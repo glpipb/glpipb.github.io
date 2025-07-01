@@ -1,71 +1,62 @@
-// app.js - El cerebro de nuestro Dashboard
-
-// 1. Importamos las funciones necesarias de Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 2. PEGA AQUÍ TU OBJETO DE CONFIGURACIÓN DE FIREBASE
-const firebaseConfig = {
-  apiKey: "AIzaSyA5rVhtkVDeJPY0bEnLjk-_LMVN3d5pkIo",
-  authDomain: "glpi-tecnologia.firebaseapp.com",
-  projectId: "glpi-tecnologia",
-  storageBucket: "glpi-tecnologia.firebasestorage.app",
-  messagingSenderId: "195664374847",
-  appId: "1:195664374847:web:88412be75b4ff8600adc8a",
-  measurementId: "G-QJD3VS1V5Y"
-};
+// ================= ¡ATENCIÓN: PEGA TU CONFIG DE FIREBASE AQUÍ! =================
+const firebaseConfig = { /* ... TU CONFIG ... */ };
+// ==============================================================================
 
-// 3. Inicializamos Firebase y Firestore
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 4. La función principal para leer datos y actualizar el HTML
-async function actualizarContadoresDashboard() {
-    console.log("Intentando actualizar contadores...");
-    try {
-        const querySnapshot = await getDocs(collection(db, "activos"));
-        
-        // Creamos un objeto para llevar la cuenta de cada tipo de activo
-        const contadores = {
-            Computadoras: 0,
-            Programas: 0,
-            'Dispositivos de red': 0,
-            Bastidores: 0,
-            Recinto: 0,
-            Monitores: 0,
-            Licencia: 0,
-            Impresoras: 0,
-            PDUs: 0,
-            Telefonos: 0 // Nota: El nombre del tipo en la DB debe coincidir exacto
-        };
+async function actualizarDashboard() {
+    // ---- Contadores de Activos ----
+    const activosSnap = await getDocs(collection(db, "activos"));
+    const contadores = { 'Computadoras': 0, 'Monitores': 0, 'Telefonos': 0, 'Impresoras': 0, 'Dispositivos de red': 0, 'Licencias': 0 };
+    const marcasComputadoras = {};
+    
+    activosSnap.forEach(doc => {
+        const activo = doc.data();
+        if (activo.tipo && contadores.hasOwnProperty(activo.tipo)) contadores[activo.tipo]++;
+        if (activo.tipo === 'Computadoras' && activo.marca) {
+            marcasComputadoras[activo.marca] = (marcasComputadoras[activo.marca] || 0) + 1;
+        }
+    });
+    Object.keys(contadores).forEach(key => {
+        const elementId = `total-${key.toLowerCase().replace(/ /g, '-')}`;
+        const element = document.getElementById(elementId);
+        if (element) element.textContent = contadores[key];
+    });
 
-        // Recorremos cada documento (activo) que encontramos en la base de datos
-        querySnapshot.forEach((doc) => {
-            const tipoActivo = doc.data().tipo; // Obtenemos el campo "tipo" del documento
-            if (tipoActivo in contadores) {
-                contadores[tipoActivo]++; // Incrementamos el contador correspondiente
-            }
-        });
+    // ---- Contadores de Tickets ----
+    const ticketsSnap = await getDocs(collection(db, "tickets"));
+    const estadosTickets = { 'Abierto': 0, 'Cerrado': 0 };
+    ticketsSnap.forEach(doc => {
+        const ticket = doc.data();
+        if (ticket.estado && estadosTickets.hasOwnProperty(ticket.estado)) estadosTickets[ticket.estado]++;
+    });
 
-        // 5. Ahora, actualizamos los números en el HTML
-        document.getElementById('total-computadoras').textContent = contadores.Computadoras;
-        document.getElementById('total-programas').textContent = contadores.Programas;
-        document.getElementById('total-dispositivos-red').textContent = contadores['Dispositivos de red'];
-        document.getElementById('total-bastidores').textContent = contadores.Bastidores;
-        document.getElementById('total-recintos').textContent = contadores.Recinto;
-        document.getElementById('total-monitores').textContent = contadores.Monitores;
-        document.getElementById('total-licencias').textContent = contadores.Licencia;
-        document.getElementById('total-impresoras').textContent = contadores.Impresoras;
-        document.getElementById('total-pdus').textContent = contadores.PDUs;
-        document.getElementById('total-telefonos').textContent = contadores.Telefonos;
-
-        console.log("¡Dashboard actualizado con éxito!", contadores);
-
-    } catch (error) {
-        console.error("Error al obtener los activos desde Firebase: ", error);
-        alert("Hubo un error al conectar con la base de datos. Revisa la consola (F12) para más detalles.");
-    }
+    // ---- Renderizar Gráficos ----
+    renderizarGrafico('computadoras-chart', 'pie', Object.keys(marcasComputadoras), Object.values(marcasComputadoras), 'Computadoras por Marca');
+    renderizarGrafico('tickets-chart', 'doughnut', Object.keys(estadosTickets), Object.values(estadosTickets), 'Tickets por Estado');
 }
 
-// 6. Hacemos que la función se ejecute en cuanto la página haya cargado
-window.addEventListener('DOMContentLoaded', actualizarContadoresDashboard);
+let charts = {};
+function renderizarGrafico(canvasId, tipo, etiquetas, datos, titulo) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    if (charts[canvasId]) {
+        charts[canvasId].destroy();
+    }
+    charts[canvasId] = new Chart(ctx, {
+        type: tipo,
+        data: {
+            labels: etiquetas,
+            datasets: [{ label: titulo, data: datos, borderWidth: 1,
+                backgroundColor: ['#e5383b', '#fca311', '#adb5bd', '#495057', '#f8f9fa']
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'white' } } } }
+    });
+}
+
+window.addEventListener('DOMContentLoaded', actualizarDashboard);
