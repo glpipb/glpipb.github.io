@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base de Conocimiento - TechControl</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="sidebar-header"><a href="index.html" class="logo">G</a></div>
+        <ul class="sidebar-menu">
+            <li><a href="index.html" title="Dashboard"><i class="fa-solid fa-house"></i></a></li>
+            <li><a href="tickets.html" title="Tickets"><i class="fa-solid fa-headset"></i></a></li>
+            <li><a href="mantenimiento.html" title="Mantenimiento"><i class="fa-solid fa-screwdriver-wrench"></i></a></li>
+            <li class="active"><a href="kb.html" title="Base de Conocimiento"><i class="fa-solid fa-key"></i></a></li>
+        </ul>
+        <div class="sidebar-footer"><a href="#" title="Configuración"><i class="fa-solid fa-gear"></i></a></div>
+    </nav>
+    
+    <main class="main-content">
+        <header class="main-header">
+            <div class="breadcrumbs"><i class="fa-solid fa-house"></i> / <span>Base de Conocimiento</span></div>
+            <div class="header-actions">
+                <div class="search-bar"><input type="text" placeholder="Buscar nota..."><i class="fa-solid fa-magnifying-glass"></i></div>
+                <div class="user-profile"><span>Super-Admin</span><div class="user-initials">JC</div></div>
+            </div>
+        </header>
+
+        <section class="dashboard-controls">
+            <div class="control-title"><h2>Notas Seguras</h2><button class="add-button" id="open-modal-btn">+</button></div>
+        </section>
+
+        <section class="kb-grid" id="kb-grid-container">
+            <!-- Las tarjetas de notas se insertarán aquí -->
+        </section>
+    </main>
+
+    <div id="add-kb-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">×</span><h2>Nueva Nota</h2>
+            <form id="add-kb-form">
+                <div class="form-group"><label for="kb-title">Título</label><input type="text" id="kb-title" required></div>
+                <div class="form-group"><label for="kb-category">Categoría</label><input type="text" id="kb-category" placeholder="Ej: Redes, Servidores, Contraseñas Wifi..." required></div>
+                <div class="form-group"><label for="kb-content">Contenido</label><textarea id="kb-content" rows="6" required></textarea></div>
+                <button type="submit" class="submit-btn">Guardar Nota</button>
+            </form>
+        </div>
+    </div>
+    <script type="module" src="kb.js"></script>
+</body>
+</html>
