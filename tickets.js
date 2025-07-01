@@ -1,9 +1,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// ================= ¡ATENCIÓN: PEGA TU CONFIG DE FIREBASE AQUÍ! =================
-const firebaseConfig = { /* ... TU CONFIG ... */ };
-// ==============================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyA5rVhtkVDeJPY0bEnLjk-_LMVN3d5pkIo",
+  authDomain: "glpi-tecnologia.firebaseapp.com",
+  projectId: "glpi-tecnologia",
+  storageBucket: "glpi-tecnologia.firebasestorage.app",
+  messagingSenderId: "195664374847",
+  appId: "1:195664374847:web:88412be75b4ff8600adc8a",
+  measurementId: "G-QJD3VS1V5Y"
+};
+
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
