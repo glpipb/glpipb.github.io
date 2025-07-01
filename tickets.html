@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tickets - TechControl</title>
+    <link rel="stylesheet" href="style.css"> <!-- Reutilizamos el mismo CSS! -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+    <!-- BARRA LATERAL DE NAVEGACIÓN (Es la misma en todas las páginas) -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <a href="index.html" class="logo">G</a> <!-- Ahora el logo nos lleva al inicio -->
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="index.html" title="Dashboard"><i class="fa-solid fa-house"></i></a></li>
+            <li><a href="#" title="Activos"><i class="fa-solid fa-box-archive"></i></a></li>
+            <!-- Marcamos "Tickets" como la página activa -->
+            <li class="active"><a href="tickets.html" title="Tickets"><i class="fa-solid fa-headset"></i></a></li>
+            <li><a href="#" title="Mantenimiento"><i class="fa-solid fa-screwdriver-wrench"></i></a></li>
+            <li><a href="#" title="Credenciales"><i class="fa-solid fa-key"></i></a></li>
+            <li><a href="#" title="Reportes"><i class="fa-solid fa-chart-line"></i></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="#" title="Configuración"><i class="fa-solid fa-gear"></i></a>
+        </div>
+    </nav>
+
+    <!-- CONTENIDO PRINCIPAL DE LA PÁGINA DE TICKETS -->
+    <main class="main-content">
+        <!-- CABECERA -->
+        <header class="main-header">
+            <div class="breadcrumbs">
+                <i class="fa-solid fa-house"></i> / <span>Tickets</span>
+            </div>
+            <div class="header-actions">
+                <div class="search-bar">
+                    <input type="text" placeholder="Buscar ticket...">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <div class="user-profile">
+                    <span>Super-Admin</span>
+                    <div class="user-initials">JC</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- TÍTULO Y CONTROLES -->
+        <section class="dashboard-controls">
+            <div class="control-title">
+                <h2>Gestión de Tickets</h2>
+                <button class="add-button">+</button>
+            </div>
+            <div class="control-tools">
+                <!-- Aquí podemos poner filtros: Ver abiertos, cerrados, etc. -->
+                <i class="fa-solid fa-filter" title="Filtrar"></i>
+            </div>
+        </section>
+
+        <!-- ÁREA PARA MOSTRAR LOS TICKETS (Aquí irá una tabla o lista) -->
+        <section class="content-area">
+             <div class="card">
+                <h3>Próximamente: Tabla de Tickets</h3>
+                <p>Aquí mostraremos una lista de todos los tickets abiertos y cerrados, leídos desde Firebase.</p>
+             </div>
+        </section>
+    </main>
+
+</body>
+</html>
