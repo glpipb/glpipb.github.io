@@ -1,0 +1,240 @@
+/* --- CONFIGURACIÓN GLOBAL Y VARIABLES DE COLOR --- */
+:root {
+    --color-red-accent: #e5383b; /* Un rojo vibrante y moderno */
+    --color-dark-bg: #1f1f1f; /* Un fondo negro/gris oscuro, no negro puro */
+    --color-content-bg: #2d2d2d; /* Un gris un poco más claro para el área de contenido */
+    --color-card-bg: #3c3c3c; /* El fondo de las tarjetas */
+    --color-border: #4a4a4a; /* Un color sutil para los bordes */
+    --color-text-primary: #f8f9fa; /* Blanco para texto principal */
+    --color-text-secondary: #adb5bd; /* Gris claro para texto secundario e iconos */
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+    display: flex;
+    background-color: var(--color-content-bg);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+}
+
+/* --- BARRA LATERAL (SIDEBAR) --- */
+.sidebar {
+    width: 80px;
+    background-color: var(--color-dark-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    border-right: 1px solid var(--color-border);
+}
+
+.sidebar .logo {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    line-height: 1;
+}
+
+.sidebar-menu {
+    list-style: none;
+    width: 100%;
+    margin-top: 50px;
+    flex-grow: 1;
+}
+
+.sidebar-menu li {
+    position: relative;
+}
+
+.sidebar-menu li a {
+    display: block;
+    color: var(--color-text-secondary);
+    padding: 20px 0;
+    font-size: 1.5rem;
+    text-align: center;
+    transition: color 0.3s ease;
+}
+
+.sidebar-menu li a:hover {
+    color: var(--color-text-primary);
+}
+
+/* Indicador rojo para el item activo */
+.sidebar-menu li.active a {
+    color: var(--color-red-accent);
+}
+.sidebar-menu li.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 60%;
+    width: 4px;
+    background-color: var(--color-red-accent);
+    border-radius: 0 4px 4px 0;
+}
+
+.sidebar-footer {
+    padding-bottom: 10px;
+}
+
+.sidebar-footer a {
+    color: var(--color-text-secondary);
+    font-size: 1.5rem;
+    transition: color 0.3s ease;
+}
+
+.sidebar-footer a:hover {
+    color: var(--color-red-accent);
+}
+
+/* --- CONTENIDO PRINCIPAL --- */
+.main-content {
+    flex-grow: 1;
+    padding: 20px 30px;
+}
+
+/* Cabecera */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.breadcrumbs {
+    color: var(--color-text-secondary);
+    font-size: 1.1rem;
+}
+.breadcrumbs span {
+    color: var(--color-text-primary);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.search-bar { position: relative; }
+.search-bar input {
+    padding: 10px 40px 10px 15px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-card-bg);
+    color: var(--color-text-primary);
+    width: 250px;
+}
+.search-bar input::placeholder { color: var(--color-text-secondary); }
+.search-bar i {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-secondary);
+}
+
+.user-profile { display: flex; align-items: center; gap: 10px; }
+.user-initials {
+    background-color: var(--color-red-accent);
+    color: var(--color-text-primary);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: bold;
+}
+
+/* Controles del Dashboard */
+.dashboard-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-dark-bg);
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    margin-bottom: 25px;
+}
+
+.control-title { display: flex; align-items: center; gap: 15px; }
+.add-button {
+    background-color: var(--color-red-accent);
+    color: var(--color-text-primary);
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+.add-button:hover { transform: scale(1.1); }
+
+.control-tools { display: flex; gap: 20px; font-size: 1.2rem; color: var(--color-text-secondary); }
+.control-tools i { cursor: pointer; transition: color 0.2s; }
+.control-tools i:hover { color: var(--color-text-primary); }
+
+/* --- GRID DE TARJETAS --- */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background-color: var(--color-card-bg);
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.card-number {
+    font-size: 2.8rem;
+    font-weight: 600;
+    color: var(--color-red-accent);
+    line-height: 1.1;
+}
+
+.card-title {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    margin-top: 5px;
+}
+
+.card-icon {
+    font-size: 1.8rem;
+    color: var(--color-text-secondary);
+    opacity: 0.8;
+}
+
+/* Estilos para los placeholders de gráficos */
+.chart-placeholder {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    flex-direction: column;
+    gap: 15px;
+    color: var(--color-text-secondary);
+    min-height: 150px;
+}
+.chart-placeholder i {
+    font-size: 3rem;
+}
