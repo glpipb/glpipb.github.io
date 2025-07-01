@@ -4,107 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tickets - TechControl</title>
-    <link rel="stylesheet" href="style.css"> <!-- Reutilizamos el mismo CSS -->
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
-    <!-- BARRA LATERAL (La dejamos como está, pero actualizamos los enlaces) -->
     <nav class="sidebar">
-        <div class="sidebar-header">
-            <a href="index.html" class="logo">G</a>
-        </div>
+        <div class="sidebar-header"><a href="index.html" class="logo">G</a></div>
         <ul class="sidebar-menu">
             <li><a href="index.html" title="Dashboard"><i class="fa-solid fa-house"></i></a></li>
-            <!-- Pronto haremos que este enlace funcione -->
-            <li><a href="index.html" title="Activos"><i class="fa-solid fa-box-archive"></i></a></li> 
             <li class="active"><a href="tickets.html" title="Tickets"><i class="fa-solid fa-headset"></i></a></li>
-            <li><a href="#" title="Mantenimiento"><i class="fa-solid fa-screwdriver-wrench"></i></a></li>
-            <li><a href="#" title="Credenciales"><i class="fa-solid fa-key"></i></a></li>
-            <li><a href="#" title="Reportes"><i class="fa-solid fa-chart-line"></i></a></li>
+            <li><a href="mantenimiento.html" title="Mantenimiento"><i class="fa-solid fa-screwdriver-wrench"></i></a></li>
+            <li><a href="kb.html" title="Base de Conocimiento"><i class="fa-solid fa-key"></i></a></li>
         </ul>
-        <div class="sidebar-footer">
-            <a href="#" title="Configuración"><i class="fa-solid fa-gear"></i></a>
-        </div>
+        <div class="sidebar-footer"><a href="#" title="Configuración"><i class="fa-solid fa-gear"></i></a></div>
     </nav>
-
-    <!-- CONTENIDO PRINCIPAL DE LA PÁGINA DE TICKETS -->
+    
     <main class="main-content">
         <header class="main-header">
-            <div class="breadcrumbs">
-                <i class="fa-solid fa-house"></i> / <span>Tickets</span>
-            </div>
-             <div class="header-actions">
-                <div class="search-bar">
-                    <input type="text" placeholder="Buscar ticket...">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                </div>
-                <div class="user-profile">
-                    <span>Super-Admin</span>
-                    <div class="user-initials">JC</div>
-                </div>
+            <div class="breadcrumbs"><i class="fa-solid fa-house"></i> / <span>Tickets</span></div>
+            <div class="header-actions">
+                <div class="search-bar"><input type="text" placeholder="Buscar ticket..."><i class="fa-solid fa-magnifying-glass"></i></div>
+                <div class="user-profile"><span>Super-Admin</span><div class="user-initials">JC</div></div>
             </div>
         </header>
 
         <section class="dashboard-controls">
-            <div class="control-title">
-                <h2>Gestión de Tickets</h2>
-                <!-- Este botón ahora abrirá el formulario modal -->
-                <button class="add-button" id="open-modal-btn">+</button>
-            </div>
+            <div class="control-title"><h2>Gestión de Tickets</h2><button class="add-button" id="open-modal-btn">+</button></div>
         </section>
 
-        <!-- TABLA PARA MOSTRAR LOS TICKETS -->
         <section class="content-area">
              <div class="card data-table-card">
                 <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Título</th>
-                            <th>Usuario</th>
-                            <th>Prioridad</th>
-                            <th>Estado</th>
-                            <th>Fecha de Creación</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tickets-table-body">
-                        <!-- Las filas de los tickets se insertarán aquí con JavaScript -->
-                        <tr><td colspan="5">Cargando tickets...</td></tr>
-                    </tbody>
+                    <thead><tr><th>Título</th><th>Usuario</th><th>Prioridad</th><th>Estado</th><th>Fecha de Creación</th></tr></thead>
+                    <tbody id="tickets-table-body"><tr><td colspan="5">Cargando tickets...</td></tr></tbody>
                 </table>
              </div>
         </section>
     </main>
 
-    <!-- FORMULARIO MODAL (inicialmente oculto) -->
     <div id="add-ticket-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn">×</span>
-            <h2>Nuevo Ticket</h2>
+            <span class="close-btn">×</span><h2>Nuevo Ticket</h2>
             <form id="add-ticket-form">
-                <div class="form-group">
-                    <label for="ticket-title">Título del Problema</label>
-                    <input type="text" id="ticket-title" required>
-                </div>
-                <div class="form-group">
-                    <label for="ticket-user">Usuario que reporta</label>
-                    <input type="text" id="ticket-user" required>
-                </div>
-                <div class="form-group">
-                    <label for="ticket-priority">Prioridad</label>
-                    <select id="ticket-priority">
-                        <option value="Baja">Baja</option>
-                        <option value="Media" selected>Media</option>
-                        <option value="Alta">Alta</option>
-                    </select>
-                </div>
+                <div class="form-group"><label for="ticket-title">Título del Problema</label><input type="text" id="ticket-title" required></div>
+                <div class="form-group"><label for="ticket-user">Usuario que reporta</label><input type="text" id="ticket-user" required></div>
+                <div class="form-group"><label for="ticket-priority">Prioridad</label><select id="ticket-priority"><option value="Baja">Baja</option><option value="Media" selected>Media</option><option value="Alta">Alta</option></select></div>
                 <button type="submit" class="submit-btn">Crear Ticket</button>
             </form>
         </div>
     </div>
-
-    <!-- Script para la lógica de esta página -->
     <script type="module" src="tickets.js"></script>
-
 </body>
 </html>
