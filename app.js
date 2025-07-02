@@ -7,11 +7,11 @@ const firebaseConfig = {
   appId: "1:195664374847:web:88412be75b4ff8600adc8a",
   measurementId: "G-QJD3VS1V5Y"
 };
-
 // --- 2. INICIALIZACIÓN DE FIREBASE ---
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+
 
 // --- 3. TEMPLATES HTML PARA CADA SECCIÓN ---
 
@@ -38,9 +38,19 @@ const ticketsHTML = `
         <form id="new-ticket-form">
             <div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div>
             <div class="form-group"><label for="description">Descripción</label><textarea id="description" rows="3" required></textarea></div>
-            <div class="form-group">
-                <label for="priority">Prioridad</label>
-                <select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 1; min-width: 200px;">
+                    <label for="requester">Solicitante</label>
+                    <select id="requester" required><option value="">Cargando...</option></select>
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 200px;">
+                    <label for="location">Ubicación</label>
+                    <select id="location" required><option value="">Cargando...</option></select>
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 150px;">
+                    <label for="priority">Prioridad</label>
+                    <select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select>
+                </div>
             </div>
             <button type="submit" class="primary">Crear Ticket</button>
         </form>
@@ -48,7 +58,7 @@ const ticketsHTML = `
     <div class="card">
         <h2>Tickets Activos</h2>
         <table id="tickets-table">
-            <thead><tr><th>Título</th><th>Prioridad</th><th>Estado</th><th>Fecha Creación</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Título</th><th>Solicitante</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
@@ -105,10 +115,10 @@ const credentialsHTML = `
     <div class="card">
         <h2>Añadir Credencial</h2>
         <form id="new-credential-form">
-            <input type="text" id="cred-system" placeholder="Sistema/Servicio" required><br><br>
-            <input type="text" id="cred-user" placeholder="Usuario"><br><br>
-            <input type="text" id="cred-pass" placeholder="Contraseña/Clave"><br><br>
-            <textarea id="cred-notes" placeholder="Notas adicionales"></textarea><br><br>
+            <div class="form-group"><input type="text" id="cred-system" placeholder="Sistema/Servicio" required></div>
+            <div class="form-group"><input type="text" id="cred-user" placeholder="Usuario"></div>
+            <div class="form-group"><input type="text" id="cred-pass" placeholder="Contraseña/Clave"></div>
+            <div class="form-group"><textarea id="cred-notes" placeholder="Notas adicionales"></textarea></div>
             <button type="submit" class="primary">Guardar</button>
         </form>
     </div>
@@ -121,10 +131,31 @@ const credentialsHTML = `
     </div>
 `;
 
+const configHTML = `
+    <h1>⚙️ Configuración</h1>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="card">
+            <h2>Gestionar Solicitantes</h2>
+            <form id="add-requester-form" style="display:flex; gap:10px; margin-bottom: 20px;">
+                <input type="text" id="requester-name" placeholder="Nombre del solicitante" required style="flex-grow:1;">
+                <button type="submit" class="primary">Añadir</button>
+            </form>
+            <ul id="requesters-list" class="config-list"></ul>
+        </div>
+        <div class="card">
+            <h2>Gestionar Ubicaciones</h2>
+            <form id="add-location-form" style="display:flex; gap:10px; margin-bottom: 20px;">
+                <input type="text" id="location-name" placeholder="Nombre de la ubicación" required style="flex-grow:1;">
+                <button type="submit" class="primary">Añadir</button>
+            </form>
+            <ul id="locations-list" class="config-list"></ul>
+        </div>
+    </div>
+`;
+
 
 // --- 4. FUNCIONES PARA RENDERIZAR CADA SECCIÓN ---
 
-// DASHBOARD
 async function renderDashboard(container) {
     container.innerHTML = dashboardHTML;
     const ticketsSnapshot = await db.collection('tickets').get();
@@ -152,7 +183,7 @@ async function renderDashboard(container) {
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: Object.keys(last7Days).map(d => new Date(d).toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(),
+            labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(),
             datasets: [{
                 label: '# de Tickets',
                 data: Object.values(last7Days).reverse(),
@@ -165,18 +196,44 @@ async function renderDashboard(container) {
     });
 }
 
-// TICKETS
-function renderTickets(container) {
+async function renderTickets(container) {
     container.innerHTML = ticketsHTML;
+
+    const requesterSelect = document.getElementById('requester');
+    const locationSelect = document.getElementById('location');
+
+    const [requestersSnapshot, locationsSnapshot] = await Promise.all([
+        db.collection('requesters').orderBy('name').get(),
+        db.collection('locations').orderBy('name').get()
+    ]);
+
+    const requestersMap = {};
+    requesterSelect.innerHTML = '<option value="">Selecciona un solicitante</option>';
+    requestersSnapshot.forEach(doc => {
+        requestersMap[doc.id] = doc.data().name;
+        requesterSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+    });
+
+    const locationsMap = {};
+    locationSelect.innerHTML = '<option value="">Selecciona una ubicación</option>';
+    locationsSnapshot.forEach(doc => {
+        locationsMap[doc.id] = doc.data().name;
+        locationSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+    });
+
     const form = document.getElementById('new-ticket-form');
     form.addEventListener('submit', e => {
         e.preventDefault();
         db.collection('tickets').add({
             title: form.title.value,
             description: form.description.value,
+            requesterId: form.requester.value,
+            locationId: form.location.value,
             priority: form.priority.value,
             status: 'abierto',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            solution: null,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            closedAt: null
         }).then(() => form.reset());
     });
 
@@ -185,31 +242,23 @@ function renderTickets(container) {
         tableBody.innerHTML = '';
         snapshot.forEach(doc => {
             const ticket = { id: doc.id, ...doc.data() };
+            if (ticket.status === 'cerrado') return;
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${ticket.title}</td>
-                <td>${ticket.priority}</td>
+                <td>${requestersMap[ticket.requesterId] || 'N/A'}</td>
+                <td>${locationsMap[ticket.locationId] || 'N/A'}</td>
                 <td><span class="status status-${ticket.status}">${ticket.status}</span></td>
-                <td>${ticket.createdAt ? ticket.createdAt.toDate().toLocaleString('es-ES') : 'N/A'}</td>
                 <td>
-                    <select class="status-changer" data-id="${ticket.id}">
-                        <option value="abierto" ${ticket.status === 'abierto' ? 'selected' : ''}>Abierto</option>
-                        <option value="proceso" ${ticket.status === 'proceso' ? 'selected' : ''}>En Proceso</option>
-                        <option value="cerrado" ${ticket.status === 'cerrado' ? 'selected' : ''}>Cerrado</option>
-                    </select>
+                    <button class="primary view-ticket-btn" data-id="${ticket.id}">Ver / Responder</button>
                 </td>
             `;
             tableBody.appendChild(tr);
         });
-        document.querySelectorAll('.status-changer').forEach(select => {
-            select.addEventListener('change', e => {
-                db.collection('tickets').doc(e.target.dataset.id).update({ status: e.target.value });
-            });
-        });
     });
 }
 
-// INVENTARIO
 function renderInventory(container) {
     container.innerHTML = inventoryHTML;
     const form = document.getElementById('new-device-form');
@@ -225,7 +274,7 @@ function renderInventory(container) {
     });
 
     const tableBody = document.querySelector('#inventory-table tbody');
-    db.collection('inventory').onSnapshot(snapshot => {
+    db.collection('inventory').orderBy('type').onSnapshot(snapshot => {
         tableBody.innerHTML = '';
         snapshot.forEach(doc => {
             const device = { id: doc.id, ...doc.data() };
@@ -240,7 +289,6 @@ function renderInventory(container) {
     });
 }
 
-// MANTENIMIENTO
 function renderMaintenance(container) {
     container.innerHTML = maintenanceHTML;
     const form = document.getElementById('new-maintenance-form');
@@ -270,7 +318,6 @@ function renderMaintenance(container) {
     });
 }
 
-// CREDENCIALES
 function renderCredentials(container) {
     container.innerHTML = credentialsHTML;
     const form = document.getElementById('new-credential-form');
@@ -285,16 +332,57 @@ function renderCredentials(container) {
     });
 
     const tableBody = document.querySelector('#credentials-table tbody');
-    db.collection('credentials').onSnapshot(snapshot => {
+    db.collection('credentials').orderBy('system').onSnapshot(snapshot => {
         tableBody.innerHTML = '';
         snapshot.forEach(doc => {
             const cred = { id: doc.id, ...doc.data() };
+            const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${cred.system}</td><td>${cred.user}</td>
                 <td>${cred.pass}</td><td>${cred.notes}</td>
-                <td><button class="danger delete-btn" data-id="${cred.id}" data-collection="credentials">Eliminar</button></td>
+                <td><button class="danger delete-btn" data-id="${doc.id}" data-collection="credentials">Eliminar</button></td>
             `;
             tableBody.appendChild(tr);
+        });
+    });
+}
+
+function renderConfiguracion(container) {
+    container.innerHTML = configHTML;
+
+    // Lógica para Solicitantes
+    const reqForm = document.getElementById('add-requester-form');
+    const reqList = document.getElementById('requesters-list');
+    reqForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const name = document.getElementById('requester-name').value.trim();
+        if (name) db.collection('requesters').add({ name: name }).then(() => reqForm.reset());
+    });
+    db.collection('requesters').orderBy('name').onSnapshot(snapshot => {
+        reqList.innerHTML = '';
+        snapshot.forEach(doc => {
+            const li = document.createElement('li');
+            li.className = 'config-list-item';
+            li.innerHTML = `<span>${doc.data().name}</span> <button class="danger delete-btn" data-id="${doc.id}" data-collection="requesters" title="Eliminar">×</button>`;
+            reqList.appendChild(li);
+        });
+    });
+
+    // Lógica para Ubicaciones
+    const locForm = document.getElementById('add-location-form');
+    const locList = document.getElementById('locations-list');
+    locForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const name = document.getElementById('location-name').value.trim();
+        if (name) db.collection('locations').add({ name: name }).then(() => locForm.reset());
+    });
+    db.collection('locations').orderBy('name').onSnapshot(snapshot => {
+        locList.innerHTML = '';
+        snapshot.forEach(doc => {
+            const li = document.createElement('li');
+            li.className = 'config-list-item';
+            li.innerHTML = `<span>${doc.data().name}</span> <button class="danger delete-btn" data-id="${doc.id}" data-collection="locations" title="Eliminar">×</button>`;
+            locList.appendChild(li);
         });
     });
 }
@@ -304,6 +392,9 @@ function renderCredentials(container) {
 
 const appContent = document.getElementById('app-content');
 const navLinks = document.querySelectorAll('.nav-link');
+const modal = document.getElementById('ticket-modal');
+const modalBody = document.getElementById('modal-body');
+const modalCloseBtn = document.querySelector('.modal-close-btn');
 
 const routes = {
     '#dashboard': renderDashboard,
@@ -311,6 +402,7 @@ const routes = {
     '#inventory': renderInventory,
     '#maintenance': renderMaintenance,
     '#credentials': renderCredentials,
+    '#configuracion': renderConfiguracion
 };
 
 function router() {
@@ -318,6 +410,7 @@ function router() {
     const renderFunction = routes[path];
     
     if (renderFunction) {
+        appContent.innerHTML = '<div class="card"><h1>Cargando...</h1></div>';
         renderFunction(appContent);
         navLinks.forEach(link => {
             link.classList.toggle('active', link.getAttribute('href') === path);
@@ -327,16 +420,72 @@ function router() {
     }
 }
 
-// Event listener para botones de eliminar (delegación de eventos)
+async function showTicketModal(ticketId) {
+    const ticketDoc = await db.collection('tickets').doc(ticketId).get();
+    if (!ticketDoc.exists) {
+        alert('Error: No se encontró el ticket.');
+        return;
+    }
+    const ticket = ticketDoc.data();
+    
+    const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || 'N/A' : 'N/A';
+    const locationName = ticket.locationId ? (await db.collection('locations').doc(ticket.locationId).get()).data()?.name || 'N/A' : 'N/A';
+
+    modalBody.innerHTML = `
+        <h2>${ticket.title}</h2>
+        <div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div>
+        <div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div>
+        <div class="ticket-detail-item"><strong>Fecha de Creación:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>
+        <div class="ticket-detail-item"><strong>Descripción:</strong><p>${ticket.description.replace(/\n/g, '<br>')}</p></div>
+        <hr>
+        <form id="solution-form">
+            <div class="form-group">
+                <label for="solution"><strong>Añadir Solución y Cerrar Ticket</strong></label>
+                <textarea id="solution" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="primary">Guardar Solución y Cerrar</button>
+        </form>
+    `;
+    modal.classList.remove('hidden');
+
+    document.getElementById('solution-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const solutionText = document.getElementById('solution').value;
+        db.collection('tickets').doc(ticketId).update({
+            solution: solutionText,
+            status: 'cerrado',
+            closedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            modal.classList.add('hidden');
+        });
+    });
+}
+
 appContent.addEventListener('click', e => {
-    if (e.target.classList.contains('delete-btn')) {
-        const id = e.target.dataset.id;
-        const collection = e.target.dataset.collection;
+    const target = e.target.closest('button');
+    if (!target) return;
+
+    if (target.classList.contains('delete-btn')) {
+        const id = target.dataset.id;
+        const collection = target.dataset.collection;
         if (confirm(`¿Seguro que quieres eliminar este elemento de ${collection}?`)) {
             db.collection(collection).doc(id).delete();
         }
     }
+    
+    if (target.classList.contains('view-ticket-btn')) {
+        const id = target.dataset.id;
+        showTicketModal(id);
+    }
 });
+
+modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
+modal.addEventListener('click', e => {
+    if (e.target === modal) {
+        modal.classList.add('hidden');
+    }
+});
+
 
 // --- 6. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
 
@@ -346,7 +495,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('login-btn');
     const logoutBtn = document.getElementById('logout-btn');
 
-    // Manejo del Login
     loginBtn.addEventListener('click', () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -354,23 +502,24 @@ document.addEventListener('DOMContentLoaded', () => {
         errorEl.textContent = '';
         auth.signInWithEmailAndPassword(email, password)
             .catch(error => {
+                console.error("Error de inicio de sesión:", error);
                 errorEl.textContent = "Correo o contraseña incorrectos.";
             });
     });
 
-    // Manejo del Logout
     logoutBtn.addEventListener('click', () => auth.signOut());
 
-    // Escuchar cambios de autenticación
     auth.onAuthStateChanged(user => {
         if (user) {
             loginContainer.classList.remove('visible');
             loginContainer.classList.add('hidden');
             appContainer.classList.add('visible');
+            appContainer.classList.remove('hidden');
             window.addEventListener('hashchange', router);
-            router(); // Cargar la vista inicial
+            router();
         } else {
             loginContainer.classList.add('visible');
+            loginContainer.classList.remove('hidden');
             appContainer.classList.remove('visible');
             appContainer.classList.add('hidden');
             window.removeEventListener('hashchange', router);
