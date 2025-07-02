@@ -19,7 +19,7 @@ body { display: flex; background-color: var(--color-content-bg); color: var(--co
 .sidebar-footer a:hover { color: var(--color-red-accent); }
 
 /* --- CONTENIDO PRINCIPAL --- */
-.main-content { flex-grow: 1; padding: 20px 30px; }
+.main-content { flex-grow: 1; padding: 20px 30px; height: 100vh; overflow-y: auto; position: relative; }
 .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 .breadcrumbs { color: var(--color-text-secondary); font-size: 1.1rem; }
 .breadcrumbs span { color: var(--color-text-primary); }
