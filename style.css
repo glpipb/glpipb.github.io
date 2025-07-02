@@ -210,3 +210,42 @@ th { background-color: #e9ecef; }
 .config-list-item:last-child {
     border-bottom: none;
 }
+/* --- Estilos para las Tarjetas del Dashboard --- */
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    display: block; /* Para que el <a> ocupe todo el espacio */
+    text-decoration: none;
+    color: #333;
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-left: 5px solid;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stat-card .stat-number {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-card .stat-label {
+    font-size: 1em;
+    color: var(--secondary-color);
+}
+
+/* Colores específicos para las tarjetas */
+.stat-card.open { border-color: var(--danger-color); }
+.stat-card.closed { border-color: var(--success-color); }
+.stat-card.all { border-color: var(--primary-color); }
