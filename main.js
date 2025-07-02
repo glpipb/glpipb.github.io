@@ -1,5 +1,7 @@
+// --- 1. IMPORTACIONES Y CONFIGURACIÓN DE FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+const firebaseConfig = {
   apiKey: "AIzaSyA5rVhtkVDeJPY0bEnLjk-_LMVN3d5pkIo",
   authDomain: "glpi-tecnologia.firebaseapp.com",
   projectId: "glpi-tecnologia",
@@ -7,12 +9,13 @@ import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimest
   messagingSenderId: "195664374847",
   appId: "1:195664374847:web:88412be75b4ff8600adc8a",
   measurementId: "G-QJD3VS1V5Y"
+};
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const appContainer = document.getElementById('app-container');
 
-// --- PLANTILLAS HTML PARA CADA SECCIÓN ---
+// --- 2. PLANTILLAS HTML PARA CADA SECCIÓN ---
 const templates = {
     dashboard: `
         <header class="main-header"><div class="breadcrumbs"><i class="fa-solid fa-house"></i> / <span>Activos</span></div></header>
@@ -48,23 +51,54 @@ const templates = {
     `
 };
 
-// --- LÓGICA PARA CADA SECCIÓN ---
+// --- 3. LÓGICA PARA CADA SECCIÓN ---
 const pageLogic = {
+    // ---- LÓGICA DEL DASHBOARD (VERSIÓN A PRUEBA DE FALLOS) ----
     dashboard: async () => {
-        const [activosSnap, ticketsSnap] = await Promise.all([getDocs(collection(db, "activos")), getDocs(collection(db, "tickets"))]);
-        const contadores = { 'Computadoras': 0, 'Monitores': 0, 'Telefonos': 0, 'Impresoras': 0, 'Dispositivos de red': 0, 'Licencias': 0 };
-        const marcas = {};
-        activosSnap.forEach(doc => {
-            const a = doc.data();
-            if (a.tipo && contadores.hasOwnProperty(a.tipo)) contadores[a.tipo]++;
-            if (a.tipo === 'Computadoras' && a.marca) marcas[a.marca] = (marcas[a.marca] || 0) + 1;
-        });
-        Object.keys(contadores).forEach(k => { const el = document.getElementById(`total-${k.toLowerCase().replace(/ /g, '-')}`); if (el) el.textContent = contadores[k]; });
-        const estados = { 'Abierto': 0, 'Cerrado': 0 };
-        ticketsSnap.forEach(doc => { const t = doc.data(); if(t.estado && estados.hasOwnProperty(t.estado)) estados[t.estado]++; });
-        renderizarGrafico('computadoras-chart', 'pie', Object.keys(marcas), Object.values(marcas));
-        renderizarGrafico('tickets-chart', 'doughnut', Object.keys(estados), Object.values(estados));
+        // --- Cargar y renderizar datos de Activos ---
+        try {
+            const activosSnap = await getDocs(collection(db, "activos"));
+            const contadores = { 'Computadoras': 0, 'Monitores': 0, 'Telefonos': 0, 'Impresoras': 0, 'Dispositivos de red': 0, 'Licencias': 0 };
+            const marcas = {};
+            
+            activosSnap.forEach(doc => {
+                const a = doc.data();
+                if (a.tipo && contadores.hasOwnProperty(a.tipo)) contadores[a.tipo]++;
+                if (a.tipo === 'Computadoras' && a.marca) marcas[a.marca] = (marcas[a.marca] || 0) + 1;
+            });
+
+            Object.keys(contadores).forEach(k => {
+                const elId = `total-${k.toLowerCase().replace(/ /g, '-')}`;
+                const el = document.getElementById(elId);
+                if (el) el.textContent = contadores[k];
+            });
+
+            renderizarGrafico('computadoras-chart', 'pie', Object.keys(marcas), Object.values(marcas));
+            console.log("Datos de Activos cargados y renderizados.");
+
+        } catch (error) {
+            console.error("Error al cargar datos de ACTIVOS:", error);
+            // Opcional: mostrar un mensaje en la UI
+        }
+
+        // --- Cargar y renderizar datos de Tickets para el gráfico ---
+        try {
+            const ticketsSnap = await getDocs(collection(db, "tickets"));
+            const estados = { 'Abierto': 0, 'Cerrado': 0 };
+
+            ticketsSnap.forEach(doc => {
+                const t = doc.data();
+                if (t.estado && estados.hasOwnProperty(t.estado)) estados[t.estado]++;
+            });
+
+            renderizarGrafico('tickets-chart', 'doughnut', Object.keys(estados), Object.values(estados));
+            console.log("Datos de Tickets cargados y renderizados para el gráfico.");
+
+        } catch (error) {
+            console.error("Error al cargar datos de TICKETS para el gráfico:", error);
+        }
     },
+    // ---- LÓGICA DE TICKETS ----
     tickets: async () => {
         renderModal('tickets');
         const cargar = async () => {
@@ -83,6 +117,7 @@ const pageLogic = {
             closeModal(); await cargar();
         });
     },
+    // ---- LÓGICA DE MANTENIMIENTO ----
     mantenimiento: async () => {
         renderModal('mantenimiento');
         const cargar = async () => {
@@ -101,6 +136,7 @@ const pageLogic = {
             closeModal(); await cargar();
         });
     },
+    // ---- LÓGICA DE BASE DE CONOCIMIENTO ----
     kb: async () => {
         renderModal('kb');
         const cargar = async () => {
@@ -120,7 +156,7 @@ const pageLogic = {
     }
 };
 
-// --- HELPERS Y FUNCIONES GLOBALES ---
+// --- 4. HELPERS Y FUNCIONES GLOBALES ---
 const modalTemplates = {
     tickets: { title: 'Nuevo Ticket', fields: [ {l: 'Título', id: 'field1', t: 'text'}, {l: 'Usuario', id: 'field2', t: 'text'}, {l: 'Prioridad', id: 'field3', t: 'select', o: ['Baja', 'Media', 'Alta']} ] },
     mantenimiento: { title: 'Programar Mantenimiento', fields: [ {l: 'Activo', id: 'field1', t: 'text'}, {l: 'Tipo', id: 'field2', t: 'select', o: ['Preventivo', 'Correctivo']}, {l: 'Fecha', id: 'field3', t: 'date'}, {l: 'Descripción', id: 'field4', t: 'textarea'} ] },
@@ -141,7 +177,7 @@ function renderizarGrafico(id, type, labels, data) {
     charts[id] = new Chart(ctx, { type, data: { labels, datasets: [{ data, backgroundColor: ['#e5383b','#fca311','#adb5bd','#495057','#f8f9fa'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { color: 'white' } } } } });
 }
 
-// --- ROUTER: EL DIRECTOR DE ORQUESTA ---
+// --- 5. ROUTER: EL DIRECTOR DE ORQUESTA ---
 const router = async () => {
     const route = window.location.hash.substring(1) || 'dashboard';
     const template = templates[route] || `<h2>Error 404</h2><p>Página no encontrada.</p>`;
@@ -153,6 +189,6 @@ const router = async () => {
     document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.toggle('active', li.dataset.route === route));
 };
 
-// --- EJECUCIÓN INICIAL ---
+// --- 6. EJECUCIÓN INICIAL ---
 window.addEventListener('hashchange', router);
 window.addEventListener('load', router);
