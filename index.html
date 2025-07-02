@@ -4,16 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TechControl Dashboard</title>
-    <!-- El CSS se puede mantener en un archivo separado o meterlo aquí. Lo dejaremos separado por orden. -->
+    
+    <!-- Enlace a tu único archivo de estilos -->
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Enlace a los iconos de Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
+    <!-- BARRA LATERAL DE NAVEGACIÓN -->
     <nav class="sidebar">
         <div class="sidebar-header"><a href="#dashboard" class="logo">G</a></div>
         <ul class="sidebar-menu">
-            <!-- Los enlaces ahora usan "#" para que JavaScript los intercepte -->
             <li data-route="dashboard" class="active"><a href="#dashboard" title="Dashboard"><i class="fa-solid fa-house"></i></a></li>
             <li data-route="tickets"><a href="#tickets" title="Tickets"><i class="fa-solid fa-headset"></i></a></li>
             <li data-route="mantenimiento"><a href="#mantenimiento" title="Mantenimiento"><i class="fa-solid fa-screwdriver-wrench"></i></a></li>
@@ -22,10 +25,16 @@
         <div class="sidebar-footer"><a href="#" title="Configuración"><i class="fa-solid fa-gear"></i></a></div>
     </nav>
     
+    <!-- CONTENEDOR PRINCIPAL DONDE JAVASCRIPT INSERTARÁ EL CONTENIDO -->
     <main id="app-container" class="main-content">
+        <!-- Este mensaje se mostrará solo si JavaScript falla -->
         <p>Cargando aplicación...</p>
     </main>
+
+    <!-- Librería para los gráficos (necesaria para el dashboard) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Enlace a tu único archivo de lógica JavaScript -->
     <script type="module" src="main.js"></script>
 
 </body>
