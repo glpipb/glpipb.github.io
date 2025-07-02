@@ -33,7 +33,7 @@ const ticketsHTML = `
         <h2>Nuevo Ticket</h2>
         <form id="new-ticket-form">
             <div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div>
-            <div class="form-group"><label for="description">Descripción</label><textarea id="description" rows="3" required></textarea></div>
+            <div class="form-group"><label>Descripción</label><div id="description-editor"></div></div>
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
                 <div class="form-group" style="flex: 1; min-width: 200px;">
                     <label for="requester">Solicitante</label>
@@ -149,6 +149,25 @@ const configHTML = `
     </div>
 `;
 
+const statisticsHTML = `
+    <h1>📈 Estadísticas</h1>
+    <div class="card">
+        <h2>Reporte de Tickets por Rango de Fechas</h2>
+        <div class="stats-filters">
+            <div class="form-group">
+                <label for="start-date">Fecha de Inicio</label>
+                <input type="date" id="start-date">
+            </div>
+            <div class="form-group">
+                <label for="end-date">Fecha de Fin</label>
+                <input type="date" id="end-date">
+            </div>
+            <button id="generate-report-btn" class="primary">Generar Reporte</button>
+        </div>
+        <canvas id="stats-chart"></canvas>
+    </div>
+`;
+
 
 // --- 4. FUNCIONES PARA RENDERIZAR CADA SECCIÓN ---
 
@@ -199,7 +218,7 @@ async function renderDashboard(container) {
         data: {
             labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(),
             datasets: [{
-                label: '# de Tickets',
+                label: '# de Tickets Creados',
                 data: Object.values(last7Days).reverse(),
                 backgroundColor: 'rgba(0, 123, 255, 0.5)',
                 borderColor: 'rgba(0, 123, 255, 1)',
@@ -212,6 +231,11 @@ async function renderDashboard(container) {
 
 async function renderTickets(container, params = {}) {
     container.innerHTML = ticketsHTML;
+
+    const quill = new Quill('#description-editor', {
+        theme: 'snow',
+        placeholder: 'Detalla el problema o solicitud...'
+    });
 
     const requesterSelect = document.getElementById('requester');
     const locationSelect = document.getElementById('location');
@@ -240,7 +264,7 @@ async function renderTickets(container, params = {}) {
         e.preventDefault();
         db.collection('tickets').add({
             title: form.title.value,
-            description: form.description.value,
+            description: quill.root.innerHTML,
             requesterId: form.requester.value,
             locationId: form.location.value,
             priority: form.priority.value,
@@ -248,14 +272,17 @@ async function renderTickets(container, params = {}) {
             solution: null,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             closedAt: null
-        }).then(() => form.reset());
+        }).then(() => {
+            form.reset();
+            quill.setText('');
+        });
     });
 
     const tableBody = document.querySelector('#tickets-table tbody');
     const tableTitle = document.getElementById('tickets-list-title');
     const filterStatus = params.status;
 
-    let query = db.collection('tickets').orderBy('createdAt', 'desc');
+    let query = db.collection('tickets');
     
     if (filterStatus) {
         query = query.where('status', '==', filterStatus);
@@ -264,7 +291,7 @@ async function renderTickets(container, params = {}) {
         tableTitle.innerText = 'Todos los Tickets';
     }
 
-    query.onSnapshot(snapshot => {
+    query.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         tableBody.innerHTML = '';
         if (snapshot.empty) {
             tableBody.innerHTML = `<tr><td colspan="5">No hay tickets que coincidan con este filtro.</td></tr>`;
@@ -285,6 +312,85 @@ async function renderTickets(container, params = {}) {
             tableBody.appendChild(tr);
         });
     });
+}
+
+function renderEstadisticas(container) {
+    container.innerHTML = statisticsHTML;
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    const generateBtn = document.getElementById('generate-report-btn');
+    const ctx = document.getElementById('stats-chart').getContext('2d');
+    let chart;
+
+    const today = new Date();
+    const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1));
+    startDateInput.value = oneMonthAgo.toISOString().split('T')[0];
+    endDateInput.value = today.toISOString().split('T')[0];
+    
+    generateBtn.addEventListener('click', async () => {
+        const startDate = new Date(startDateInput.value);
+        const endDate = new Date(endDateInput.value);
+        endDate.setHours(23, 59, 59);
+
+        const ticketsSnapshot = await db.collection('tickets')
+            .where('createdAt', '>=', startDate)
+            .where('createdAt', '<=', endDate)
+            .get();
+
+        const tickets = ticketsSnapshot.docs.map(doc => doc.data());
+
+        const dataByDay = {};
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dayKey = d.toISOString().split('T')[0];
+            dataByDay[dayKey] = { created: 0, closed: 0 };
+        }
+
+        tickets.forEach(ticket => {
+            const createdDay = ticket.createdAt.toDate().toISOString().split('T')[0];
+            if (dataByDay[createdDay]) {
+                dataByDay[createdDay].created++;
+            }
+            if (ticket.closedAt) {
+                const closedDay = ticket.closedAt.toDate().toISOString().split('T')[0];
+                if (dataByDay[closedDay]) {
+                    dataByDay[closedDay].closed++;
+                }
+            }
+        });
+        
+        const labels = Object.keys(dataByDay);
+        const createdData = labels.map(day => dataByDay[day].created);
+        const closedData = labels.map(day => dataByDay[day].closed);
+
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.map(d => new Date(d+'T00:00:00').toLocaleDateString('es-ES', {month:'short', day:'numeric'})),
+                datasets: [
+                    {
+                        label: 'Tickets Creados',
+                        data: createdData,
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Tickets Cerrados',
+                        data: closedData,
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    });
+
+    generateBtn.click();
 }
 
 function renderInventory(container) {
@@ -425,6 +531,7 @@ const modalCloseBtn = document.querySelector('.modal-close-btn');
 const routes = {
     '#dashboard': renderDashboard,
     '#tickets': renderTickets,
+    '#estadisticas': renderEstadisticas,
     '#inventory': renderInventory,
     '#maintenance': renderMaintenance,
     '#credentials': renderCredentials,
@@ -465,46 +572,50 @@ async function showTicketModal(ticketId) {
 
     let solutionHTML = `
         <hr>
+        <h3>Añadir Solución</h3>
         <form id="solution-form">
-            <div class="form-group">
-                <label for="solution"><strong>Añadir Solución y Cerrar Ticket</strong></label>
-                <textarea id="solution" rows="4" required></textarea>
-            </div>
+            <div class="form-group"><div id="solution-editor"></div></div>
             <button type="submit" class="primary">Guardar Solución y Cerrar</button>
-        </form>
-    `;
+        </form>`;
 
     if (ticket.status === 'cerrado') {
         solutionHTML = `
             <hr>
-            <div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-cerrado">Cerrado</span></div>
-            <div class="ticket-detail-item"><strong>Fecha de Cierre:</strong> ${ticket.closedAt ? ticket.closedAt.toDate().toLocaleString('es-ES') : 'N/A'}</div>
-            <div class="ticket-detail-item"><strong>Solución Aplicada:</strong><p>${ticket.solution ? ticket.solution.replace(/\n/g, '<br>') : 'No se especificó solución.'}</p></div>
-        `;
+            <h3>Solución Aplicada</h3>
+            <div class="card">${ticket.solution || 'No se especificó solución.'}</div>`;
     }
 
     modalBody.innerHTML = `
-        <h2>${ticket.title}</h2>
-        <div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div>
-        <div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div>
-        <div class="ticket-detail-item"><strong>Fecha de Creación:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>
-        <div class="ticket-detail-item"><strong>Descripción:</strong><p>${ticket.description.replace(/\n/g, '<br>')}</p></div>
-        ${solutionHTML}
+        <div class="ticket-modal-layout">
+            <div class="ticket-modal-main">
+                <h2>${ticket.title}</h2>
+                <hr>
+                <h3>Descripción</h3>
+                <div class="card">${ticket.description}</div>
+                ${solutionHTML}
+            </div>
+            <div class="ticket-modal-sidebar">
+                <h3>Detalles del Ticket</h3>
+                <div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${ticket.status}</span></div>
+                <div class="ticket-detail-item"><strong>Prioridad:</strong> ${ticket.priority}</div>
+                <div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div>
+                <div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div>
+                <div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>
+                ${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}
+            </div>
+        </div>
     `;
     modal.classList.remove('hidden');
 
-    const solutionForm = document.getElementById('solution-form');
-    if (solutionForm) {
-        solutionForm.addEventListener('submit', e => {
+    if (ticket.status !== 'cerrado') {
+        const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución aplicada...' });
+        document.getElementById('solution-form').addEventListener('submit', e => {
             e.preventDefault();
-            const solutionText = document.getElementById('solution').value;
             db.collection('tickets').doc(ticketId).update({
-                solution: solutionText,
+                solution: solutionEditor.root.innerHTML,
                 status: 'cerrado',
                 closedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                modal.classList.add('hidden');
-            });
+            }).then(() => modal.classList.add('hidden'));
         });
     }
 }
@@ -543,7 +654,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('login-btn');
     const logoutBtn = document.getElementById('logout-btn');
 
-    loginBtn.addEventListener('click', () => {
+    // Llenar el div de login que está en el HTML
+    loginContainer.innerHTML = `
+        <div class="login-box">
+            <h2>Iniciar Sesión</h2>
+            <input type="email" id="email" placeholder="Correo electrónico">
+            <input type="password" id="password" placeholder="Contraseña">
+            <button id="login-btn">Entrar</button>
+            <p id="login-error" class="error-message"></p>
+        </div>
+    `;
+
+    // Re-asignar los botones después de crear el HTML
+    const reconnectedLoginBtn = document.getElementById('login-btn');
+
+    reconnectedLoginBtn.addEventListener('click', () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const errorEl = document.getElementById('login-error');
