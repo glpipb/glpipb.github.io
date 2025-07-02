@@ -159,23 +159,17 @@ async function renderDashboard(container) {
     container.innerHTML = dashboardHTML;
     const cardsContainer = document.getElementById('dashboard-cards');
     cardsContainer.innerHTML = 'Cargando estadísticas...';
-
     const ticketsSnapshot = await db.collection('tickets').get();
     const tickets = ticketsSnapshot.docs.map(doc => doc.data());
-
     const openCount = tickets.filter(t => t.status === 'abierto').length;
     const closedCount = tickets.filter(t => t.status === 'cerrado').length;
     const totalCount = tickets.length;
-
     cardsContainer.innerHTML = `
         <a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a>
         <a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a>
         <a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>
     `;
-
-    const last7Days = Array(7).fill(0).reduce((acc, _, i) => {
-        const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc;
-    }, {});
+    const last7Days = Array(7).fill(0).reduce((acc, _, i) => { const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc; }, {});
     tickets.forEach(ticket => {
         if (ticket.createdAt) {
             const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0];
@@ -191,9 +185,7 @@ async function renderDashboard(container) {
 
 async function renderNewTicketForm(container) {
     container.innerHTML = newTicketFormHTML;
-
     const quill = new Quill('#description-editor', { theme: 'snow', placeholder: 'Detalla el problema o solicitud...' });
-
     const requesterSelect = document.getElementById('requester');
     const locationSelect = document.getElementById('location');
     const [reqSnap, locSnap] = await Promise.all([ db.collection('requesters').orderBy('name').get(), db.collection('locations').orderBy('name').get() ]);
@@ -201,20 +193,12 @@ async function renderNewTicketForm(container) {
     reqSnap.forEach(doc => { requesterSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`; });
     locationSelect.innerHTML = '<option value="">Selecciona una ubicación</option>';
     locSnap.forEach(doc => { locationSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`; });
-
     const form = document.getElementById('new-ticket-form');
     form.addEventListener('submit', e => {
         e.preventDefault();
         db.collection('tickets').add({
-            title: form.title.value,
-            description: quill.root.innerHTML,
-            requesterId: form.requester.value,
-            locationId: form.location.value,
-            priority: form.priority.value,
-            status: 'abierto',
-            solution: null,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            closedAt: null
+            title: form.title.value, description: quill.root.innerHTML, requesterId: form.requester.value, locationId: form.location.value,
+            priority: form.priority.value, status: 'abierto', solution: null, createdAt: firebase.firestore.FieldValue.serverTimestamp(), closedAt: null
         }).then(() => {
             alert('¡Ticket creado con éxito!');
             window.location.hash = '#tickets?status=abierto';
@@ -224,24 +208,19 @@ async function renderNewTicketForm(container) {
 
 async function renderTicketList(container, params = {}) {
     container.innerHTML = ticketListHTML;
-
     const [reqSnap, locSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get() ]);
     const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name);
     const locationsMap = {}; locSnap.forEach(doc => locationsMap[doc.id] = doc.data().name);
-
     const tableBody = document.querySelector('#tickets-table tbody');
     const tableTitle = document.getElementById('tickets-list-title');
     const filterStatus = params.status;
-
     let query = db.collection('tickets');
-    
     if (filterStatus) {
         query = query.where('status', '==', filterStatus);
         tableTitle.innerText = `Tickets ${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}s`;
     } else {
         tableTitle.innerText = 'Todos los Tickets';
     }
-
     query.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         tableBody.innerHTML = '';
         if (snapshot.empty) {
@@ -251,13 +230,7 @@ async function renderTicketList(container, params = {}) {
         snapshot.forEach(doc => {
             const ticket = { id: doc.id, ...doc.data() };
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${ticket.title}</td>
-                <td>${requestersMap[ticket.requesterId] || 'N/A'}</td>
-                <td>${locationsMap[ticket.locationId] || 'N/A'}</td>
-                <td><span class="status status-${ticket.status}">${ticket.status}</span></td>
-                <td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>
-            `;
+            tr.innerHTML = `<td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || 'N/A'}</td><td>${locationsMap[ticket.locationId] || 'N/A'}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`;
             tableBody.appendChild(tr);
         });
     }, error => {
@@ -277,40 +250,67 @@ function renderEstadisticas(container) {
     const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1));
     startDateInput.value = oneMonthAgo.toISOString().split('T')[0];
     endDateInput.value = today.toISOString().split('T')[0];
+    
     generateBtn.addEventListener('click', async () => {
         const startDate = new Date(startDateInput.value);
+        startDate.setHours(0, 0, 0, 0); // Asegurar que empieza al inicio del día
         const endDate = new Date(endDateInput.value);
-        endDate.setHours(23, 59, 59);
-        const ticketsSnapshot = await db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get();
-        const tickets = ticketsSnapshot.docs.map(doc => doc.data());
+        endDate.setHours(23, 59, 59, 999); // Asegurar que termina al final del día
+
+        // **INICIO DE LA LÓGICA CORREGIDA**
         const dataByDay = {};
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             const dayKey = d.toISOString().split('T')[0];
             dataByDay[dayKey] = { created: 0, closed: 0 };
         }
-        tickets.forEach(ticket => {
-            const createdDay = ticket.createdAt.toDate().toISOString().split('T')[0];
-            if (dataByDay[createdDay]) dataByDay[createdDay].created++;
-            if (ticket.closedAt) {
-                const closedDay = ticket.closedAt.toDate().toISOString().split('T')[0];
-                if (dataByDay[closedDay]) dataByDay[closedDay].closed++;
-            }
-        });
-        const labels = Object.keys(dataByDay);
-        const createdData = labels.map(day => dataByDay[day].created);
-        const closedData = labels.map(day => dataByDay[day].closed);
-        if (chart) chart.destroy();
-        chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels.map(d => new Date(d+'T00:00:00').toLocaleDateString('es-ES', {month:'short', day:'numeric'})),
-                datasets: [
-                    { label: 'Tickets Creados', data: createdData, borderColor: 'rgba(0, 123, 255, 1)', backgroundColor: 'rgba(0, 123, 255, 0.2)', fill: true, tension: 0.1 },
-                    { label: 'Tickets Cerrados', data: closedData, borderColor: 'rgba(40, 167, 69, 1)', backgroundColor: 'rgba(40, 167, 69, 0.2)', fill: true, tension: 0.1 }
-                ]
-            },
-            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-        });
+
+        // Query 1: Tickets CREADOS en el rango
+        const createdQuery = db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get();
+        // Query 2: Tickets CERRADOS en el rango
+        const closedQuery = db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get();
+        
+        try {
+            const [createdSnapshot, closedSnapshot] = await Promise.all([createdQuery, closedQuery]);
+    
+            createdSnapshot.forEach(doc => {
+                const ticket = doc.data();
+                const createdDay = ticket.createdAt.toDate().toISOString().split('T')[0];
+                if (dataByDay[createdDay]) {
+                    dataByDay[createdDay].created++;
+                }
+            });
+    
+            closedSnapshot.forEach(doc => {
+                const ticket = doc.data();
+                if (ticket.closedAt) {
+                    const closedDay = ticket.closedAt.toDate().toISOString().split('T')[0];
+                    if (dataByDay[closedDay]) {
+                        dataByDay[closedDay].closed++;
+                    }
+                }
+            });
+            // **FIN DE LA LÓGICA CORREGIDA**
+    
+            const labels = Object.keys(dataByDay);
+            const createdData = labels.map(day => dataByDay[day].created);
+            const closedData = labels.map(day => dataByDay[day].closed);
+    
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.map(d => new Date(d+'T00:00:00').toLocaleDateString('es-ES', {month:'short', day:'numeric'})),
+                    datasets: [
+                        { label: 'Tickets Creados', data: createdData, borderColor: 'rgba(0, 123, 255, 1)', backgroundColor: 'rgba(0, 123, 255, 0.2)', fill: true, tension: 0.1 },
+                        { label: 'Tickets Cerrados', data: closedData, borderColor: 'rgba(40, 167, 69, 1)', backgroundColor: 'rgba(40, 167, 69, 0.2)', fill: true, tension: 0.1 }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+        } catch (error) {
+            console.error("Error generando el reporte: ", error);
+            alert("Error al generar el reporte. Asegúrate de haber creado los índices necesarios en Firebase (para createdAt y closedAt).");
+        }
     });
     generateBtn.click();
 }
@@ -318,27 +318,14 @@ function renderEstadisticas(container) {
 function renderInventory(container) {
     container.innerHTML = inventoryHTML;
     const form = document.getElementById('new-device-form');
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        db.collection('inventory').add({
-            type: form['device-type'].value,
-            brand: form['device-brand'].value,
-            model: form['device-model'].value,
-            serial: form['device-serial'].value,
-            user: form['device-user'].value,
-        }).then(() => form.reset());
-    });
+    form.addEventListener('submit', e => { e.preventDefault(); db.collection('inventory').add({ type: form['device-type'].value, brand: form['device-brand'].value, model: form['device-model'].value, serial: form['device-serial'].value, user: form['device-user'].value, }).then(() => form.reset()); });
     const tableBody = document.querySelector('#inventory-table tbody');
     db.collection('inventory').orderBy('type').onSnapshot(snapshot => {
         tableBody.innerHTML = '';
         snapshot.forEach(doc => {
             const device = { id: doc.id, ...doc.data() };
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${device.type}</td><td>${device.brand}</td><td>${device.model}</td>
-                <td>${device.serial}</td><td>${device.user}</td>
-                <td><button class="danger delete-btn" data-id="${device.id}" data-collection="inventory">Eliminar</button></td>
-            `;
+            tr.innerHTML = `<td>${device.type}</td><td>${device.brand}</td><td>${device.model}</td><td>${device.serial}</td><td>${device.user}</td><td><button class="danger delete-btn" data-id="${device.id}" data-collection="inventory">Eliminar</button></td>`;
             tableBody.appendChild(tr);
         });
     });
@@ -347,26 +334,14 @@ function renderInventory(container) {
 function renderMaintenance(container) {
     container.innerHTML = maintenanceHTML;
     const form = document.getElementById('new-maintenance-form');
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        db.collection('maintenance').add({
-            task: form['maint-task'].value,
-            nextDate: form['maint-date'].value,
-            frequency: form['maint-freq'].value,
-        }).then(() => form.reset());
-    });
+    form.addEventListener('submit', e => { e.preventDefault(); db.collection('maintenance').add({ task: form['maint-task'].value, nextDate: form['maint-date'].value, frequency: form['maint-freq'].value, }).then(() => form.reset()); });
     const tableBody = document.querySelector('#maintenance-table tbody');
     db.collection('maintenance').orderBy('nextDate').onSnapshot(snapshot => {
         tableBody.innerHTML = '';
         snapshot.forEach(doc => {
             const maint = { id: doc.id, ...doc.data() };
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${maint.task}</td>
-                <td>${new Date(maint.nextDate + 'T00:00:00').toLocaleDateString('es-ES')}</td>
-                <td>${maint.frequency}</td>
-                <td><button class="danger delete-btn" data-id="${maint.id}" data-collection="maintenance">Completado</button></td>
-            `;
+            tr.innerHTML = `<td>${maint.task}</td><td>${new Date(maint.nextDate + 'T00:00:00').toLocaleDateString('es-ES')}</td><td>${maint.frequency}</td><td><button class="danger delete-btn" data-id="${maint.id}" data-collection="maintenance">Completado</button></td>`;
             tableBody.appendChild(tr);
         });
     });
@@ -375,26 +350,14 @@ function renderMaintenance(container) {
 function renderCredentials(container) {
     container.innerHTML = credentialsHTML;
     const form = document.getElementById('new-credential-form');
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        db.collection('credentials').add({
-            system: form['cred-system'].value,
-            user: form['cred-user'].value,
-            pass: form['cred-pass'].value,
-            notes: form['cred-notes'].value,
-        }).then(() => form.reset());
-    });
+    form.addEventListener('submit', e => { e.preventDefault(); db.collection('credentials').add({ system: form['cred-system'].value, user: form['cred-user'].value, pass: form['cred-pass'].value, notes: form['cred-notes'].value, }).then(() => form.reset()); });
     const tableBody = document.querySelector('#credentials-table tbody');
     db.collection('credentials').orderBy('system').onSnapshot(snapshot => {
         tableBody.innerHTML = '';
         snapshot.forEach(doc => {
             const cred = { id: doc.id, ...doc.data() };
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${cred.system}</td><td>${cred.user}</td>
-                <td>${cred.pass}</td><td>${cred.notes}</td>
-                <td><button class="danger delete-btn" data-id="${doc.id}" data-collection="credentials">Eliminar</button></td>
-            `;
+            tr.innerHTML = `<td>${cred.system}</td><td>${cred.user}</td><td>${cred.pass}</td><td>${cred.notes}</td><td><button class="danger delete-btn" data-id="${doc.id}" data-collection="credentials">Eliminar</button></td>`;
             tableBody.appendChild(tr);
         });
     });
@@ -404,11 +367,7 @@ function renderConfiguracion(container) {
     container.innerHTML = configHTML;
     const reqForm = document.getElementById('add-requester-form');
     const reqList = document.getElementById('requesters-list');
-    reqForm.addEventListener('submit', e => {
-        e.preventDefault();
-        const name = document.getElementById('requester-name').value.trim();
-        if (name) db.collection('requesters').add({ name: name }).then(() => reqForm.reset());
-    });
+    reqForm.addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('requester-name').value.trim(); if (name) db.collection('requesters').add({ name: name }).then(() => reqForm.reset()); });
     db.collection('requesters').orderBy('name').onSnapshot(snapshot => {
         reqList.innerHTML = '';
         snapshot.forEach(doc => {
@@ -420,11 +379,7 @@ function renderConfiguracion(container) {
     });
     const locForm = document.getElementById('add-location-form');
     const locList = document.getElementById('locations-list');
-    locForm.addEventListener('submit', e => {
-        e.preventDefault();
-        const name = document.getElementById('location-name').value.trim();
-        if (name) db.collection('locations').add({ name: name }).then(() => locForm.reset());
-    });
+    locForm.addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('location-name').value.trim(); if (name) db.collection('locations').add({ name: name }).then(() => locForm.reset()); });
     db.collection('locations').orderBy('name').onSnapshot(snapshot => {
         locList.innerHTML = '';
         snapshot.forEach(doc => {
@@ -438,24 +393,15 @@ function renderConfiguracion(container) {
 
 
 // --- 5. ROUTER Y LÓGICA PRINCIPAL ---
-
 const appContent = document.getElementById('app-content');
 const navLinks = document.querySelectorAll('.nav-link');
 const modal = document.getElementById('ticket-modal');
 const modalBody = document.getElementById('modal-body');
 const modalCloseBtn = document.querySelector('.modal-close-btn');
-
 const routes = {
-    '#dashboard': renderDashboard,
-    '#crear-ticket': renderNewTicketForm,
-    '#tickets': renderTicketList,
-    '#estadisticas': renderEstadisticas,
-    '#inventory': renderInventory,
-    '#maintenance': renderMaintenance,
-    '#credentials': renderCredentials,
-    '#configuracion': renderConfiguracion
+    '#dashboard': renderDashboard, '#crear-ticket': renderNewTicketForm, '#tickets': renderTicketList, '#estadisticas': renderEstadisticas,
+    '#inventory': renderInventory, '#maintenance': renderMaintenance, '#credentials': renderCredentials, '#configuracion': renderConfiguracion
 };
-
 function router() {
     const fullHash = window.location.hash || '#dashboard';
     const [path, queryString] = fullHash.split('?');
@@ -469,93 +415,57 @@ function router() {
             const linkPath = link.getAttribute('href').split('?')[0];
             link.classList.toggle('active', linkPath === path);
         });
-    } else {
-        appContent.innerHTML = '<h1>404 - Página no encontrada</h1>';
-    }
+    } else { appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; }
 }
-
 async function showTicketModal(ticketId) {
     const ticketDoc = await db.collection('tickets').doc(ticketId).get();
     if (!ticketDoc.exists) { alert('Error: No se encontró el ticket.'); return; }
     const ticket = ticketDoc.data();
     const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || 'N/A' : 'N/A';
     const locationName = ticket.locationId ? (await db.collection('locations').doc(ticket.locationId).get()).data()?.name || 'N/A' : 'N/A';
-    let solutionHTML = `
-        <hr><h3>Añadir Solución</h3>
-        <form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`;
-    if (ticket.status === 'cerrado') {
-        solutionHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`;
-    }
+    let solutionHTML = `<hr><h3>Añadir Solución</h3><form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`;
+    if (ticket.status === 'cerrado') { solutionHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`; }
     modalBody.innerHTML = `
         <div class="ticket-modal-layout">
-            <div class="ticket-modal-main">
-                <h2>${ticket.title}</h2><hr><h3>Descripción</h3>
-                <div class="card">${ticket.description}</div>
-                ${solutionHTML}
-            </div>
-            <div class="ticket-modal-sidebar">
-                <h3>Detalles del Ticket</h3>
-                <div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${ticket.status}</span></div>
-                <div class="ticket-detail-item"><strong>Prioridad:</strong> ${ticket.priority}</div>
-                <div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div>
-                <div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div>
-                <div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>
-                ${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}
-            </div>
+            <div class="ticket-modal-main"><h2>${ticket.title}</h2><hr><h3>Descripción</h3><div class="card">${ticket.description}</div>${solutionHTML}</div>
+            <div class="ticket-modal-sidebar"><h3>Detalles del Ticket</h3><div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${ticket.status}</span></div><div class="ticket-detail-item"><strong>Prioridad:</strong> ${ticket.priority}</div><div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div><div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div><div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}</div>
         </div>`;
     modal.classList.remove('hidden');
     if (ticket.status !== 'cerrado') {
         const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución aplicada...' });
         document.getElementById('solution-form').addEventListener('submit', e => {
             e.preventDefault();
-            db.collection('tickets').doc(ticketId).update({
-                solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => modal.classList.add('hidden'));
+            db.collection('tickets').doc(ticketId).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => modal.classList.add('hidden'));
         });
     }
 }
-
 appContent.addEventListener('click', e => {
     const target = e.target.closest('button');
     if (!target) return;
     if (target.classList.contains('delete-btn')) {
         const id = target.dataset.id;
         const collection = target.dataset.collection;
-        if (confirm(`¿Seguro que quieres eliminar este elemento de ${collection}?`)) {
-            db.collection(collection).doc(id).delete();
-        }
+        if (confirm(`¿Seguro que quieres eliminar este elemento de ${collection}?`)) { db.collection(collection).doc(id).delete(); }
     }
-    if (target.classList.contains('view-ticket-btn')) {
-        const id = target.dataset.id;
-        showTicketModal(id);
-    }
+    if (target.classList.contains('view-ticket-btn')) { const id = target.dataset.id; showTicketModal(id); }
 });
-
 modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
 modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
-
 
 // --- 6. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
 document.addEventListener('DOMContentLoaded', () => {
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     const logoutBtn = document.getElementById('logout-btn');
-
     loginContainer.innerHTML = `<div class="login-box"><h2>Iniciar Sesión</h2><input type="email" id="email" placeholder="Correo electrónico"><input type="password" id="password" placeholder="Contraseña"><button id="login-btn">Entrar</button><p id="login-error" class="error-message"></p></div>`;
-    
     document.getElementById('login-btn').addEventListener('click', () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const errorEl = document.getElementById('login-error');
         errorEl.textContent = '';
-        auth.signInWithEmailAndPassword(email, password).catch(error => {
-            console.error("Error de inicio de sesión:", error);
-            errorEl.textContent = "Correo o contraseña incorrectos.";
-        });
+        auth.signInWithEmailAndPassword(email, password).catch(error => { console.error("Error de inicio de sesión:", error); errorEl.textContent = "Correo o contraseña incorrectos."; });
     });
-
     logoutBtn.addEventListener('click', () => auth.signOut());
-
     auth.onAuthStateChanged(user => {
         if (user) {
             loginContainer.classList.remove('visible');
