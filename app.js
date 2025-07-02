@@ -7,6 +7,7 @@ const firebaseConfig = {
   appId: "1:195664374847:web:88412be75b4ff8600adc8a",
   measurementId: "G-QJD3VS1V5Y"
 };
+
 // --- 2. INICIALIZACIÓN DE FIREBASE ---
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -17,15 +18,10 @@ const auth = firebase.auth();
 
 const dashboardHTML = `
     <h1>📊 Dashboard</h1>
-    <div class="card">
-        <h2>Resumen de Tickets</h2>
-        <div id="ticket-summary" style="display: flex; justify-content: space-around; text-align: center;">
-            <div><h3 id="total-open">0</h3><p>Abiertos</p></div>
-            <div><h3 id="total-in-progress">0</h3><p>En Proceso</p></div>
-            <div><h3 id="total-closed">0</h3><p>Cerrados</p></div>
-        </div>
+    <div class="dashboard-stats" id="dashboard-cards">
+        <!-- Las tarjetas se generan dinámicamente aquí -->
     </div>
-    <div class="card">
+    <div class="card" style="margin-top: 30px;">
         <h2>Tickets por Día (Últimos 7 días)</h2>
         <canvas id="ticketsChart"></canvas>
     </div>
@@ -56,7 +52,7 @@ const ticketsHTML = `
         </form>
     </div>
     <div class="card">
-        <h2>Tickets Activos</h2>
+        <h2 id="tickets-list-title">Tickets</h2>
         <table id="tickets-table">
             <thead><tr><th>Título</th><th>Solicitante</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody></tbody>
@@ -158,13 +154,31 @@ const configHTML = `
 
 async function renderDashboard(container) {
     container.innerHTML = dashboardHTML;
+    const cardsContainer = document.getElementById('dashboard-cards');
+    cardsContainer.innerHTML = 'Cargando estadísticas...';
+
     const ticketsSnapshot = await db.collection('tickets').get();
     const tickets = ticketsSnapshot.docs.map(doc => doc.data());
 
-    document.getElementById('total-open').innerText = tickets.filter(t => t.status === 'abierto').length;
-    document.getElementById('total-in-progress').innerText = tickets.filter(t => t.status === 'proceso').length;
-    document.getElementById('total-closed').innerText = tickets.filter(t => t.status === 'cerrado').length;
-    
+    const openCount = tickets.filter(t => t.status === 'abierto').length;
+    const closedCount = tickets.filter(t => t.status === 'cerrado').length;
+    const totalCount = tickets.length;
+
+    cardsContainer.innerHTML = `
+        <a href="#tickets?status=abierto" class="stat-card open">
+            <div class="stat-number">${openCount}</div>
+            <div class="stat-label">Tickets Abiertos</div>
+        </a>
+        <a href="#tickets?status=cerrado" class="stat-card closed">
+            <div class="stat-number">${closedCount}</div>
+            <div class="stat-label">Tickets Cerrados</div>
+        </a>
+        <a href="#tickets" class="stat-card all">
+            <div class="stat-number">${totalCount}</div>
+            <div class="stat-label">Todos los Tickets</div>
+        </a>
+    `;
+
     const last7Days = Array(7).fill(0).reduce((acc, _, i) => {
         const d = new Date();
         d.setDate(d.getDate() - i);
@@ -196,7 +210,7 @@ async function renderDashboard(container) {
     });
 }
 
-async function renderTickets(container) {
+async function renderTickets(container, params = {}) {
     container.innerHTML = ticketsHTML;
 
     const requesterSelect = document.getElementById('requester');
@@ -238,12 +252,26 @@ async function renderTickets(container) {
     });
 
     const tableBody = document.querySelector('#tickets-table tbody');
-    db.collection('tickets').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+    const tableTitle = document.getElementById('tickets-list-title');
+    const filterStatus = params.status;
+
+    let query = db.collection('tickets').orderBy('createdAt', 'desc');
+    
+    if (filterStatus) {
+        query = query.where('status', '==', filterStatus);
+        tableTitle.innerText = `Tickets ${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}s`;
+    } else {
+        tableTitle.innerText = 'Todos los Tickets';
+    }
+
+    query.onSnapshot(snapshot => {
         tableBody.innerHTML = '';
+        if (snapshot.empty) {
+            tableBody.innerHTML = `<tr><td colspan="5">No hay tickets que coincidan con este filtro.</td></tr>`;
+            return;
+        }
         snapshot.forEach(doc => {
             const ticket = { id: doc.id, ...doc.data() };
-            if (ticket.status === 'cerrado') return;
-
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${ticket.title}</td>
@@ -251,7 +279,7 @@ async function renderTickets(container) {
                 <td>${locationsMap[ticket.locationId] || 'N/A'}</td>
                 <td><span class="status status-${ticket.status}">${ticket.status}</span></td>
                 <td>
-                    <button class="primary view-ticket-btn" data-id="${ticket.id}">Ver / Responder</button>
+                    <button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button>
                 </td>
             `;
             tableBody.appendChild(tr);
@@ -350,7 +378,6 @@ function renderCredentials(container) {
 function renderConfiguracion(container) {
     container.innerHTML = configHTML;
 
-    // Lógica para Solicitantes
     const reqForm = document.getElementById('add-requester-form');
     const reqList = document.getElementById('requesters-list');
     reqForm.addEventListener('submit', e => {
@@ -368,7 +395,6 @@ function renderConfiguracion(container) {
         });
     });
 
-    // Lógica para Ubicaciones
     const locForm = document.getElementById('add-location-form');
     const locList = document.getElementById('locations-list');
     locForm.addEventListener('submit', e => {
@@ -406,14 +432,20 @@ const routes = {
 };
 
 function router() {
-    const path = window.location.hash || '#dashboard';
+    const fullHash = window.location.hash || '#dashboard';
+    const [path, queryString] = fullHash.split('?');
+    
+    const params = new URLSearchParams(queryString);
+    const paramsObj = Object.fromEntries(params.entries());
+
     const renderFunction = routes[path];
     
     if (renderFunction) {
         appContent.innerHTML = '<div class="card"><h1>Cargando...</h1></div>';
-        renderFunction(appContent);
+        renderFunction(appContent, paramsObj); 
         navLinks.forEach(link => {
-            link.classList.toggle('active', link.getAttribute('href') === path);
+            const linkPath = link.getAttribute('href').split('?')[0];
+            link.classList.toggle('active', linkPath === path);
         });
     } else {
         appContent.innerHTML = '<h1>404 - Página no encontrada</h1>';
@@ -431,12 +463,7 @@ async function showTicketModal(ticketId) {
     const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || 'N/A' : 'N/A';
     const locationName = ticket.locationId ? (await db.collection('locations').doc(ticket.locationId).get()).data()?.name || 'N/A' : 'N/A';
 
-    modalBody.innerHTML = `
-        <h2>${ticket.title}</h2>
-        <div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div>
-        <div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div>
-        <div class="ticket-detail-item"><strong>Fecha de Creación:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>
-        <div class="ticket-detail-item"><strong>Descripción:</strong><p>${ticket.description.replace(/\n/g, '<br>')}</p></div>
+    let solutionHTML = `
         <hr>
         <form id="solution-form">
             <div class="form-group">
@@ -446,19 +473,40 @@ async function showTicketModal(ticketId) {
             <button type="submit" class="primary">Guardar Solución y Cerrar</button>
         </form>
     `;
+
+    if (ticket.status === 'cerrado') {
+        solutionHTML = `
+            <hr>
+            <div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-cerrado">Cerrado</span></div>
+            <div class="ticket-detail-item"><strong>Fecha de Cierre:</strong> ${ticket.closedAt ? ticket.closedAt.toDate().toLocaleString('es-ES') : 'N/A'}</div>
+            <div class="ticket-detail-item"><strong>Solución Aplicada:</strong><p>${ticket.solution ? ticket.solution.replace(/\n/g, '<br>') : 'No se especificó solución.'}</p></div>
+        `;
+    }
+
+    modalBody.innerHTML = `
+        <h2>${ticket.title}</h2>
+        <div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div>
+        <div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div>
+        <div class="ticket-detail-item"><strong>Fecha de Creación:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>
+        <div class="ticket-detail-item"><strong>Descripción:</strong><p>${ticket.description.replace(/\n/g, '<br>')}</p></div>
+        ${solutionHTML}
+    `;
     modal.classList.remove('hidden');
 
-    document.getElementById('solution-form').addEventListener('submit', e => {
-        e.preventDefault();
-        const solutionText = document.getElementById('solution').value;
-        db.collection('tickets').doc(ticketId).update({
-            solution: solutionText,
-            status: 'cerrado',
-            closedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            modal.classList.add('hidden');
+    const solutionForm = document.getElementById('solution-form');
+    if (solutionForm) {
+        solutionForm.addEventListener('submit', e => {
+            e.preventDefault();
+            const solutionText = document.getElementById('solution').value;
+            db.collection('tickets').doc(ticketId).update({
+                solution: solutionText,
+                status: 'cerrado',
+                closedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                modal.classList.add('hidden');
+            });
         });
-    });
+    }
 }
 
 appContent.addEventListener('click', e => {
