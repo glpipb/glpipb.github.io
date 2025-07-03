@@ -4,79 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Gestor de TI</title>
-    <!-- Quill.js - Editor de Texto Enriquecido -->
+    
+    <!-- Librerías de Calendario (FullCalendar) -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    
+    <!-- Editor de Texto Enriquecido (Quill.js) -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+    <!-- Estilos Principales -->
     <link rel="stylesheet" href="style.css">
+    
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <!-- Chart.js para los gráficos -->
+    
+    <!-- Gráficos (Chart.js) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Quill.js - Script -->
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 </head>
 <body>
-
-    <div id="login-container" class="visible">
-        <!-- ... (el contenido del login no cambia) ... -->
-    </div>
-
+    <!-- El resto del body no cambia... -->
+    <div id="login-container" class="visible"></div>
     <div id="app-container" class="hidden">
         <nav class="sidebar">
-            <div class="sidebar-header">
-                <h3>Mi Gestor TI</h3>
-            </div>
-<ul class="nav-list">
-    <li><a href="#dashboard" class="nav-link active">📊 Dashboard</a></li>
-    <li><a href="#crear-ticket" class="nav-link">➕ Crear Ticket</a></li>
-    <li><a href="#tickets" class="nav-link">🎟️ Tickets (Ver todos)</a></li>
-    <li><a href="#estadisticas" class="nav-link">📈 Estadísticas</a></li>
-
-    <!-- NUEVO MENÚ DESPLEGABLE DE INVENTARIO -->
-    <li class="nav-item-with-submenu">
-        <a href="#" class="nav-link">💻 Inventario</a>
-        <ul class="submenu">
-            <li><a href="#inventory-computers">Computadores</a></li>
-            <li><a href="#inventory-phones">Teléfonos</a></li>
-            <li><a href="#inventory-cameras">Cámaras</a></li>
-            <li><a href="#inventory-modems">Módems</a></li>
-            <li><a href="#inventory-communicators">Comunicadores</a></li>
-            <li><a href="#inventory-network">Dispositivos de Red</a></li>
-            <li><a href="#inventory-printers">Impresoras</a></li>
-        </ul>
-    </li>
-    
-    <li><a href="#maintenance" class="nav-link">⚙️ Mantenimientos</a></li>
-    <li><a href="#credentials" class="nav-link">🔑 Credenciales</a></li>
-    <li><a href="#configuracion" class="nav-link">⚙️ Configuración</a></li>
-</ul>
-            <div class="sidebar-footer">
-                <a href="#" id="logout-btn">Cerrar Sesión</a>
-            </div>
+            <div class="sidebar-header"><h3>Mi Gestor TI</h3></div>
+            <ul class="nav-list">
+                <li><a href="#dashboard" class="nav-link active">📊 Dashboard</a></li>
+                <li><a href="#crear-ticket" class="nav-link">➕ Crear Ticket</a></li>
+                <li><a href="#tickets" class="nav-link">🎟️ Tickets (Ver todos)</a></li>
+                <li><a href="#estadisticas" class="nav-link">📈 Estadísticas</a></li>
+                <li class="nav-item-with-submenu">
+                    <a href="#" class="nav-link">💻 Inventario</a>
+                    <ul class="submenu">
+                        <li><a href="#inventory-computers">Computadores</a></li>
+                        <li><a href="#inventory-phones">Teléfonos</a></li>
+                        <li><a href="#inventory-cameras">Cámaras</a></li>
+                        <li><a href="#inventory-modems">Módems</a></li>
+                        <li><a href="#inventory-communicators">Comunicadores</a></li>
+                        <li><a href="#inventory-network">Dispositivos de Red</a></li>
+                        <li><a href="#inventory-printers">Impresoras</a></li>
+                    </ul>
+                </li>
+                <li><a href="#maintenance" class="nav-link">📅 Planificación</a></li>
+                <li><a href="#credentials" class="nav-link">🔑 Credenciales</a></li>
+                <li><a href="#configuracion" class="nav-link">⚙️ Configuración</a></li>
+            </ul>
+            <div class="sidebar-footer"><a href="#" id="logout-btn">Cerrar Sesión</a></div>
         </nav>
-
-        <main id="app-content">
-            <!-- El contenido se cargará aquí con JavaScript -->
-        </main>
+        <main id="app-content"></main>
     </div>
-
-    <div id="ticket-modal" class="modal-overlay hidden">
-        <div class="modal-content large"> <!-- Añadimos la clase 'large' -->
-            <span class="modal-close-btn">×</span>
-            <div id="modal-body">
-            </div>
-        </div>
-    </div>
-
+    <div id="ticket-modal" class="modal-overlay hidden"><div class="modal-content large"><span class="modal-close-btn">×</span><div id="modal-body"></div></div></div>
+    <div id="form-modal" class="modal-overlay hidden"><div class="modal-content"><span class="modal-close-btn">×</span><div id="form-modal-body"></div></div></div>
+    
     <script src="app.js"></script>
-    <div id="form-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <span class="modal-close-btn">×</span>
-            <div id="form-modal-body">
-                <!-- El contenido del formulario se inyectará aquí -->
-            </div>
-        </div>
-    </div>
 </body>
 </html>
