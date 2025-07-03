@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Gestor de TI</title>
     
+    <!-- NUEVA TIPOGRAFÍA PROFESIONAL (INTER) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <!-- Librerías de Calendario (FullCalendar) -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
     
@@ -19,7 +24,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-storage-compat.js"></script> <!-- SDK DE STORAGE AÑADIDO -->
+    <!-- ELIMINADO: Ya no necesitamos el SDK de Storage -->
     
     <!-- Gráficos (Chart.js) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -55,13 +60,10 @@
         </nav>
         <main id="app-content"></main>
     </div>
-    
     <div id="ticket-modal" class="modal-overlay hidden"><div class="modal-content large"><span class="modal-close-btn">×</span><div id="modal-body"></div></div></div>
     <div id="form-modal" class="modal-overlay hidden"><div class="modal-content"><span class="modal-close-btn">×</span><div id="form-modal-body"></div></div></div>
-    
-    <!-- NUEVO MODAL PARA LAS ACCIONES DEL CALENDARIO -->
     <div id="action-modal" class="modal-overlay hidden"><div class="modal-content"><span class="modal-close-btn">×</span><div id="action-modal-body"></div></div></div>
-
+    
     <script src="app.js"></script>
 </body>
 </html>
