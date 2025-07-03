@@ -7,23 +7,21 @@ const firebaseConfig = {
   appId: "1:195664374847:web:88412be75b4ff8600adc8a",
   measurementId: "G-QJD3VS1V5Y"
 };
-// --- 2. INICIALIZACIÓN DE FIREBASE ---
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+const storage = firebase.storage();
 
 
-// --- 3. TEMPLATES HTML PARA CADA SECCIÓN ---
+// --- 3. TEMPLATES HTML (Sin cambios) ---
 const dashboardHTML = `<h1>📊 Dashboard</h1><div class="dashboard-stats" id="dashboard-cards"></div><div class="card" style="margin-top: 30px;"><h2>Tickets por Día (Últimos 7 días)</h2><canvas id="ticketsChart"></canvas></div>`;
 const ticketListHTML = `<div class="card"><h2 id="tickets-list-title">Tickets</h2><table id="tickets-table"><thead><tr><th>Título</th><th>Solicitante</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
 const newTicketFormHTML = `<h1>➕ Crear Nuevo Ticket</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div style="display: flex; gap: 20px; flex-wrap: wrap;"><div class="form-group" style="flex: 1; min-width: 200px;"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group" style="flex: 1; min-width: 200px;"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group" style="flex: 1; min-width: 150px;"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 const statisticsHTML = `<h1>📈 Estadísticas</h1><div class="card"><h2>Reporte de Tickets por Rango de Fechas</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div><canvas id="stats-chart"></canvas></div>`;
 const inventoryPageHTML = `<h1 id="inventory-title"></h1><div class="add-new-button-container"><button id="add-inventory-item-btn" class="primary open-form-modal-btn">Añadir Nuevo</button></div><div class="card"><h2 id="inventory-list-title"></h2><table id="inventory-table"><thead id="inventory-table-head"></thead><tbody id="inventory-table-body"></tbody></table></div>`;
+const maintenanceCalendarHTML = `<h1>📅 Planificación</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="maintenance">Programar Tarea</button></div><div class="card"><div id="maintenance-calendar"></div></div>`;
 const credentialsPageHTML = `<h1>🔑 Gestor de Credenciales (No Críticas)</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="credentials">Añadir Nueva Credencial</button></div><div class="card" style="border-left: 5px solid var(--danger-color);"><h2 style="color: var(--danger-color);">⚠️ ADVERTENCIA DE SEGURIDAD ⚠️</h2><p>Nunca guardes aquí contraseñas de administrador o de cuentas importantes.</p></div><div class="card"><h2>Credenciales Guardadas</h2><table id="credentials-table"><thead><tr><th>Sistema</th><th>Usuario</th><th>Contraseña</th><th>Notas</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
 const configHTML = `<h1>⚙️ Configuración</h1><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"><div class="card"><h2>Gestionar Solicitantes</h2><form id="add-requester-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="requester-name" placeholder="Nombre del solicitante" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="requesters-list" class="config-list"></ul></div><div class="card"><h2>Gestionar Ubicaciones</h2><form id="add-location-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="location-name" placeholder="Nombre de la ubicación" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="locations-list" class="config-list"></ul></div></div>`;
-
-// NUEVO TEMPLATE PARA EL CALENDARIO
-const maintenanceCalendarHTML = `<h1>📅 Planificación</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="maintenance">Programar Tarea</button></div><div class="card"><div id="maintenance-calendar"></div></div>`;
 
 
 // --- 4. FUNCIONES PARA RENDERIZAR CADA SECCIÓN ---
@@ -38,361 +36,71 @@ const inventoryCategoryConfig = {
     printers: { title: 'Impresoras', titleSingular: 'Impresora', fields: { brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, ipAddress: { label: 'Dirección IP', type: 'text' }, type: { label: 'Tipo (Láser, Tinta)', type: 'text' } }}
 };
 
-async function renderDashboard(container) {
-    container.innerHTML = dashboardHTML;
-    const cardsContainer = document.getElementById('dashboard-cards');
-    cardsContainer.innerHTML = 'Cargando estadísticas...';
-    const ticketsSnapshot = await db.collection('tickets').get();
-    const tickets = ticketsSnapshot.docs.map(doc => doc.data());
-    const openCount = tickets.filter(t => t.status === 'abierto').length;
-    const closedCount = tickets.filter(t => t.status === 'cerrado').length;
-    const totalCount = tickets.length;
-    cardsContainer.innerHTML = `<a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a><a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a><a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>`;
-    const last7Days = Array(7).fill(0).reduce((acc, _, i) => { const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc; }, {});
-    tickets.forEach(ticket => { if (ticket.createdAt) { const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0]; if (last7Days.hasOwnProperty(ticketDate)) { last7Days[ticketDate]++; } } });
-    const ctx = document.getElementById('ticketsChart').getContext('2d');
-    new Chart(ctx, { type: 'bar', data: { labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(), datasets: [{ label: '# de Tickets Creados', data: Object.values(last7Days).reverse(), backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 1 }] }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
-}
-
-async function renderNewTicketForm(container) {
-    container.innerHTML = newTicketFormHTML;
-    const quill = new Quill('#description-editor', { theme: 'snow', placeholder: 'Detalla el problema o solicitud...' });
-    const requesterSelect = document.getElementById('requester');
-    const locationSelect = document.getElementById('location');
-    const [reqSnap, locSnap] = await Promise.all([ db.collection('requesters').orderBy('name').get(), db.collection('locations').orderBy('name').get() ]);
-    requesterSelect.innerHTML = '<option value="">Selecciona un solicitante</option>';
-    reqSnap.forEach(doc => { requesterSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`; });
-    locationSelect.innerHTML = '<option value="">Selecciona una ubicación</option>';
-    locSnap.forEach(doc => { locationSelect.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`; });
-    const form = document.getElementById('new-ticket-form');
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        db.collection('tickets').add({
-            title: form.title.value, description: quill.root.innerHTML, requesterId: form.requester.value, locationId: form.location.value,
-            priority: form.priority.value, status: 'abierto', solution: null, createdAt: firebase.firestore.FieldValue.serverTimestamp(), closedAt: null
-        }).then(() => {
-            alert('¡Ticket creado con éxito!');
-            window.location.hash = '#tickets?status=abierto';
-        });
-    });
-}
-
-async function renderTicketList(container, params = {}) {
-    container.innerHTML = ticketListHTML;
-    const [reqSnap, locSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get() ]);
-    const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name);
-    const tableBody = document.querySelector('#tickets-table tbody');
-    const tableTitle = document.getElementById('tickets-list-title');
-    const filterStatus = params.status;
-    let query = db.collection('tickets');
-    if (filterStatus) {
-        query = query.where('status', '==', filterStatus);
-        tableTitle.innerText = `Tickets ${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}s`;
+// Función de ayuda para manejar errores de índice de Firebase
+function handleFirestoreError(error, element) {
+    console.error("Firestore Error:", error);
+    const indexLinkRegex = /(https:\/\/console\.firebase\.google\.com\/project\/.*?\/firestore\/indexes\?create_composite=.*?)"/;
+    const match = error.message.match(indexLinkRegex);
+    if (match) {
+        const link = match[1];
+        element.innerHTML = `
+            <tr>
+                <td colspan="5" style="color:red; text-align:left;">
+                    <strong>Error de Firebase:</strong> Se requiere un índice que no existe o aún se está creando.
+                    <br><br>
+                    <a href="${link}" target="_blank" style="color:blue; text-decoration:underline;">
+                        Haz clic aquí para crear el índice en una nueva pestaña.
+                    </a>
+                    <br><br>
+                    Después de crearlo, espera unos minutos a que se habilite y luego recarga esta página.
+                </td>
+            </tr>`;
     } else {
-        tableTitle.innerText = 'Todos los Tickets';
+        element.innerHTML = `<tr><td colspan="5" style="color:red;">Error al cargar los datos: ${error.message}</td></tr>`;
     }
-    query.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-        tableBody.innerHTML = '';
-        if (snapshot.empty) { tableBody.innerHTML = `<tr><td colspan="5">No hay tickets que coincidan con este filtro.</td></tr>`; return; }
-        snapshot.forEach(doc => {
-            const ticket = { id: doc.id, ...doc.data() };
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.locationId || 'N/A'}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`;
-            tableBody.appendChild(tr);
-        });
-    }, error => {
-        console.error("Error en la consulta de tickets: ", error);
-        tableBody.innerHTML = `<tr><td colspan="5" style="color:red;">Error al cargar tickets. Por favor, asegúrate de haber creado el índice compuesto en Firebase (tickets: status ascendente, createdAt descendente).</td></tr>`;
-    });
 }
 
-function renderEstadisticas(container) {
-    container.innerHTML = statisticsHTML;
-    const startDateInput = document.getElementById('start-date');
-    const endDateInput = document.getElementById('end-date');
-    const generateBtn = document.getElementById('generate-report-btn');
-    const ctx = document.getElementById('stats-chart').getContext('2d');
-    let chart;
-    const today = new Date();
-    const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1));
-    startDateInput.value = oneMonthAgo.toISOString().split('T')[0];
-    endDateInput.value = today.toISOString().split('T')[0];
-    generateBtn.addEventListener('click', async () => {
-        const startDate = new Date(startDateInput.value); startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date(endDateInput.value); endDate.setHours(23, 59, 59, 999);
-        const dataByDay = {};
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { dataByDay[d.toISOString().split('T')[0]] = { created: 0, closed: 0 }; }
-        const createdQuery = db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get();
-        const closedQuery = db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get();
-        try {
-            const [createdSnapshot, closedSnapshot] = await Promise.all([createdQuery, closedQuery]);
-            createdSnapshot.forEach(doc => { const ticket = doc.data(); const createdDay = ticket.createdAt.toDate().toISOString().split('T')[0]; if (dataByDay[createdDay]) dataByDay[createdDay].created++; });
-            closedSnapshot.forEach(doc => { const ticket = doc.data(); if (ticket.closedAt) { const closedDay = ticket.closedAt.toDate().toISOString().split('T')[0]; if (dataByDay[closedDay]) dataByDay[closedDay].closed++; } });
-            const labels = Object.keys(dataByDay);
-            const createdData = labels.map(day => dataByDay[day].created);
-            const closedData = labels.map(day => dataByDay[day].closed);
-            if (chart) chart.destroy();
-            chart = new Chart(ctx, { type: 'line', data: { labels: labels.map(d => new Date(d+'T00:00:00').toLocaleDateString('es-ES', {month:'short', day:'numeric'})), datasets: [ { label: 'Tickets Creados', data: createdData, borderColor: 'rgba(0, 123, 255, 1)', backgroundColor: 'rgba(0, 123, 255, 0.2)', fill: true, tension: 0.1 }, { label: 'Tickets Cerrados', data: closedData, borderColor: 'rgba(40, 167, 69, 1)', backgroundColor: 'rgba(40, 167, 69, 0.2)', fill: true, tension: 0.1 } ] }, options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
-        } catch (error) { console.error("Error generando el reporte: ", error); alert("Error al generar el reporte. Asegúrate de haber creado los índices necesarios en Firebase (para createdAt y closedAt)."); }
-    });
-    generateBtn.click();
-}
-
-function renderInventoryPage(container, params) {
-    const category = params.category;
-    container.innerHTML = inventoryPageHTML;
-    const config = inventoryCategoryConfig[category];
-    if (!config) { container.innerHTML = `<h1>Error: Categoría de inventario no encontrada.</h1>`; return; }
-    document.getElementById('inventory-title').innerText = `💻 Inventario de ${config.title}`;
-    document.getElementById('inventory-list-title').innerText = `Lista de ${config.title}`;
-    const addButton = document.getElementById('add-inventory-item-btn');
-    addButton.innerText = `Añadir Nuevo ${config.titleSingular}`;
-    addButton.dataset.type = 'inventory';
-    addButton.dataset.category = category;
-    const tableHeadContainer = document.getElementById('inventory-table-head');
-    const tableHeaders = Object.values(config.fields).map(field => field.label);
-    tableHeadContainer.innerHTML = `<tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`;
-    const tableBody = document.getElementById('inventory-table-body');
-    db.collection('inventory').where('category', '==', category).onSnapshot(snapshot => {
-        tableBody.innerHTML = '';
-        snapshot.forEach(doc => {
-            const device = { id: doc.id, ...doc.data() };
-            const tr = document.createElement('tr');
-            const cells = Object.keys(config.fields).map(key => `<td>${device[key] || 'N/A'}</td>`).join('');
-            tr.innerHTML = `${cells}<td><button class="danger delete-btn" data-id="${device.id}" data-collection="inventory">Eliminar</button></td>`;
-            tableBody.appendChild(tr);
-        });
-    });
-}
-
-function renderMaintenanceCalendar(container) {
-    container.innerHTML = maintenanceCalendarHTML;
-    const calendarEl = document.getElementById('maintenance-calendar');
-
-    db.collection('maintenance').onSnapshot(snapshot => {
-        const eventColors = {
-            'Preventivo': '#dc3545', // Rojo
-            'Correctivo': '#ffc107', // Amarillo
-            'Tarea': '#007bff',      // Azul
-            'Recordatorio': '#17a2b8'  // Cian
-        };
-
-        const events = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                title: data.task,
-                start: data.date,
-                color: eventColors[data.type] || '#6c757d' // Color por defecto gris
-            };
-        });
-
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            initialView: 'dayGridMonth',
-            locale: 'es',
-            events: events,
-            eventClick: function(info) {
-                if (confirm(`¿Marcar la tarea "${info.event.title}" como completada y eliminarla del calendario?`)) {
-                    db.collection('maintenance').doc(info.event.id).delete()
-                        .then(() => {
-                            console.log("Evento eliminado con éxito");
-                            info.event.remove(); // Eliminar visualmente del calendario
-                        })
-                        .catch(error => console.error("Error al eliminar evento: ", error));
-                }
-            }
-        });
-        calendar.render();
-    });
-}
-
-function renderCredentialsPage(container) {
-    container.innerHTML = credentialsPageHTML;
-    const tableBody = document.querySelector('#credentials-table tbody');
-    db.collection('credentials').orderBy('system').onSnapshot(snapshot => {
-        tableBody.innerHTML = '';
-        snapshot.forEach(doc => {
-            const cred = { id: doc.id, ...doc.data() };
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${cred.system}</td><td>${cred.user}</td><td>${cred.pass}</td><td>${cred.notes}</td><td><button class="danger delete-btn" data-id="${doc.id}" data-collection="credentials">Eliminar</button></td>`;
-            tableBody.appendChild(tr);
-        });
-    });
-}
-
-function renderConfiguracion(container) {
-    container.innerHTML = configHTML;
-    const reqForm = document.getElementById('add-requester-form');
-    const reqList = document.getElementById('requesters-list');
-    reqForm.addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('requester-name').value.trim(); if (name) db.collection('requesters').add({ name: name }).then(() => reqForm.reset()); });
-    db.collection('requesters').orderBy('name').onSnapshot(snapshot => {
-        reqList.innerHTML = '';
-        snapshot.forEach(doc => { const li = document.createElement('li'); li.className = 'config-list-item'; li.innerHTML = `<span>${doc.data().name}</span> <button class="danger delete-btn" data-id="${doc.id}" data-collection="requesters" title="Eliminar">×</button>`; reqList.appendChild(li); });
-    });
-    const locForm = document.getElementById('add-location-form');
-    const locList = document.getElementById('locations-list');
-    locForm.addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('location-name').value.trim(); if (name) db.collection('locations').add({ name: name }).then(() => locForm.reset()); });
-    db.collection('locations').orderBy('name').onSnapshot(snapshot => {
-        locList.innerHTML = '';
-        snapshot.forEach(doc => { const li = document.createElement('li'); li.className = 'config-list-item'; li.innerHTML = `<span>${doc.data().name}</span> <button class="danger delete-btn" data-id="${doc.id}" data-collection="locations" title="Eliminar">×</button>`; locList.appendChild(li); });
-    });
-}
+async function renderDashboard(container) { container.innerHTML = dashboardHTML; const cardsContainer = document.getElementById('dashboard-cards'); cardsContainer.innerHTML = 'Cargando estadísticas...'; const ticketsSnapshot = await db.collection('tickets').get(); const tickets = ticketsSnapshot.docs.map(doc => doc.data()); const openCount = tickets.filter(t => t.status === 'abierto').length; const closedCount = tickets.filter(t => t.status === 'cerrado').length; const totalCount = tickets.length; cardsContainer.innerHTML = `<a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a><a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a><a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>`; const last7Days = Array(7).fill(0).reduce((acc, _, i) => { const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc; }, {}); tickets.forEach(ticket => { if (ticket.createdAt) { const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0]; if (last7Days.hasOwnProperty(ticketDate)) { last7Days[ticketDate]++; } } }); const ctx = document.getElementById('ticketsChart').getContext('2d'); new Chart(ctx, { type: 'bar', data: { labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(), datasets: [{ label: '# de Tickets Creados', data: Object.values(last7Days).reverse(), backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 1 }] }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); }
+async function renderNewTicketForm(container) { container.innerHTML = newTicketFormHTML; const quill = new Quill('#description-editor', { theme: 'snow', placeholder: 'Detalla el problema o solicitud...' }); const requesterSelect = document.getElementById('requester'); const locationSelect = document.getElementById('location'); const [reqSnap, locSnap] = await Promise.all([ db.collection('requesters').orderBy('name').get(), db.collection('locations').orderBy('name').get() ]); requesterSelect.innerHTML = '<option value="">Selecciona un solicitante</option>'; reqSnap.forEach(doc => { requesterSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`; }); locationSelect.innerHTML = '<option value="">Selecciona una ubicación</option>'; locSnap.forEach(doc => { locationSelect.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`; }); const form = document.getElementById('new-ticket-form'); form.addEventListener('submit', e => { e.preventDefault(); db.collection('tickets').add({ title: form.title.value, description: quill.root.innerHTML, requesterId: form.requester.value, locationId: form.location.value, priority: form.priority.value, status: 'abierto', solution: null, createdAt: firebase.firestore.FieldValue.serverTimestamp(), closedAt: null }).then(() => { alert('¡Ticket creado con éxito!'); window.location.hash = '#tickets?status=abierto'; }); }); }
+async function renderTicketList(container, params = {}) { container.innerHTML = ticketListHTML; const [reqSnap] = await Promise.all([ db.collection('requesters').get() ]); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); const tableBody = document.querySelector('#tickets-table tbody'); const tableTitle = document.getElementById('tickets-list-title'); const filterStatus = params.status; let query = db.collection('tickets'); if (filterStatus) { query = query.where('status', '==', filterStatus); tableTitle.innerText = `Tickets ${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}s`; } else { tableTitle.innerText = 'Todos los Tickets'; } query.orderBy('createdAt', 'desc').onSnapshot(snapshot => { tableBody.innerHTML = ''; if (snapshot.empty) { tableBody.innerHTML = `<tr><td colspan="5">No hay tickets que coincidan con este filtro.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.locationId || 'N/A'}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
+function renderEstadisticas(container) { container.innerHTML = statisticsHTML; const startDateInput = document.getElementById('start-date'); const endDateInput = document.getElementById('end-date'); const generateBtn = document.getElementById('generate-report-btn'); const ctx = document.getElementById('stats-chart').getContext('2d'); let chart; const today = new Date(); const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1)); startDateInput.value = oneMonthAgo.toISOString().split('T')[0]; endDateInput.value = today.toISOString().split('T')[0]; generateBtn.addEventListener('click', async () => { const startDate = new Date(startDateInput.value); startDate.setHours(0, 0, 0, 0); const endDate = new Date(endDateInput.value); endDate.setHours(23, 59, 59, 999); const dataByDay = {}; for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { dataByDay[d.toISOString().split('T')[0]] = { created: 0, closed: 0 }; } const createdQuery = db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get(); const closedQuery = db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get(); try { const [createdSnapshot, closedSnapshot] = await Promise.all([createdQuery, closedQuery]); createdSnapshot.forEach(doc => { const ticket = doc.data(); const createdDay = ticket.createdAt.toDate().toISOString().split('T')[0]; if (dataByDay[createdDay]) dataByDay[createdDay].created++; }); closedSnapshot.forEach(doc => { const ticket = doc.data(); if (ticket.closedAt) { const closedDay = ticket.closedAt.toDate().toISOString().split('T')[0]; if (dataByDay[closedDay]) dataByDay[closedDay].closed++; } }); const labels = Object.keys(dataByDay); const createdData = labels.map(day => dataByDay[day].created); const closedData = labels.map(day => dataByDay[day].closed); if (chart) chart.destroy(); chart = new Chart(ctx, { type: 'line', data: { labels: labels.map(d => new Date(d+'T00:00:00').toLocaleDateString('es-ES', {month:'short', day:'numeric'})), datasets: [ { label: 'Tickets Creados', data: createdData, borderColor: 'rgba(0, 123, 255, 1)', backgroundColor: 'rgba(0, 123, 255, 0.2)', fill: true, tension: 0.1 }, { label: 'Tickets Cerrados', data: closedData, borderColor: 'rgba(40, 167, 69, 1)', backgroundColor: 'rgba(40, 167, 69, 0.2)', fill: true, tension: 0.1 } ] }, options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); } catch (error) { alert("Error al generar el reporte. Esto usualmente significa que un índice de Firebase aún se está creando. Por favor, espera unos minutos y vuelve a intentarlo."); console.error("Error generando el reporte: ", error); } }); generateBtn.click(); }
+function renderInventoryPage(container, params) { const category = params.category; container.innerHTML = inventoryPageHTML; const config = inventoryCategoryConfig[category]; if (!config) { container.innerHTML = `<h1>Error: Categoría de inventario no encontrada.</h1>`; return; } document.getElementById('inventory-title').innerText = `💻 Inventario de ${config.title}`; document.getElementById('inventory-list-title').innerText = `Lista de ${config.title}`; const addButton = document.getElementById('add-inventory-item-btn'); addButton.innerText = `Añadir Nuevo ${config.titleSingular}`; addButton.dataset.type = 'inventory'; addButton.dataset.category = category; const tableHeadContainer = document.getElementById('inventory-table-head'); const tableHeaders = Object.values(config.fields).map(field => field.label); tableHeadContainer.innerHTML = `<tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`; const tableBody = document.getElementById('inventory-table-body'); db.collection('inventory').where('category', '==', category).onSnapshot(snapshot => { tableBody.innerHTML = ''; snapshot.forEach(doc => { const device = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); const cells = Object.keys(config.fields).map(key => `<td>${device[key] || 'N/A'}</td>`).join(''); tr.innerHTML = `${cells}<td><button class="danger delete-btn" data-id="${device.id}" data-collection="inventory">Eliminar</button></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
+function renderMaintenanceCalendar(container) { container.innerHTML = maintenanceCalendarHTML; const calendarEl = document.getElementById('maintenance-calendar'); db.collection('maintenance').where('status', 'in', ['planificada', 'completada']).onSnapshot(snapshot => { const eventColors = { 'Preventivo': '#dc3545', 'Correctivo': '#ffc107', 'Tarea': '#007bff', 'Recordatorio': '#17a2b8' }; const events = snapshot.docs.map(doc => { const data = doc.data(); let color = eventColors[data.type] || '#6c757d'; if (data.status === 'completada') color = '#28a745'; return { id: doc.id, title: data.task, start: data.date, color: color, extendedProps: { status: data.status, ...data } }; }); const calendar = new FullCalendar.Calendar(calendarEl, { headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' }, initialView: 'dayGridMonth', locale: 'es', buttonText: { today: 'hoy', month: 'mes', week: 'semana', day: 'día', list: 'agenda' }, events: events, eventClick: function(info) { showEventActionChoiceModal(info.event.id, info.event.title, info.event.extendedProps); } }); calendar.render(); }, error => handleFirestoreError(error, calendarEl)); }
+function renderCredentialsPage(container) { container.innerHTML = credentialsPageHTML; const tableBody = document.querySelector('#credentials-table tbody'); db.collection('credentials').orderBy('system').onSnapshot(snapshot => { tableBody.innerHTML = ''; snapshot.forEach(doc => { const cred = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${cred.system}</td><td>${cred.user}</td><td>${cred.pass}</td><td>${cred.notes}</td><td><button class="danger delete-btn" data-id="${doc.id}" data-collection="credentials">Eliminar</button></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
+function renderConfiguracion(container) { container.innerHTML = configHTML; const reqForm = document.getElementById('add-requester-form'); const reqList = document.getElementById('requesters-list'); reqForm.addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('requester-name').value.trim(); if (name) db.collection('requesters').add({ name: name }).then(() => reqForm.reset()); }); db.collection('requesters').orderBy('name').onSnapshot(snapshot => { reqList.innerHTML = ''; snapshot.forEach(doc => { const li = document.createElement('li'); li.className = 'config-list-item'; li.innerHTML = `<span>${doc.data().name}</span> <button class="danger delete-btn" data-id="${doc.id}" data-collection="requesters" title="Eliminar">×</button>`; reqList.appendChild(li); }); }); const locForm = document.getElementById('add-location-form'); const locList = document.getElementById('locations-list'); locForm.addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('location-name').value.trim(); if (name) db.collection('locations').add({ name: name }).then(() => locForm.reset()); }); db.collection('locations').orderBy('name').onSnapshot(snapshot => { locList.innerHTML = ''; snapshot.forEach(doc => { const li = document.createElement('li'); li.className = 'config-list-item'; li.innerHTML = `<span>${doc.data().name}</span> <button class="danger delete-btn" data-id="${doc.id}" data-collection="locations" title="Eliminar">×</button>`; locList.appendChild(li); }); }); }
 
 
 // --- 5. ROUTER Y LÓGICA PRINCIPAL ---
 const appContent = document.getElementById('app-content');
 const navLinks = document.querySelectorAll('.nav-link');
-
-const routes = {
-    '#dashboard': renderDashboard,
-    '#crear-ticket': renderNewTicketForm,
-    '#tickets': renderTicketList,
-    '#estadisticas': renderEstadisticas,
-    '#maintenance': renderMaintenanceCalendar,
-    '#credentials': renderCredentialsPage,
-    '#configuracion': renderConfiguracion
-};
-
-function router() {
-    const fullHash = window.location.hash || '#dashboard';
-    const [path, queryString] = fullHash.split('?');
-    const params = new URLSearchParams(queryString);
-    document.querySelectorAll('.nav-item-with-submenu').forEach(item => item.classList.remove('open'));
-    if (path.startsWith('#inventory-')) {
-        const category = path.replace('#inventory-', '');
-        params.set('category', category);
-        renderInventoryPage(appContent, Object.fromEntries(params.entries()));
-        const inventoryLink = document.querySelector('.nav-item-with-submenu > a');
-        if (inventoryLink) { inventoryLink.parentElement.classList.add('open'); navLinks.forEach(link => link.classList.remove('active')); inventoryLink.classList.add('active'); }
-        return;
-    }
-    const paramsObj = Object.fromEntries(params.entries());
-    const renderFunction = routes[path];
-    if (renderFunction) {
-        appContent.innerHTML = '<div class="card"><h1>Cargando...</h1></div>';
-        renderFunction(appContent, paramsObj); 
-        navLinks.forEach(link => { const linkPath = link.getAttribute('href').split('?')[0]; link.classList.toggle('active', linkPath === path); });
-    } else { appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; }
-}
-
-async function showFormModal(type, category = null) {
-    const formModal = document.getElementById('form-modal');
-    const modalBody = formModal.querySelector('#form-modal-body');
-    let formHTML = '', title = '', collectionName = '', formId = 'modal-form';
-    switch (type) {
-        case 'inventory':
-            const config = inventoryCategoryConfig[category];
-            title = `Añadir Nuevo ${config.titleSingular}`;
-            collectionName = 'inventory';
-            let fieldsHTML = '';
-            for (const [key, field] of Object.entries(config.fields)) {
-                let inputHTML = `<input type="${field.type || 'text'}" id="form-${key}" name="${key}" required>`;
-                if (field.type === 'textarea') inputHTML = `<textarea id="form-${key}" name="${key}" rows="3"></textarea>`;
-                else if (field.type === 'select') {
-                    let optionsHTML = '<option value="">Selecciona...</option>';
-                    if (field.optionsSource === 'locations') {
-                        const locSnap = await db.collection('locations').orderBy('name').get();
-                        optionsHTML += locSnap.docs.map(doc => `<option value="${doc.data().name}">${doc.data().name}</option>`).join('');
-                    } else { optionsHTML += field.options.map(opt => `<option value="${opt}">${opt}</option>`).join(''); }
-                    inputHTML = `<select id="form-${key}" name="${key}">${optionsHTML}</select>`;
-                }
-                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label>${inputHTML}</div>`;
-            }
-            formHTML = `<div class="inventory-form-grid">${fieldsHTML}</div>`;
-            break;
-        case 'maintenance':
-            title = 'Programar Tarea en Calendario';
-            collectionName = 'maintenance';
-            formHTML = `
-                <div class="form-group"><label for="form-task">Título de la Tarea</label><input type="text" id="form-task" name="task" required></div>
-                <div class="form-group"><label for="form-date">Fecha</label><input type="date" id="form-date" name="date" required></div>
-                <div class="form-group"><label for="form-type">Tipo de Tarea</label><select id="form-type" name="type"><option value="Preventivo">Mantenimiento Preventivo</option><option value="Correctivo">Mantenimiento Correctivo</option><option value="Tarea">Tarea</option><option value="Recordatorio">Recordatorio</option></select></div>`;
-            break;
-        case 'credentials':
-            title = 'Añadir Nueva Credencial';
-            collectionName = 'credentials';
-            formHTML = `<div class="form-group"><label for="form-system">Sistema/Servicio</label><input type="text" id="form-system" name="system" required></div><div class="form-group"><label for="form-user">Usuario</label><input type="text" id="form-user" name="user"></div><div class="form-group"><label for="form-pass">Contraseña</label><input type="text" id="form-pass" name="pass"></div><div class="form-group"><label for="form-notes">Notas</label><textarea id="form-notes" name="notes" rows="3"></textarea></div>`;
-            break;
-    }
-    modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">Guardar</button></div></form>`;
-    formModal.classList.remove('hidden');
-    document.getElementById(formId).addEventListener('submit', e => {
-        e.preventDefault();
-        const form = e.target;
-        const data = {};
-        if (type === 'inventory') data.category = category;
-        new FormData(form).forEach((value, key) => { data[key] = value; });
-        db.collection(collectionName).add(data).then(() => { formModal.classList.add('hidden'); }).catch(error => { console.error("Error al guardar: ", error); alert("Hubo un error al guardar los datos."); });
-    });
-}
-
-async function showTicketModal(ticketId) {
-    const ticketModal = document.getElementById('ticket-modal');
-    const modalBody = ticketModal.querySelector('#modal-body');
-    const ticketDoc = await db.collection('tickets').doc(ticketId).get();
-    if (!ticketDoc.exists) { alert('Error: No se encontró el ticket.'); return; }
-    const ticket = ticketDoc.data();
-    const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || 'N/A' : 'N/A';
-    const locationName = ticket.locationId || 'N/A';
-    let solutionHTML = `<hr><h3>Añadir Solución</h3><form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`;
-    if (ticket.status === 'cerrado') { solutionHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`; }
-    modalBody.innerHTML = `
-        <div class="ticket-modal-layout">
-            <div class="ticket-modal-main"><h2>${ticket.title}</h2><hr><h3>Descripción</h3><div class="card">${ticket.description}</div>${solutionHTML}</div>
-            <div class="ticket-modal-sidebar"><h3>Detalles del Ticket</h3><div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${ticket.status}</span></div><div class="ticket-detail-item"><strong>Prioridad:</strong> ${ticket.priority}</div><div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div><div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div><div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}</div>
-        </div>`;
-    ticketModal.classList.remove('hidden');
-    if (ticket.status !== 'cerrado') {
-        const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución aplicada...' });
-        document.getElementById('solution-form').addEventListener('submit', e => { e.preventDefault(); db.collection('tickets').doc(ticketId).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => ticketModal.classList.add('hidden')); });
-    }
-}
+const routes = { '#dashboard': renderDashboard, '#crear-ticket': renderNewTicketForm, '#tickets': renderTicketList, '#estadisticas': renderEstadisticas, '#maintenance': renderMaintenanceCalendar, '#credentials': renderCredentialsPage, '#configuracion': renderConfiguracion };
+function router() { const fullHash = window.location.hash || '#dashboard'; const [path, queryString] = fullHash.split('?'); const params = new URLSearchParams(queryString); document.querySelectorAll('.nav-item-with-submenu').forEach(item => item.classList.remove('open')); if (path.startsWith('#inventory-')) { const category = path.replace('#inventory-', ''); params.set('category', category); renderInventoryPage(appContent, Object.fromEntries(params.entries())); const inventoryLink = document.querySelector('.nav-item-with-submenu > a'); if (inventoryLink) { inventoryLink.parentElement.classList.add('open'); navLinks.forEach(link => link.classList.remove('active')); inventoryLink.classList.add('active'); } return; } const paramsObj = Object.fromEntries(params.entries()); const renderFunction = routes[path]; if (renderFunction) { appContent.innerHTML = '<div class="card"><h1>Cargando...</h1></div>'; renderFunction(appContent, paramsObj); navLinks.forEach(link => { const linkPath = link.getAttribute('href').split('?')[0]; link.classList.toggle('active', linkPath === path); }); } else { appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; } }
+function showEventActionChoiceModal(eventId, eventTitle, eventProps) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); let completedInfo = ''; if (eventProps.status === 'completada') { completedInfo = `<hr><h4>Información de Finalización</h4><p><strong>Fecha:</strong> ${new Date(eventProps.completedDate + 'T00:00:00').toLocaleDateString('es-ES')}</p><p><strong>A tiempo:</strong> ${eventProps.onTimeStatus}</p><p><strong>Evidencias:</strong></p>${eventProps.evidenceFiles && eventProps.evidenceFiles.length > 0 ? `<ul>${eventProps.evidenceFiles.map(url => `<li><a href="${url}" target="_blank">Ver archivo</a></li>`).join('')}</ul>` : '<p>No se subieron archivos.</p>'}`; } const actionButtons = eventProps.status === 'planificada' ? `<div style="display: flex; justify-content: space-around; margin-top: 20px;"><button class="primary" id="finalize-task-btn">✅ Finalizar Tarea</button><button class="danger" id="cancel-task-btn">❌ Cancelar Tarea</button></div>` : ''; modalBody.innerHTML = `<h2>${eventTitle}</h2><p><strong>Estado:</strong> ${eventProps.status}</p>${completedInfo}${actionButtons}`; actionModal.classList.remove('hidden'); if (eventProps.status === 'planificada') { document.getElementById('finalize-task-btn').onclick = () => { actionModal.classList.add('hidden'); showFinalizeTaskModal(eventId, eventTitle); }; document.getElementById('cancel-task-btn').onclick = () => { actionModal.classList.add('hidden'); showCancelTaskModal(eventId, eventTitle); }; } }
+function showFinalizeTaskModal(eventId, eventTitle) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); const today = new Date().toISOString().split('T')[0]; modalBody.innerHTML = `<h2>Finalizar Tarea: "${eventTitle}"</h2><form id="finalize-form"><div class="form-group"><label for="completedDate">Fecha de Realización</label><input type="date" id="completedDate" name="completedDate" value="${today}" required></div><div class="form-group"><label for="onTimeStatus">¿Se realizó a tiempo?</label><select id="onTimeStatus" name="onTimeStatus"><option value="Sí">Sí</option><option value="No">No</option></select></div><div class="form-group"><label for="evidenceFiles">Documentos de Evidencia (opcional)</label><input type="file" id="evidenceFiles" name="evidenceFiles" multiple><progress id="uploadProgress" value="0" max="100" style="width: 100%; display: none;"></progress></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="primary">Guardar Finalización</button></div></form>`; actionModal.classList.remove('hidden'); document.getElementById('finalize-form').addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target; const files = form.evidenceFiles.files; const progressEl = document.getElementById('uploadProgress'); let fileURLs = []; if (files.length > 0) { progressEl.style.display = 'block'; const uploadPromises = Array.from(files).map(file => { const storageRef = storage.ref(`maintenance-evidence/${eventId}/${Date.now()}-${file.name}`); const task = storageRef.put(file); return new Promise((resolve, reject) => { task.on('state_changed', snapshot => { progressEl.value = (snapshot.bytesTransferred / snapshot.totalBytes) * 100; }, error => reject(error), async () => { const downloadURL = await task.snapshot.ref.getDownloadURL(); resolve(downloadURL); }); }); }); fileURLs = await Promise.all(uploadPromises); } const updateData = { status: 'completada', completedDate: form.completedDate.value, onTimeStatus: form.onTimeStatus.value, evidenceFiles: firebase.firestore.FieldValue.arrayUnion(...fileURLs) }; db.collection('maintenance').doc(eventId).update(updateData).then(() => actionModal.classList.add('hidden')).catch(error => console.error("Error al finalizar la tarea: ", error)); }); }
+function showCancelTaskModal(eventId, eventTitle) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); modalBody.innerHTML = `<h2>Cancelar Tarea: "${eventTitle}"</h2><form id="cancel-form"><div class="form-group"><label for="cancellationReason">Razón de la Cancelación</label><textarea id="cancellationReason" name="cancellationReason" rows="4" required></textarea></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="danger">Confirmar Cancelación</button></div></form>`; actionModal.classList.remove('hidden'); document.getElementById('cancel-form').addEventListener('submit', e => { e.preventDefault(); const reason = e.target.cancellationReason.value; db.collection('maintenance').doc(eventId).update({ status: 'cancelada', cancellationReason: reason }).then(() => actionModal.classList.add('hidden')); }); }
+async function showFormModal(type, category = null) { const formModal = document.getElementById('form-modal'); const modalBody = formModal.querySelector('#form-modal-body'); let formHTML = '', title = '', collectionName = '', formId = 'modal-form'; switch (type) { case 'inventory': const config = inventoryCategoryConfig[category]; title = `Añadir Nuevo ${config.titleSingular}`; collectionName = 'inventory'; let fieldsHTML = ''; for (const [key, field] of Object.entries(config.fields)) { let inputHTML = `<input type="${field.type || 'text'}" id="form-${key}" name="${key}" required>`; if (field.type === 'textarea') inputHTML = `<textarea id="form-${key}" name="${key}" rows="3"></textarea>`; else if (field.type === 'select') { let optionsHTML = '<option value="">Selecciona...</option>'; if (field.optionsSource === 'locations') { const locSnap = await db.collection('locations').orderBy('name').get(); optionsHTML += locSnap.docs.map(doc => `<option value="${doc.data().name}">${doc.data().name}</option>`).join(''); } else { optionsHTML += field.options.map(opt => `<option value="${opt}">${opt}</option>`).join(''); } inputHTML = `<select id="form-${key}" name="${key}">${optionsHTML}</select>`; } fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label>${inputHTML}</div>`; } formHTML = `<div class="inventory-form-grid">${fieldsHTML}</div>`; break; case 'maintenance': title = 'Programar Tarea en Calendario'; collectionName = 'maintenance'; formHTML = `<div class="form-group"><label for="form-task">Título de la Tarea</label><input type="text" id="form-task" name="task" required></div><div class="form-group"><label for="form-date">Fecha</label><input type="date" id="form-date" name="date" required></div><div class="form-group"><label for="form-type">Tipo de Tarea</label><select id="form-type" name="type"><option value="Preventivo">Mantenimiento Preventivo</option><option value="Correctivo">Mantenimiento Correctivo</option><option value="Tarea">Tarea</option><option value="Recordatorio">Recordatorio</option></select></div>`; break; case 'credentials': title = 'Añadir Nueva Credencial'; collectionName = 'credentials'; formHTML = `<div class="form-group"><label for="form-system">Sistema/Servicio</label><input type="text" id="form-system" name="system" required></div><div class="form-group"><label for="form-user">Usuario</label><input type="text" id="form-user" name="user"></div><div class="form-group"><label for="form-pass">Contraseña</label><input type="text" id="form-pass" name="pass"></div><div class="form-group"><label for="form-notes">Notas</label><textarea id="form-notes" name="notes" rows="3"></textarea></div>`; break; } modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">Guardar</button></div></form>`; formModal.classList.remove('hidden'); document.getElementById(formId).addEventListener('submit', e => { e.preventDefault(); const form = e.target; const data = {}; if (type === 'maintenance') data.status = 'planificada'; if (type === 'inventory') data.category = category; new FormData(form).forEach((value, key) => { data[key] = value; }); db.collection(collectionName).add(data).then(() => { formModal.classList.add('hidden'); }).catch(error => { console.error("Error al guardar: ", error); alert("Hubo un error al guardar los datos."); }); }); }
+async function showTicketModal(ticketId) { const ticketModal = document.getElementById('ticket-modal'); const modalBody = ticketModal.querySelector('#modal-body'); const ticketDoc = await db.collection('tickets').doc(ticketId).get(); if (!ticketDoc.exists) { alert('Error: No se encontró el ticket.'); return; } const ticket = ticketDoc.data(); const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || 'N/A' : 'N/A'; const locationName = ticket.locationId || 'N/A'; let solutionHTML = `<hr><h3>Añadir Solución</h3><form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`; if (ticket.status === 'cerrado') { solutionHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`; } modalBody.innerHTML = `<div class="ticket-modal-layout"><div class="ticket-modal-main"><h2>${ticket.title}</h2><hr><h3>Descripción</h3><div class="card">${ticket.description}</div>${solutionHTML}</div><div class="ticket-modal-sidebar"><h3>Detalles del Ticket</h3><div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${ticket.status}</span></div><div class="ticket-detail-item"><strong>Prioridad:</strong> ${ticket.priority}</div><div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div><div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div><div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}</div></div>`; ticketModal.classList.remove('hidden'); if (ticket.status !== 'cerrado') { const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución aplicada...' }); document.getElementById('solution-form').addEventListener('submit', e => { e.preventDefault(); db.collection('tickets').doc(ticketId).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => ticketModal.classList.add('hidden')); }); } }
 
 // --- 6. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
 document.addEventListener('DOMContentLoaded', () => {
     const appContent = document.getElementById('app-content');
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
-    appContent.addEventListener('click', e => {
-        const target = e.target.closest('button');
-        if (!target) return;
-        if (target.classList.contains('delete-btn')) { const id = target.dataset.id; const collection = target.dataset.collection; if (confirm(`¿Seguro que quieres eliminar este elemento de ${collection}?`)) { db.collection(collection).doc(id).delete(); } }
-        if (target.classList.contains('view-ticket-btn')) { const id = target.dataset.id; showTicketModal(id); }
-        if (target.classList.contains('open-form-modal-btn') || target.id === 'add-inventory-item-btn') { const type = target.dataset.type; const category = target.dataset.category; showFormModal(type, category); }
-    });
+    const actionModal = document.getElementById('action-modal');
+    appContent.addEventListener('click', e => { const target = e.target.closest('button'); if (!target) return; if (target.classList.contains('delete-btn')) { const id = target.dataset.id; const collection = target.dataset.collection; if (confirm(`¿Seguro que quieres eliminar este elemento de ${collection}?`)) { db.collection(collection).doc(id).delete(); } } if (target.classList.contains('view-ticket-btn')) { const id = target.dataset.id; showTicketModal(id); } if (target.classList.contains('open-form-modal-btn') || target.id === 'add-inventory-item-btn') { const type = target.dataset.type; const category = target.dataset.category; showFormModal(type, category); } });
     ticketModal.querySelector('.modal-close-btn').addEventListener('click', () => ticketModal.classList.add('hidden'));
     formModal.querySelector('.modal-close-btn').addEventListener('click', () => formModal.classList.add('hidden'));
+    actionModal.querySelector('.modal-close-btn').addEventListener('click', () => actionModal.classList.add('hidden'));
     ticketModal.addEventListener('click', e => { if (e.target === ticketModal) ticketModal.classList.add('hidden'); });
     formModal.addEventListener('click', e => { if (e.target === formModal) formModal.classList.add('hidden'); });
-    
-    // LÓGICA DEL MENÚ CORREGIDA
+    actionModal.addEventListener('click', e => { if (e.target === actionModal) actionModal.classList.add('hidden'); });
     const submenuToggle = document.querySelector('.nav-item-with-submenu > a');
-    if (submenuToggle) {
-        submenuToggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            submenuToggle.parentElement.classList.toggle('open');
-        });
-    }
-
+    if (submenuToggle) { submenuToggle.addEventListener('click', (e) => { e.preventDefault(); submenuToggle.parentElement.classList.toggle('open'); }); }
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     loginContainer.innerHTML = `<div class="login-box"><h2>Iniciar Sesión</h2><input type="email" id="email" placeholder="Correo electrónico"><input type="password" id="password" placeholder="Contraseña"><button id="login-btn">Entrar</button><p id="login-error" class="error-message"></p></div>`;
-    
-    document.getElementById('login-btn').addEventListener('click', () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const errorEl = document.getElementById('login-error');
-        errorEl.textContent = '';
-        auth.signInWithEmailAndPassword(email, password).catch(error => { console.error("Error de inicio de sesión:", error); errorEl.textContent = "Correo o contraseña incorrectos."; });
-    });
-
+    document.getElementById('login-btn').addEventListener('click', () => { const email = document.getElementById('email').value; const password = document.getElementById('password').value; const errorEl = document.getElementById('login-error'); errorEl.textContent = ''; auth.signInWithEmailAndPassword(email, password).catch(error => { console.error("Error de inicio de sesión:", error); errorEl.textContent = "Correo o contraseña incorrectos."; }); });
     document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
-
     auth.onAuthStateChanged(user => {
         if (user) {
             loginContainer.classList.remove('visible'); loginContainer.classList.add('hidden');
