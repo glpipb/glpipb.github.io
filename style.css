@@ -1,346 +1,119 @@
 :root {
     --primary-color: #007bff;
-    --secondary-color: #6c757d;
-    --bg-color: #f4f7f6;
-    --sidebar-bg: #343a40;
-    --sidebar-text: #f8f9fa;
+    --secondary-color: #5a6268;
+    --bg-color: #f8f9fa;
+    --sidebar-bg: #212529;
+    --sidebar-text: #e9ecef;
     --card-bg: #ffffff;
     --border-color: #dee2e6;
     --success-color: #28a745;
     --danger-color: #dc3545;
     --warning-color: #ffc107;
+    --font-family: 'Inter', sans-serif; /* NUEVA FUENTE */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font-family);
     background-color: var(--bg-color);
-    color: #333;
+    color: #343a40;
     display: flex;
+    font-size: 16px; /* Ajuste de tamaño base */
+    line-height: 1.6; /* Mejorar legibilidad */
 }
 
 /* --- Login --- */
-#login-container {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: var(--bg-color);
-}
-.login-box {
-    padding: 40px;
-    background: var(--card-bg);
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    text-align: center;
-    width: 350px;
-}
-.login-box h2 { margin-bottom: 20px; }
-.login-box input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-.login-box button {
-    width: 100%;
-    padding: 12px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-}
+#login-container { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background-color: var(--bg-color); }
+.login-box { padding: 40px; background: var(--card-bg); border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+.login-box h2 { margin-bottom: 25px; font-weight: 600; }
+.login-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; }
+.login-box button { width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 500; }
 .login-box button:hover { opacity: 0.9; }
 .error-message { color: var(--danger-color); margin-top: 10px; font-size: 14px; }
 
 /* --- App Layout --- */
-#app-container {
-    display: flex;
-    width: 100vw;
-    height: 100vh;
-}
+#app-container { display: flex; width: 100vw; height: 100vh; }
 .hidden { display: none !important; }
 .visible { display: flex !important; }
 
-.sidebar {
-    width: 240px;
-    background-color: var(--sidebar-bg);
-    color: var(--sidebar-text);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-.sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #495057; }
+.sidebar { width: 250px; background-color: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; height: 100%; }
+.sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #343a40; font-weight: 600; }
 .nav-list { list-style: none; flex-grow: 1; }
-.nav-list li a {
-    display: block;
-    padding: 15px 20px;
-    color: var(--sidebar-text);
-    text-decoration: none;
-    transition: background-color 0.2s;
-}
-.nav-list li a:hover, .nav-list li a.active { background-color: #495057; }
-.sidebar-footer { padding: 20px; border-top: 1px solid #495057; text-align: center; }
-.sidebar-footer a { color: var(--warning-color); text-decoration: none; }
+.nav-list li a { display: block; padding: 15px 25px; color: var(--sidebar-text); text-decoration: none; transition: background-color 0.2s, color 0.2s; font-weight: 500; }
+.nav-list li a:hover { background-color: #343a40; }
+.nav-list li a.active { background-color: var(--primary-color); color: white; }
+.sidebar-footer { padding: 20px; border-top: 1px solid #343a40; text-align: center; }
+.sidebar-footer a { color: var(--warning-color); text-decoration: none; font-weight: 500; }
 
-#app-content {
-    flex-grow: 1;
-    padding: 30px;
-    overflow-y: auto;
-}
+#app-content { flex-grow: 1; padding: 40px; overflow-y: auto; }
 
 /* --- General Components --- */
-h1 { margin-bottom: 20px; }
-.card {
-    background: var(--card-bg);
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
-}
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-.form-group input, .form-group select, .form-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-button.primary {
-    padding: 10px 20px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
+h1, h2 { font-weight: 600; letter-spacing: -0.5px; }
+h1 { margin-bottom: 30px; }
+h2 { margin-bottom: 20px; }
+.card { background: var(--card-bg); border-radius: 8px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 25px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px; color: var(--secondary-color); }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: var(--font-family); font-size: 16px; }
+button.primary { padding: 10px 20px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
 button.danger { background-color: var(--danger-color); }
 
 /* Table styles */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-th, td {
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    text-align: left;
-}
-th { background-color: #e9ecef; }
-.status {
-    padding: 5px 10px;
-    border-radius: 12px;
-    color: white;
-    font-size: 12px;
-    text-align: center;
-}
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th, td { padding: 14px; border: 1px solid var(--border-color); text-align: left; }
+th { background-color: #f1f3f5; font-weight: 600; font-size: 14px; }
+.status { padding: 5px 12px; border-radius: 12px; color: white; font-size: 12px; text-align: center; font-weight: 600; }
 .status-abierto { background-color: var(--danger-color); }
 .status-proceso { background-color: var(--warning-color); }
 .status-cerrado { background-color: var(--success-color); }
+
 /* --- Estilos del Modal --- */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    transition: opacity 0.3s ease;
-}
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.3s ease; }
+.modal-content { background: white; padding: 30px; border-radius: 8px; width: 600px; max-width: 90%; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
+.modal-close-btn { position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; color: #aaa; cursor: pointer; }
+.modal-close-btn:hover { color: #333; }
+.ticket-detail-item { margin-bottom: 15px; }
+.ticket-detail-item strong { display: block; color: var(--secondary-color); margin-bottom: 4px; }
+.config-list { list-style: none; padding-left: 0; }
+.config-list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-color); }
+.config-list-item:last-child { border-bottom: none; }
 
-.modal-content {
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
-    width: 600px;
-    max-width: 90%;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modal-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 28px;
-    font-weight: bold;
-    color: #aaa;
-    cursor: pointer;
-}
-
-.modal-close-btn:hover {
-    color: #333;
-}
-
-.ticket-detail-item {
-    margin-bottom: 15px;
-}
-
-.ticket-detail-item strong {
-    display: block;
-    color: var(--secondary-color);
-    margin-bottom: 4px;
-}
-
-/* Estilos para listas en Configuración */
-.config-list {
-    list-style: none;
-    padding-left: 0;
-}
-.config-list-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid var(--border-color);
-}
-.config-list-item:last-child {
-    border-bottom: none;
-}
 /* --- Estilos para las Tarjetas del Dashboard --- */
-.dashboard-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-}
-
-.stat-card {
-    display: block; /* Para que el <a> ocupe todo el espacio */
-    text-decoration: none;
-    color: #333;
-    background-color: var(--card-bg);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border-left: 5px solid;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.stat-card .stat-number {
-    font-size: 2.5em;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.stat-card .stat-label {
-    font-size: 1em;
-    color: var(--secondary-color);
-}
-
-/* Colores específicos para las tarjetas */
+.dashboard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; }
+.stat-card { display: block; text-decoration: none; color: #333; background-color: var(--card-bg); padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); transition: transform 0.2s ease, box-shadow 0.2s ease; border-left: 5px solid; }
+.stat-card:hover { transform: translateY(-5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+.stat-card .stat-number { font-size: 2.5em; font-weight: 700; margin-bottom: 5px; }
+.stat-card .stat-label { font-size: 1em; color: var(--secondary-color); font-weight: 500; }
 .stat-card.open { border-color: var(--danger-color); }
 .stat-card.closed { border-color: var(--success-color); }
 .stat-card.all { border-color: var(--primary-color); }
+
 /* --- Estilos para la Página de Estadísticas --- */
-.stats-filters {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    margin-bottom: 20px;
-}
+.stats-filters { display: flex; gap: 20px; align-items: center; margin-bottom: 20px; }
 
 /* --- Estilos para el Editor de Texto Enriquecido --- */
-.ql-toolbar {
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-}
-.ql-container {
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
-    height: 150px;
-    font-size: 16px;
-}
+.ql-toolbar { border-top-left-radius: 6px; border-top-right-radius: 6px; }
+.ql-container { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; height: 150px; font-size: 16px; }
 
 /* --- Estilos para el Modal Rediseñado --- */
-.modal-content.large {
-    width: 900px; /* Hacemos el modal más ancho */
-    max-width: 95%;
-}
+.modal-content.large { width: 950px; max-width: 95%; }
+.ticket-modal-layout { display: flex; gap: 30px; }
+.ticket-modal-main { flex: 2; }
+.ticket-modal-sidebar { flex: 1; background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); }
+.ticket-modal-sidebar .ticket-detail-item { padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+.ticket-modal-sidebar .ticket-detail-item:last-child { border-bottom: none; }
 
-.ticket-modal-layout {
-    display: flex;
-    gap: 30px;
-}
-
-.ticket-modal-main {
-    flex: 2; /* Ocupa 2/3 del espacio */
-}
-
-.ticket-modal-sidebar {
-    flex: 1; /* Ocupa 1/3 del espacio */
-    background-color: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-.ticket-modal-sidebar .ticket-detail-item {
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border-color);
-}
-.ticket-modal-sidebar .ticket-detail-item:last-child {
-    border-bottom: none;
-}
 /* --- Estilos para el Menú Desplegable de Inventario --- */
-.nav-item-with-submenu > a::after {
-    content: '›';
-    float: right;
-    transition: transform 0.2s ease;
-    font-size: 1.5em;
-    line-height: 0.8em;
-}
+.nav-item-with-submenu > a::after { content: '›'; float: right; transition: transform 0.2s ease; font-size: 1.5em; line-height: 0.8em; }
+.nav-item-with-submenu.open > a::after { transform: rotate(90deg); }
+.submenu { list-style: none; padding-left: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background-color: #2c3136; }
+.nav-item-with-submenu.open .submenu { max-height: 500px; transition: max-height 0.4s ease-in; }
+.submenu li a { padding-left: 45px !important; font-size: 0.9em; }
 
-.nav-item-with-submenu.open > a::after {
-    transform: rotate(90deg);
-}
+/* --- Estilos para formularios de inventario --- */
+.inventory-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+@media (min-width: 1200px) { .inventory-form-grid { grid-template-columns: repeat(3, 1fr); } }
 
-.submenu {
-    list-style: none;
-    padding-left: 0;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    background-color: #2c3136; /* Un poco más oscuro para diferenciar */
-}
-
-.nav-item-with-submenu.open .submenu {
-    max-height: 500px; /* Un valor alto para asegurar que todo quepa */
-    transition: max-height 0.4s ease-in;
-}
-
-.submenu li a {
-    padding-left: 40px !important; /* Indentación para los sub-items */
-    font-size: 0.9em;
-}
-
-/* Estilos para formularios de inventario más complejos */
-.inventory-form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-}
 /* --- Estilos para el botón de Añadir en las páginas de lista --- */
-.add-new-button-container {
-    margin-bottom: 20px;
-    padding: 10px;
-    background-color: var(--card-bg);
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    text-align: right;
-}
+.add-new-button-container { margin-bottom: 25px; padding: 20px; background-color: var(--card-bg); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); text-align: right; }
