@@ -1,6 +1,6 @@
 [
   {
-    "origin": ["https://tu-usuario.github.io"],
+    "origin": ["https://glpipb.github.io"],
     "method": ["GET", "PUT", "POST", "DELETE"],
     "responseHeader": [
       "Content-Type",
