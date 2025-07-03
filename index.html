@@ -19,6 +19,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-storage-compat.js"></script> <!-- SDK DE STORAGE AÑADIDO -->
     
     <!-- Gráficos (Chart.js) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -54,9 +55,13 @@
         </nav>
         <main id="app-content"></main>
     </div>
+    
     <div id="ticket-modal" class="modal-overlay hidden"><div class="modal-content large"><span class="modal-close-btn">×</span><div id="modal-body"></div></div></div>
     <div id="form-modal" class="modal-overlay hidden"><div class="modal-content"><span class="modal-close-btn">×</span><div id="form-modal-body"></div></div></div>
     
+    <!-- NUEVO MODAL PARA LAS ACCIONES DEL CALENDARIO -->
+    <div id="action-modal" class="modal-overlay hidden"><div class="modal-content"><span class="modal-close-btn">×</span><div id="action-modal-body"></div></div></div>
+
     <script src="app.js"></script>
 </body>
 </html>
