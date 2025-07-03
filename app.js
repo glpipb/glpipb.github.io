@@ -7,6 +7,7 @@ const firebaseConfig = {
   appId: "1:195664374847:web:88412be75b4ff8600adc8a",
   measurementId: "G-QJD3VS1V5Y"
 };
+
 // --- 2. INICIALIZACIÓN DE FIREBASE ---
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -14,7 +15,6 @@ const auth = firebase.auth();
 
 
 // --- 3. TEMPLATES HTML PARA CADA SECCIÓN ---
-
 const dashboardHTML = `<h1>📊 Dashboard</h1><div class="dashboard-stats" id="dashboard-cards"></div><div class="card" style="margin-top: 30px;"><h2>Tickets por Día (Últimos 7 días)</h2><canvas id="ticketsChart"></canvas></div>`;
 const ticketListHTML = `<div class="card"><h2 id="tickets-list-title">Tickets</h2><table id="tickets-table"><thead><tr><th>Título</th><th>Solicitante</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
 const newTicketFormHTML = `<h1>➕ Crear Nuevo Ticket</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div style="display: flex; gap: 20px; flex-wrap: wrap;"><div class="form-group" style="flex: 1; min-width: 200px;"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group" style="flex: 1; min-width: 200px;"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group" style="flex: 1; min-width: 150px;"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
@@ -280,8 +280,6 @@ function renderConfiguracion(container) {
 // --- 5. ROUTER Y LÓGICA PRINCIPAL ---
 const appContent = document.getElementById('app-content');
 const navLinks = document.querySelectorAll('.nav-link');
-const ticketModal = document.getElementById('ticket-modal');
-const formModal = document.getElementById('form-modal');
 
 const routes = {
     '#dashboard': renderDashboard,
@@ -323,7 +321,8 @@ function router() {
 }
 
 async function showFormModal(type, category = null) {
-    const modalBody = document.getElementById('form-modal').querySelector('#form-modal-body');
+    const formModal = document.getElementById('form-modal');
+    const modalBody = formModal.querySelector('#form-modal-body');
     let formHTML = '';
     let title = '';
     let collectionName = '';
@@ -356,19 +355,12 @@ async function showFormModal(type, category = null) {
         case 'maintenance':
             title = 'Programar Nuevo Mantenimiento';
             collectionName = 'maintenance';
-            formHTML = `
-                <div class="form-group"><label for="form-task">Tarea</label><input type="text" id="form-task" name="task" required></div>
-                <div class="form-group"><label for="form-nextDate">Próxima Fecha</label><input type="date" id="form-nextDate" name="nextDate" required></div>
-                <div class="form-group"><label for="form-frequency">Frecuencia</label><select id="form-frequency" name="frequency"><option value="unica">Vez Única</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>`;
+            formHTML = `<div class="form-group"><label for="form-task">Tarea</label><input type="text" id="form-task" name="task" required></div><div class="form-group"><label for="form-nextDate">Próxima Fecha</label><input type="date" id="form-nextDate" name="nextDate" required></div><div class="form-group"><label for="form-frequency">Frecuencia</label><select id="form-frequency" name="frequency"><option value="unica">Vez Única</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>`;
             break;
         case 'credentials':
             title = 'Añadir Nueva Credencial';
             collectionName = 'credentials';
-            formHTML = `
-                <div class="form-group"><label for="form-system">Sistema/Servicio</label><input type="text" id="form-system" name="system" required></div>
-                <div class="form-group"><label for="form-user">Usuario</label><input type="text" id="form-user" name="user"></div>
-                <div class="form-group"><label for="form-pass">Contraseña</label><input type="text" id="form-pass" name="pass"></div>
-                <div class="form-group"><label for="form-notes">Notas</label><textarea id="form-notes" name="notes" rows="3"></textarea></div>`;
+            formHTML = `<div class="form-group"><label for="form-system">Sistema/Servicio</label><input type="text" id="form-system" name="system" required></div><div class="form-group"><label for="form-user">Usuario</label><input type="text" id="form-user" name="user"></div><div class="form-group"><label for="form-pass">Contraseña</label><input type="text" id="form-pass" name="pass"></div><div class="form-group"><label for="form-notes">Notas</label><textarea id="form-notes" name="notes" rows="3"></textarea></div>`;
             break;
     }
     modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">Guardar</button></div></form>`;
@@ -386,6 +378,8 @@ async function showFormModal(type, category = null) {
 }
 
 async function showTicketModal(ticketId) {
+    const ticketModal = document.getElementById('ticket-modal');
+    const modalBody = ticketModal.querySelector('#modal-body');
     const ticketDoc = await db.collection('tickets').doc(ticketId).get();
     if (!ticketDoc.exists) { alert('Error: No se encontró el ticket.'); return; }
     const ticket = ticketDoc.data();
@@ -393,7 +387,6 @@ async function showTicketModal(ticketId) {
     const locationName = ticket.locationId || 'N/A';
     let solutionHTML = `<hr><h3>Añadir Solución</h3><form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`;
     if (ticket.status === 'cerrado') { solutionHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`; }
-    const modalBody = document.getElementById('ticket-modal').querySelector('#modal-body');
     modalBody.innerHTML = `
         <div class="ticket-modal-layout">
             <div class="ticket-modal-main"><h2>${ticket.title}</h2><hr><h3>Descripción</h3><div class="card">${ticket.description}</div>${solutionHTML}</div>
@@ -415,6 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
 
+    // Listener de eventos principal para botones dentro del contenido dinámico
     appContent.addEventListener('click', e => {
         const target = e.target.closest('button');
         if (!target) return;
@@ -431,11 +425,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Listeners para cerrar los modals
     ticketModal.querySelector('.modal-close-btn').addEventListener('click', () => ticketModal.classList.add('hidden'));
     formModal.querySelector('.modal-close-btn').addEventListener('click', () => formModal.classList.add('hidden'));
     ticketModal.addEventListener('click', e => { if (e.target === ticketModal) ticketModal.classList.add('hidden'); });
     formModal.addEventListener('click', e => { if (e.target === formModal) formModal.classList.add('hidden'); });
     
+    // Listener para el menú desplegable
     const submenuToggle = document.querySelector('.nav-item-with-submenu > a');
     if (submenuToggle) {
         submenuToggle.addEventListener('click', (e) => {
@@ -443,9 +439,10 @@ document.addEventListener('DOMContentLoaded', () => {
             submenuToggle.parentElement.classList.toggle('open');
         });
     }
+
+    // Lógica de autenticación
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
-    const logoutBtn = document.getElementById('logout-btn');
     loginContainer.innerHTML = `<div class="login-box"><h2>Iniciar Sesión</h2><input type="email" id="email" placeholder="Correo electrónico"><input type="password" id="password" placeholder="Contraseña"><button id="login-btn">Entrar</button><p id="login-error" class="error-message"></p></div>`;
     
     document.getElementById('login-btn').addEventListener('click', () => {
@@ -455,7 +452,9 @@ document.addEventListener('DOMContentLoaded', () => {
         errorEl.textContent = '';
         auth.signInWithEmailAndPassword(email, password).catch(error => { console.error("Error de inicio de sesión:", error); errorEl.textContent = "Correo o contraseña incorrectos."; });
     });
-    logoutBtn.addEventListener('click', () => auth.signOut());
+
+    document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+
     auth.onAuthStateChanged(user => {
         if (user) {
             loginContainer.classList.remove('visible'); loginContainer.classList.add('hidden');
