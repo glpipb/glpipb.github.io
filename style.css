@@ -298,3 +298,41 @@ th { background-color: #e9ecef; }
 .ticket-modal-sidebar .ticket-detail-item:last-child {
     border-bottom: none;
 }
+/* --- Estilos para el Menú Desplegable de Inventario --- */
+.nav-item-with-submenu > a::after {
+    content: '›';
+    float: right;
+    transition: transform 0.2s ease;
+    font-size: 1.5em;
+    line-height: 0.8em;
+}
+
+.nav-item-with-submenu.open > a::after {
+    transform: rotate(90deg);
+}
+
+.submenu {
+    list-style: none;
+    padding-left: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    background-color: #2c3136; /* Un poco más oscuro para diferenciar */
+}
+
+.nav-item-with-submenu.open .submenu {
+    max-height: 500px; /* Un valor alto para asegurar que todo quepa */
+    transition: max-height 0.4s ease-in;
+}
+
+.submenu li a {
+    padding-left: 40px !important; /* Indentación para los sub-items */
+    font-size: 0.9em;
+}
+
+/* Estilos para formularios de inventario más complejos */
+.inventory-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
