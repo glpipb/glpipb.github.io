@@ -16,43 +16,39 @@ const auth = firebase.auth();
 // --- 3. TEMPLATES HTML PARA CADA SECCIÓN ---
 
 const dashboardHTML = `<h1>📊 Dashboard</h1><div class="dashboard-stats" id="dashboard-cards"></div><div class="card" style="margin-top: 30px;"><h2>Tickets por Día (Últimos 7 días)</h2><canvas id="ticketsChart"></canvas></div>`;
-
 const ticketListHTML = `<div class="card"><h2 id="tickets-list-title">Tickets</h2><table id="tickets-table"><thead><tr><th>Título</th><th>Solicitante</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
-
 const newTicketFormHTML = `<h1>➕ Crear Nuevo Ticket</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div style="display: flex; gap: 20px; flex-wrap: wrap;"><div class="form-group" style="flex: 1; min-width: 200px;"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group" style="flex: 1; min-width: 200px;"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group" style="flex: 1; min-width: 150px;"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
-
 const statisticsHTML = `<h1>📈 Estadísticas</h1><div class="card"><h2>Reporte de Tickets por Rango de Fechas</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div><canvas id="stats-chart"></canvas></div>`;
-
-const inventoryPageHTML = `
-    <h1 id="inventory-title"></h1>
-    <div class="card">
-        <h2>Añadir Nuevo Dispositivo</h2>
-        <form id="new-device-form">
-            <div id="inventory-form-fields" class="inventory-form-grid">
-                <!-- Los campos se generarán aquí -->
-            </div>
-            <div style="margin-top: 20px;">
-                <button type="submit" class="primary">Añadir al Inventario</button>
-            </div>
-        </form>
-    </div>
-    <div class="card">
-        <h2 id="inventory-list-title">Dispositivos</h2>
-        <table id="inventory-table">
-            <thead id="inventory-table-head"></thead>
-            <tbody id="inventory-table-body"></tbody>
-        </table>
-    </div>
-`;
-
-const maintenanceHTML = `<h1>⚙️ Plan de Mantenimiento</h1><div class="card"><h2>Programar Mantenimiento</h2><form id="new-maintenance-form" style="display: flex; gap: 10px; flex-wrap: wrap;"><input type="text" id="maint-task" placeholder="Tarea" required style="flex: 2;"><input type="date" id="maint-date" required style="flex: 1;"><select id="maint-freq" style="flex: 1;"><option value="unica">Vez Única</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select><button type="submit" class="primary">Programar</button></form></div><div class="card"><h2>Próximos Mantenimientos</h2><table id="maintenance-table"><thead><tr><th>Tarea</th><th>Próxima Fecha</th><th>Frecuencia</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
-
-const credentialsHTML = `<h1>🔑 Gestor de Credenciales (No Críticas)</h1><div class="card" style="border-left: 5px solid var(--danger-color);"><h2 style="color: var(--danger-color);">⚠️ ADVERTENCIA DE SEGURIDAD ⚠️</h2><p>Almacenar credenciales aquí no es seguro. Úsalo <strong>SOLAMENTE</strong> para información no sensible (contraseñas de impresoras, usuarios de prueba, etc.). <strong>NUNCA guardes aquí contraseñas de administrador o de cuentas importantes.</strong></p></div><div class="card"><h2>Añadir Credencial</h2><form id="new-credential-form"><div class="form-group"><input type="text" id="cred-system" placeholder="Sistema/Servicio" required></div><div class="form-group"><input type="text" id="cred-user" placeholder="Usuario"></div><div class="form-group"><input type="text" id="cred-pass" placeholder="Contraseña/Clave"></div><div class="form-group"><textarea id="cred-notes" placeholder="Notas adicionales"></textarea></div><button type="submit" class="primary">Guardar</button></form></div><div class="card"><h2>Credenciales Guardadas</h2><table id="credentials-table"><thead><tr><th>Sistema</th><th>Usuario</th><th>Contraseña</th><th>Notas</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
-
+const inventoryPageHTML = `<h1 id="inventory-title"></h1><div class="add-new-button-container"><button id="add-inventory-item-btn" class="primary open-form-modal-btn">Añadir Nuevo</button></div><div class="card"><h2 id="inventory-list-title"></h2><table id="inventory-table"><thead id="inventory-table-head"></thead><tbody id="inventory-table-body"></tbody></table></div>`;
+const maintenancePageHTML = `<h1>⚙️ Plan de Mantenimiento</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="maintenance">Programar Nuevo Mantenimiento</button></div><div class="card"><h2>Próximos Mantenimientos</h2><table id="maintenance-table"><thead><tr><th>Tarea</th><th>Próxima Fecha</th><th>Frecuencia</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
+const credentialsPageHTML = `<h1>🔑 Gestor de Credenciales (No Críticas)</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="credentials">Añadir Nueva Credencial</button></div><div class="card" style="border-left: 5px solid var(--danger-color);"><h2 style="color: var(--danger-color);">⚠️ ADVERTENCIA DE SEGURIDAD ⚠️</h2><p>Nunca guardes aquí contraseñas de administrador o de cuentas importantes.</p></div><div class="card"><h2>Credenciales Guardadas</h2><table id="credentials-table"><thead><tr><th>Sistema</th><th>Usuario</th><th>Contraseña</th><th>Notas</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
 const configHTML = `<h1>⚙️ Configuración</h1><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"><div class="card"><h2>Gestionar Solicitantes</h2><form id="add-requester-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="requester-name" placeholder="Nombre del solicitante" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="requesters-list" class="config-list"></ul></div><div class="card"><h2>Gestionar Ubicaciones</h2><form id="add-location-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="location-name" placeholder="Nombre de la ubicación" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="locations-list" class="config-list"></ul></div></div>`;
 
 
 // --- 4. FUNCIONES PARA RENDERIZAR CADA SECCIÓN ---
+
+const inventoryCategoryConfig = {
+    computers: {
+        title: 'Computadores', titleSingular: 'Computador',
+        fields: {
+            brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' },
+            user: { label: 'Usuario', type: 'text' }, cpu: { label: 'CPU', type: 'text' }, ram: { label: 'RAM (GB)', type: 'text' },
+            storage: { label: 'Almacenamiento (GB)', type: 'text' }, os: { label: 'Sistema Operativo', type: 'text' },
+            licenciaWindows: { label: 'Licencia Windows', type: 'text' },
+            tipoOffice: { label: 'Tipo de Office', type: 'select', options: ['No Aplica', 'Microsoft 365', 'Office 2021', 'Office 2019', 'Otro'] },
+            licenciaOffice: { label: 'Licencia Office', type: 'text' },
+            sede: { label: 'Sede', type: 'select', optionsSource: 'locations' },
+            estado: { label: 'Estado', type: 'select', options: ['En Uso', 'En Bodega', 'De Baja', 'En Reparación'] },
+            observaciones: { label: 'Observaciones', type: 'textarea' }
+        }
+    },
+    phones: { title: 'Teléfonos', titleSingular: 'Teléfono', fields: { brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, imei: { label: 'IMEI', type: 'text' }, phoneNumber: { label: 'N/Teléfono', type: 'text' }, user: { label: 'Usuario', type: 'text' } }},
+    cameras: { title: 'Cámaras', titleSingular: 'Cámara', fields: { brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, ipAddress: { label: 'Dirección IP', type: 'text' }, location: { label: 'Ubicación Física', type: 'text' } }},
+    modems: { title: 'Módems', titleSingular: 'Módem', fields: { brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, serviceProvider: { label: 'Proveedor de Internet', type: 'text' } }},
+    communicators: { title: 'Comunicadores', titleSingular: 'Comunicador', fields: { brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, type: { label: 'Tipo (Satelital, Radio)', type: 'text' } }},
+    network: { title: 'Dispositivos de Red', titleSingular: 'Dispositivo de Red', fields: { type: { label: 'Tipo (Switch, Router, AP)', type: 'text' }, brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, ipAddress: { label: 'Dirección IP', type: 'text' }, location: { label: 'Ubicación Física', type: 'text' } }},
+    printers: { title: 'Impresoras', titleSingular: 'Impresora', fields: { brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, ipAddress: { label: 'Dirección IP', type: 'text' }, type: { label: 'Tipo (Láser, Tinta)', type: 'text' } }}
+};
 
 async function renderDashboard(container) {
     container.innerHTML = dashboardHTML;
@@ -91,7 +87,7 @@ async function renderNewTicketForm(container) {
     requesterSelect.innerHTML = '<option value="">Selecciona un solicitante</option>';
     reqSnap.forEach(doc => { requesterSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`; });
     locationSelect.innerHTML = '<option value="">Selecciona una ubicación</option>';
-    locSnap.forEach(doc => { locationSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`; });
+    locSnap.forEach(doc => { locationSelect.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`; });
     const form = document.getElementById('new-ticket-form');
     form.addEventListener('submit', e => {
         e.preventDefault();
@@ -129,7 +125,7 @@ async function renderTicketList(container, params = {}) {
         snapshot.forEach(doc => {
             const ticket = { id: doc.id, ...doc.data() };
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || 'N/A'}</td><td>${locationsMap[ticket.locationId] || 'N/A'}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`;
+            tr.innerHTML = `<td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.locationId || 'N/A'}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`;
             tableBody.appendChild(tr);
         });
     }, error => {
@@ -149,7 +145,6 @@ function renderEstadisticas(container) {
     const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1));
     startDateInput.value = oneMonthAgo.toISOString().split('T')[0];
     endDateInput.value = today.toISOString().split('T')[0];
-    
     generateBtn.addEventListener('click', async () => {
         const startDate = new Date(startDateInput.value);
         startDate.setHours(0, 0, 0, 0);
@@ -202,36 +197,19 @@ function renderEstadisticas(container) {
 function renderInventoryPage(container, params) {
     const category = params.category;
     container.innerHTML = inventoryPageHTML;
-
-    const categoryConfig = {
-        computers: { title: 'Computadores', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', user: 'Usuario', cpu: 'CPU', ram: 'RAM (GB)', storage: 'Almacenamiento (GB)', os: 'Sistema Operativo' }},
-        phones: { title: 'Teléfonos', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', imei: 'IMEI', phoneNumber: 'N/Teléfono', user: 'Usuario' }},
-        cameras: { title: 'Cámaras', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', ipAddress: 'Dirección IP', location: 'Ubicación Física' }},
-        modems: { title: 'Módems', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', serviceProvider: 'Proveedor de Internet' }},
-        communicators: { title: 'Comunicadores', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', type: 'Tipo (Satelital, Radio)' }},
-        network: { title: 'Dispositivos de Red', fields: { type: 'Tipo (Switch, Router, AP)', brand: 'Marca', model: 'Modelo', ipAddress: 'Dirección IP', location: 'Ubicación Física' }},
-        printers: { title: 'Impresoras', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', ipAddress: 'Dirección IP', type: 'Tipo (Láser, Tinta)' }}
-    };
-
-    const config = categoryConfig[category];
+    const config = inventoryCategoryConfig[category];
     if (!config) { container.innerHTML = `<h1>Error: Categoría de inventario no encontrada.</h1>`; return; }
 
     document.getElementById('inventory-title').innerText = `💻 Inventario de ${config.title}`;
     document.getElementById('inventory-list-title').innerText = `Lista de ${config.title}`;
-    const formFieldsContainer = document.getElementById('inventory-form-fields');
-    const tableHeadContainer = document.getElementById('inventory-table-head');
-    
-    formFieldsContainer.innerHTML = Object.entries(config.fields).map(([key, label]) => `<div class="form-group"><label for="device-${key}">${label}</label><input type="text" id="device-${key}" name="${key}" required></div>`).join('');
-    const tableHeaders = Object.values(config.fields);
-    tableHeadContainer.innerHTML = `<tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`;
+    const addButton = document.getElementById('add-inventory-item-btn');
+    addButton.innerText = `Añadir Nuevo ${config.titleSingular}`;
+    addButton.dataset.type = 'inventory';
+    addButton.dataset.category = category;
 
-    const form = document.getElementById('new-device-form');
-    form.addEventListener('submit', e => {
-        e.preventDefault();
-        const deviceData = { category: category };
-        Object.keys(config.fields).forEach(key => { deviceData[key] = form[key].value; });
-        db.collection('inventory').add(deviceData).then(() => form.reset());
-    });
+    const tableHeadContainer = document.getElementById('inventory-table-head');
+    const tableHeaders = Object.values(config.fields).map(field => field.label);
+    tableHeadContainer.innerHTML = `<tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`;
 
     const tableBody = document.getElementById('inventory-table-body');
     db.collection('inventory').where('category', '==', category).onSnapshot(snapshot => {
@@ -246,10 +224,8 @@ function renderInventoryPage(container, params) {
     });
 }
 
-function renderMaintenance(container) {
-    container.innerHTML = maintenanceHTML;
-    const form = document.getElementById('new-maintenance-form');
-    form.addEventListener('submit', e => { e.preventDefault(); db.collection('maintenance').add({ task: form['maint-task'].value, nextDate: form['maint-date'].value, frequency: form['maint-freq'].value, }).then(() => form.reset()); });
+function renderMaintenancePage(container) {
+    container.innerHTML = maintenancePageHTML;
     const tableBody = document.querySelector('#maintenance-table tbody');
     db.collection('maintenance').orderBy('nextDate').onSnapshot(snapshot => {
         tableBody.innerHTML = '';
@@ -262,10 +238,8 @@ function renderMaintenance(container) {
     });
 }
 
-function renderCredentials(container) {
-    container.innerHTML = credentialsHTML;
-    const form = document.getElementById('new-credential-form');
-    form.addEventListener('submit', e => { e.preventDefault(); db.collection('credentials').add({ system: form['cred-system'].value, user: form['cred-user'].value, pass: form['cred-pass'].value, notes: form['cred-notes'].value, }).then(() => form.reset()); });
+function renderCredentialsPage(container) {
+    container.innerHTML = credentialsPageHTML;
     const tableBody = document.querySelector('#credentials-table tbody');
     db.collection('credentials').orderBy('system').onSnapshot(snapshot => {
         tableBody.innerHTML = '';
@@ -310,17 +284,16 @@ function renderConfiguracion(container) {
 // --- 5. ROUTER Y LÓGICA PRINCIPAL ---
 const appContent = document.getElementById('app-content');
 const navLinks = document.querySelectorAll('.nav-link');
-const modal = document.getElementById('ticket-modal');
-const modalBody = document.getElementById('modal-body');
-const modalCloseBtn = document.querySelector('.modal-close-btn');
+const ticketModal = document.getElementById('ticket-modal');
+const formModal = document.getElementById('form-modal');
 
 const routes = {
     '#dashboard': renderDashboard,
     '#crear-ticket': renderNewTicketForm,
     '#tickets': renderTicketList,
     '#estadisticas': renderEstadisticas,
-    '#maintenance': renderMaintenance,
-    '#credentials': renderCredentials,
+    '#maintenance': renderMaintenancePage,
+    '#credentials': renderCredentialsPage,
     '#configuracion': renderConfiguracion
 };
 
@@ -356,25 +329,103 @@ function router() {
     } else { appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; }
 }
 
+async function showFormModal(type, category = null) {
+    const modalBody = document.getElementById('form-modal-body');
+    let formHTML = '';
+    let title = '';
+    let collectionName = '';
+    let formId = 'modal-form';
+    let configFields = {};
+
+    switch (type) {
+        case 'inventory':
+            const config = inventoryCategoryConfig[category];
+            title = `Añadir Nuevo ${config.titleSingular}`;
+            collectionName = 'inventory';
+            configFields = config.fields;
+
+            let fieldsHTML = '';
+            for (const [key, field] of Object.entries(configFields)) {
+                let inputHTML = `<input type="text" id="form-${key}" name="${key}" required>`;
+                if (field.type === 'textarea') {
+                    inputHTML = `<textarea id="form-${key}" name="${key}" rows="3"></textarea>`;
+                } else if (field.type === 'select') {
+                    let optionsHTML = '<option value="">Selecciona...</option>';
+                    if (field.optionsSource === 'locations') {
+                        const locSnap = await db.collection('locations').orderBy('name').get();
+                        optionsHTML += locSnap.docs.map(doc => `<option value="${doc.data().name}">${doc.data().name}</option>`).join('');
+                    } else {
+                        optionsHTML += field.options.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+                    }
+                    inputHTML = `<select id="form-${key}" name="${key}">${optionsHTML}</select>`;
+                }
+                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label>${inputHTML}</div>`;
+            }
+            formHTML = `<div class="inventory-form-grid">${fieldsHTML}</div>`;
+            break;
+        case 'maintenance':
+            title = 'Programar Nuevo Mantenimiento';
+            collectionName = 'maintenance';
+            formHTML = `
+                <div class="form-group"><label for="form-task">Tarea</label><input type="text" id="form-task" name="task" required></div>
+                <div class="form-group"><label for="form-nextDate">Próxima Fecha</label><input type="date" id="form-nextDate" name="nextDate" required></div>
+                <div class="form-group"><label for="form-frequency">Frecuencia</label><select id="form-frequency" name="frequency"><option value="unica">Vez Única</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>`;
+            break;
+        case 'credentials':
+            title = 'Añadir Nueva Credencial';
+            collectionName = 'credentials';
+            formHTML = `
+                <div class="form-group"><label for="form-system">Sistema/Servicio</label><input type="text" id="form-system" name="system" required></div>
+                <div class="form-group"><label for="form-user">Usuario</label><input type="text" id="form-user" name="user"></div>
+                <div class="form-group"><label for="form-pass">Contraseña</label><input type="text" id="form-pass" name="pass"></div>
+                <div class="form-group"><label for="form-notes">Notas</label><textarea id="form-notes" name="notes" rows="3"></textarea></div>`;
+            break;
+    }
+
+    modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">Guardar</button></div></form>`;
+    formModal.classList.remove('hidden');
+
+    document.getElementById(formId).addEventListener('submit', e => {
+        e.preventDefault();
+        const form = e.target;
+        const data = {};
+        if (type === 'inventory') data.category = category;
+        
+        new FormData(form).forEach((value, key) => {
+            data[key] = value;
+        });
+
+        db.collection(collectionName).add(data)
+            .then(() => {
+                formModal.classList.add('hidden');
+            })
+            .catch(error => {
+                console.error("Error al guardar: ", error);
+                alert("Hubo un error al guardar los datos.");
+            });
+    });
+}
+
 async function showTicketModal(ticketId) {
     const ticketDoc = await db.collection('tickets').doc(ticketId).get();
     if (!ticketDoc.exists) { alert('Error: No se encontró el ticket.'); return; }
     const ticket = ticketDoc.data();
     const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || 'N/A' : 'N/A';
-    const locationName = ticket.locationId ? (await db.collection('locations').doc(ticket.locationId).get()).data()?.name || 'N/A' : 'N/A';
+    const locationName = ticket.locationId || 'N/A';
     let solutionHTML = `<hr><h3>Añadir Solución</h3><form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`;
     if (ticket.status === 'cerrado') { solutionHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`; }
+    const modalBody = document.getElementById('ticket-modal').querySelector('#modal-body');
     modalBody.innerHTML = `
         <div class="ticket-modal-layout">
             <div class="ticket-modal-main"><h2>${ticket.title}</h2><hr><h3>Descripción</h3><div class="card">${ticket.description}</div>${solutionHTML}</div>
             <div class="ticket-modal-sidebar"><h3>Detalles del Ticket</h3><div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${ticket.status}</span></div><div class="ticket-detail-item"><strong>Prioridad:</strong> ${ticket.priority}</div><div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div><div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div><div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}</div>
         </div>`;
-    modal.classList.remove('hidden');
+    ticketModal.classList.remove('hidden');
     if (ticket.status !== 'cerrado') {
         const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución aplicada...' });
         document.getElementById('solution-form').addEventListener('submit', e => {
             e.preventDefault();
-            db.collection('tickets').doc(ticketId).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => modal.classList.add('hidden'));
+            db.collection('tickets').doc(ticketId).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => ticketModal.classList.add('hidden'));
         });
     }
 }
@@ -388,10 +439,17 @@ appContent.addEventListener('click', e => {
         if (confirm(`¿Seguro que quieres eliminar este elemento de ${collection}?`)) { db.collection(collection).doc(id).delete(); }
     }
     if (target.classList.contains('view-ticket-btn')) { const id = target.dataset.id; showTicketModal(id); }
+    if (target.classList.contains('open-form-modal-btn') || target.id === 'add-inventory-item-btn') {
+        const type = target.dataset.type;
+        const category = target.dataset.category;
+        showFormModal(type, category);
+    }
 });
 
-modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
-modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+document.getElementById('ticket-modal').querySelector('.modal-close-btn').addEventListener('click', () => document.getElementById('ticket-modal').classList.add('hidden'));
+document.getElementById('form-modal').querySelector('.modal-close-btn').addEventListener('click', () => document.getElementById('form-modal').classList.add('hidden'));
+document.getElementById('ticket-modal').addEventListener('click', e => { if (e.target === document.getElementById('ticket-modal')) document.getElementById('ticket-modal').classList.add('hidden'); });
+document.getElementById('form-modal').addEventListener('click', e => { if (e.target === document.getElementById('form-modal')) document.getElementById('form-modal').classList.add('hidden'); });
 
 // --- 6. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -402,7 +460,6 @@ document.addEventListener('DOMContentLoaded', () => {
             submenuToggle.parentElement.classList.toggle('open');
         });
     }
-
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     const logoutBtn = document.getElementById('logout-btn');
@@ -415,9 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
         errorEl.textContent = '';
         auth.signInWithEmailAndPassword(email, password).catch(error => { console.error("Error de inicio de sesión:", error); errorEl.textContent = "Correo o contraseña incorrectos."; });
     });
-
     logoutBtn.addEventListener('click', () => auth.signOut());
-
     auth.onAuthStateChanged(user => {
         if (user) {
             loginContainer.classList.remove('visible'); loginContainer.classList.add('hidden');
