@@ -7,7 +7,6 @@ const firebaseConfig = {
   appId: "1:195664374847:web:88412be75b4ff8600adc8a",
   measurementId: "G-QJD3VS1V5Y"
 };
-
 // --- 2. INICIALIZACIÓN DE FIREBASE ---
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -20,28 +19,17 @@ const ticketListHTML = `<div class="card"><h2 id="tickets-list-title">Tickets</h
 const newTicketFormHTML = `<h1>➕ Crear Nuevo Ticket</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div style="display: flex; gap: 20px; flex-wrap: wrap;"><div class="form-group" style="flex: 1; min-width: 200px;"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group" style="flex: 1; min-width: 200px;"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group" style="flex: 1; min-width: 150px;"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 const statisticsHTML = `<h1>📈 Estadísticas</h1><div class="card"><h2>Reporte de Tickets por Rango de Fechas</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div><canvas id="stats-chart"></canvas></div>`;
 const inventoryPageHTML = `<h1 id="inventory-title"></h1><div class="add-new-button-container"><button id="add-inventory-item-btn" class="primary open-form-modal-btn">Añadir Nuevo</button></div><div class="card"><h2 id="inventory-list-title"></h2><table id="inventory-table"><thead id="inventory-table-head"></thead><tbody id="inventory-table-body"></tbody></table></div>`;
-const maintenancePageHTML = `<h1>⚙️ Plan de Mantenimiento</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="maintenance">Programar Nuevo Mantenimiento</button></div><div class="card"><h2>Próximos Mantenimientos</h2><table id="maintenance-table"><thead><tr><th>Tarea</th><th>Próxima Fecha</th><th>Frecuencia</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
 const credentialsPageHTML = `<h1>🔑 Gestor de Credenciales (No Críticas)</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="credentials">Añadir Nueva Credencial</button></div><div class="card" style="border-left: 5px solid var(--danger-color);"><h2 style="color: var(--danger-color);">⚠️ ADVERTENCIA DE SEGURIDAD ⚠️</h2><p>Nunca guardes aquí contraseñas de administrador o de cuentas importantes.</p></div><div class="card"><h2>Credenciales Guardadas</h2><table id="credentials-table"><thead><tr><th>Sistema</th><th>Usuario</th><th>Contraseña</th><th>Notas</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
 const configHTML = `<h1>⚙️ Configuración</h1><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"><div class="card"><h2>Gestionar Solicitantes</h2><form id="add-requester-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="requester-name" placeholder="Nombre del solicitante" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="requesters-list" class="config-list"></ul></div><div class="card"><h2>Gestionar Ubicaciones</h2><form id="add-location-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="location-name" placeholder="Nombre de la ubicación" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="locations-list" class="config-list"></ul></div></div>`;
+
+// NUEVO TEMPLATE PARA EL CALENDARIO
+const maintenanceCalendarHTML = `<h1>📅 Planificación</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="maintenance">Programar Tarea</button></div><div class="card"><div id="maintenance-calendar"></div></div>`;
 
 
 // --- 4. FUNCIONES PARA RENDERIZAR CADA SECCIÓN ---
 
 const inventoryCategoryConfig = {
-    computers: {
-        title: 'Computadores', titleSingular: 'Computador',
-        fields: {
-            brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' },
-            user: { label: 'Usuario', type: 'text' }, cpu: { label: 'CPU', type: 'text' }, ram: { label: 'RAM (GB)', type: 'text' },
-            storage: { label: 'Almacenamiento (GB)', type: 'text' }, os: { label: 'Sistema Operativo', type: 'text' },
-            licenciaWindows: { label: 'Licencia Windows', type: 'text' },
-            tipoOffice: { label: 'Tipo de Office', type: 'select', options: ['No Aplica', 'Microsoft 365', 'Office 2021', 'Office 2019', 'Otro'] },
-            licenciaOffice: { label: 'Licencia Office', type: 'text' },
-            sede: { label: 'Sede', type: 'select', optionsSource: 'locations' },
-            estado: { label: 'Estado', type: 'select', options: ['En Uso', 'En Bodega', 'De Baja', 'En Reparación'] },
-            observaciones: { label: 'Observaciones', type: 'textarea' }
-        }
-    },
+    computers: { title: 'Computadores', titleSingular: 'Computador', fields: { brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, user: { label: 'Usuario', type: 'text' }, cpu: { label: 'CPU', type: 'text' }, ram: { label: 'RAM (GB)', type: 'text' }, storage: { label: 'Almacenamiento (GB)', type: 'text' }, os: { label: 'Sistema Operativo', type: 'text' }, licenciaWindows: { label: 'Licencia Windows', type: 'text' }, tipoOffice: { label: 'Tipo de Office', type: 'select', options: ['No Aplica', 'Microsoft 365', 'Office 2021', 'Office 2019', 'Otro'] }, licenciaOffice: { label: 'Licencia Office', type: 'text' }, sede: { label: 'Sede', type: 'select', optionsSource: 'locations' }, estado: { label: 'Estado', type: 'select', options: ['En Uso', 'En Bodega', 'De Baja', 'En Reparación'] }, observaciones: { label: 'Observaciones', type: 'textarea' } }},
     phones: { title: 'Teléfonos', titleSingular: 'Teléfono', fields: { brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, imei: { label: 'IMEI', type: 'text' }, phoneNumber: { label: 'N/Teléfono', type: 'text' }, user: { label: 'Usuario', type: 'text' } }},
     cameras: { title: 'Cámaras', titleSingular: 'Cámara', fields: { brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, ipAddress: { label: 'Dirección IP', type: 'text' }, location: { label: 'Ubicación Física', type: 'text' } }},
     modems: { title: 'Módems', titleSingular: 'Módem', fields: { brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, serviceProvider: { label: 'Proveedor de Internet', type: 'text' } }},
@@ -59,23 +47,11 @@ async function renderDashboard(container) {
     const openCount = tickets.filter(t => t.status === 'abierto').length;
     const closedCount = tickets.filter(t => t.status === 'cerrado').length;
     const totalCount = tickets.length;
-    cardsContainer.innerHTML = `
-        <a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a>
-        <a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a>
-        <a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>
-    `;
+    cardsContainer.innerHTML = `<a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a><a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a><a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>`;
     const last7Days = Array(7).fill(0).reduce((acc, _, i) => { const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc; }, {});
-    tickets.forEach(ticket => {
-        if (ticket.createdAt) {
-            const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0];
-            if (last7Days.hasOwnProperty(ticketDate)) { last7Days[ticketDate]++; }
-        }
-    });
+    tickets.forEach(ticket => { if (ticket.createdAt) { const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0]; if (last7Days.hasOwnProperty(ticketDate)) { last7Days[ticketDate]++; } } });
     const ctx = document.getElementById('ticketsChart').getContext('2d');
-    new Chart(ctx, { type: 'bar', data: {
-        labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(),
-        datasets: [{ label: '# de Tickets Creados', data: Object.values(last7Days).reverse(), backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 1 }]
-    }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
+    new Chart(ctx, { type: 'bar', data: { labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(), datasets: [{ label: '# de Tickets Creados', data: Object.values(last7Days).reverse(), backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 1 }] }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
 }
 
 async function renderNewTicketForm(container) {
@@ -117,10 +93,7 @@ async function renderTicketList(container, params = {}) {
     }
     query.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         tableBody.innerHTML = '';
-        if (snapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="5">No hay tickets que coincidan con este filtro.</td></tr>`;
-            return;
-        }
+        if (snapshot.empty) { tableBody.innerHTML = `<tr><td colspan="5">No hay tickets que coincidan con este filtro.</td></tr>`; return; }
         snapshot.forEach(doc => {
             const ticket = { id: doc.id, ...doc.data() };
             const tr = document.createElement('tr');
@@ -145,50 +118,22 @@ function renderEstadisticas(container) {
     startDateInput.value = oneMonthAgo.toISOString().split('T')[0];
     endDateInput.value = today.toISOString().split('T')[0];
     generateBtn.addEventListener('click', async () => {
-        const startDate = new Date(startDateInput.value);
-        startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date(endDateInput.value);
-        endDate.setHours(23, 59, 59, 999);
+        const startDate = new Date(startDateInput.value); startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(endDateInput.value); endDate.setHours(23, 59, 59, 999);
         const dataByDay = {};
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-            const dayKey = d.toISOString().split('T')[0];
-            dataByDay[dayKey] = { created: 0, closed: 0 };
-        }
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { dataByDay[d.toISOString().split('T')[0]] = { created: 0, closed: 0 }; }
         const createdQuery = db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get();
         const closedQuery = db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get();
         try {
             const [createdSnapshot, closedSnapshot] = await Promise.all([createdQuery, closedQuery]);
-            createdSnapshot.forEach(doc => {
-                const ticket = doc.data();
-                const createdDay = ticket.createdAt.toDate().toISOString().split('T')[0];
-                if (dataByDay[createdDay]) dataByDay[createdDay].created++;
-            });
-            closedSnapshot.forEach(doc => {
-                const ticket = doc.data();
-                if (ticket.closedAt) {
-                    const closedDay = ticket.closedAt.toDate().toISOString().split('T')[0];
-                    if (dataByDay[closedDay]) dataByDay[closedDay].closed++;
-                }
-            });
+            createdSnapshot.forEach(doc => { const ticket = doc.data(); const createdDay = ticket.createdAt.toDate().toISOString().split('T')[0]; if (dataByDay[createdDay]) dataByDay[createdDay].created++; });
+            closedSnapshot.forEach(doc => { const ticket = doc.data(); if (ticket.closedAt) { const closedDay = ticket.closedAt.toDate().toISOString().split('T')[0]; if (dataByDay[closedDay]) dataByDay[closedDay].closed++; } });
             const labels = Object.keys(dataByDay);
             const createdData = labels.map(day => dataByDay[day].created);
             const closedData = labels.map(day => dataByDay[day].closed);
             if (chart) chart.destroy();
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels.map(d => new Date(d+'T00:00:00').toLocaleDateString('es-ES', {month:'short', day:'numeric'})),
-                    datasets: [
-                        { label: 'Tickets Creados', data: createdData, borderColor: 'rgba(0, 123, 255, 1)', backgroundColor: 'rgba(0, 123, 255, 0.2)', fill: true, tension: 0.1 },
-                        { label: 'Tickets Cerrados', data: closedData, borderColor: 'rgba(40, 167, 69, 1)', backgroundColor: 'rgba(40, 167, 69, 0.2)', fill: true, tension: 0.1 }
-                    ]
-                },
-                options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-            });
-        } catch (error) {
-            console.error("Error generando el reporte: ", error);
-            alert("Error al generar el reporte. Asegúrate de haber creado los índices necesarios en Firebase (para createdAt y closedAt).");
-        }
+            chart = new Chart(ctx, { type: 'line', data: { labels: labels.map(d => new Date(d+'T00:00:00').toLocaleDateString('es-ES', {month:'short', day:'numeric'})), datasets: [ { label: 'Tickets Creados', data: createdData, borderColor: 'rgba(0, 123, 255, 1)', backgroundColor: 'rgba(0, 123, 255, 0.2)', fill: true, tension: 0.1 }, { label: 'Tickets Cerrados', data: closedData, borderColor: 'rgba(40, 167, 69, 1)', backgroundColor: 'rgba(40, 167, 69, 0.2)', fill: true, tension: 0.1 } ] }, options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
+        } catch (error) { console.error("Error generando el reporte: ", error); alert("Error al generar el reporte. Asegúrate de haber creado los índices necesarios en Firebase (para createdAt y closedAt)."); }
     });
     generateBtn.click();
 }
@@ -220,17 +165,49 @@ function renderInventoryPage(container, params) {
     });
 }
 
-function renderMaintenancePage(container) {
-    container.innerHTML = maintenancePageHTML;
-    const tableBody = document.querySelector('#maintenance-table tbody');
-    db.collection('maintenance').orderBy('nextDate').onSnapshot(snapshot => {
-        tableBody.innerHTML = '';
-        snapshot.forEach(doc => {
-            const maint = { id: doc.id, ...doc.data() };
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${maint.task}</td><td>${new Date(maint.nextDate + 'T00:00:00').toLocaleDateString('es-ES')}</td><td>${maint.frequency}</td><td><button class="danger delete-btn" data-id="${maint.id}" data-collection="maintenance">Completado</button></td>`;
-            tableBody.appendChild(tr);
+function renderMaintenanceCalendar(container) {
+    container.innerHTML = maintenanceCalendarHTML;
+    const calendarEl = document.getElementById('maintenance-calendar');
+
+    db.collection('maintenance').onSnapshot(snapshot => {
+        const eventColors = {
+            'Preventivo': '#dc3545', // Rojo
+            'Correctivo': '#ffc107', // Amarillo
+            'Tarea': '#007bff',      // Azul
+            'Recordatorio': '#17a2b8'  // Cian
+        };
+
+        const events = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                title: data.task,
+                start: data.date,
+                color: eventColors[data.type] || '#6c757d' // Color por defecto gris
+            };
         });
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            initialView: 'dayGridMonth',
+            locale: 'es',
+            events: events,
+            eventClick: function(info) {
+                if (confirm(`¿Marcar la tarea "${info.event.title}" como completada y eliminarla del calendario?`)) {
+                    db.collection('maintenance').doc(info.event.id).delete()
+                        .then(() => {
+                            console.log("Evento eliminado con éxito");
+                            info.event.remove(); // Eliminar visualmente del calendario
+                        })
+                        .catch(error => console.error("Error al eliminar evento: ", error));
+                }
+            }
+        });
+        calendar.render();
     });
 }
 
@@ -255,24 +232,14 @@ function renderConfiguracion(container) {
     reqForm.addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('requester-name').value.trim(); if (name) db.collection('requesters').add({ name: name }).then(() => reqForm.reset()); });
     db.collection('requesters').orderBy('name').onSnapshot(snapshot => {
         reqList.innerHTML = '';
-        snapshot.forEach(doc => {
-            const li = document.createElement('li');
-            li.className = 'config-list-item';
-            li.innerHTML = `<span>${doc.data().name}</span> <button class="danger delete-btn" data-id="${doc.id}" data-collection="requesters" title="Eliminar">×</button>`;
-            reqList.appendChild(li);
-        });
+        snapshot.forEach(doc => { const li = document.createElement('li'); li.className = 'config-list-item'; li.innerHTML = `<span>${doc.data().name}</span> <button class="danger delete-btn" data-id="${doc.id}" data-collection="requesters" title="Eliminar">×</button>`; reqList.appendChild(li); });
     });
     const locForm = document.getElementById('add-location-form');
     const locList = document.getElementById('locations-list');
     locForm.addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('location-name').value.trim(); if (name) db.collection('locations').add({ name: name }).then(() => locForm.reset()); });
     db.collection('locations').orderBy('name').onSnapshot(snapshot => {
         locList.innerHTML = '';
-        snapshot.forEach(doc => {
-            const li = document.createElement('li');
-            li.className = 'config-list-item';
-            li.innerHTML = `<span>${doc.data().name}</span> <button class="danger delete-btn" data-id="${doc.id}" data-collection="locations" title="Eliminar">×</button>`;
-            locList.appendChild(li);
-        });
+        snapshot.forEach(doc => { const li = document.createElement('li'); li.className = 'config-list-item'; li.innerHTML = `<span>${doc.data().name}</span> <button class="danger delete-btn" data-id="${doc.id}" data-collection="locations" title="Eliminar">×</button>`; locList.appendChild(li); });
     });
 }
 
@@ -286,7 +253,7 @@ const routes = {
     '#crear-ticket': renderNewTicketForm,
     '#tickets': renderTicketList,
     '#estadisticas': renderEstadisticas,
-    '#maintenance': renderMaintenancePage,
+    '#maintenance': renderMaintenanceCalendar,
     '#credentials': renderCredentialsPage,
     '#configuracion': renderConfiguracion
 };
@@ -301,11 +268,7 @@ function router() {
         params.set('category', category);
         renderInventoryPage(appContent, Object.fromEntries(params.entries()));
         const inventoryLink = document.querySelector('.nav-item-with-submenu > a');
-        if (inventoryLink) {
-            inventoryLink.parentElement.classList.add('open');
-            navLinks.forEach(link => link.classList.remove('active'));
-            inventoryLink.classList.add('active');
-        }
+        if (inventoryLink) { inventoryLink.parentElement.classList.add('open'); navLinks.forEach(link => link.classList.remove('active')); inventoryLink.classList.add('active'); }
         return;
     }
     const paramsObj = Object.fromEntries(params.entries());
@@ -313,21 +276,14 @@ function router() {
     if (renderFunction) {
         appContent.innerHTML = '<div class="card"><h1>Cargando...</h1></div>';
         renderFunction(appContent, paramsObj); 
-        navLinks.forEach(link => {
-            const linkPath = link.getAttribute('href').split('?')[0];
-            link.classList.toggle('active', linkPath === path);
-        });
+        navLinks.forEach(link => { const linkPath = link.getAttribute('href').split('?')[0]; link.classList.toggle('active', linkPath === path); });
     } else { appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; }
 }
 
 async function showFormModal(type, category = null) {
     const formModal = document.getElementById('form-modal');
     const modalBody = formModal.querySelector('#form-modal-body');
-    let formHTML = '';
-    let title = '';
-    let collectionName = '';
-    let formId = 'modal-form';
-
+    let formHTML = '', title = '', collectionName = '', formId = 'modal-form';
     switch (type) {
         case 'inventory':
             const config = inventoryCategoryConfig[category];
@@ -336,16 +292,13 @@ async function showFormModal(type, category = null) {
             let fieldsHTML = '';
             for (const [key, field] of Object.entries(config.fields)) {
                 let inputHTML = `<input type="${field.type || 'text'}" id="form-${key}" name="${key}" required>`;
-                if (field.type === 'textarea') {
-                    inputHTML = `<textarea id="form-${key}" name="${key}" rows="3"></textarea>`;
-                } else if (field.type === 'select') {
+                if (field.type === 'textarea') inputHTML = `<textarea id="form-${key}" name="${key}" rows="3"></textarea>`;
+                else if (field.type === 'select') {
                     let optionsHTML = '<option value="">Selecciona...</option>';
                     if (field.optionsSource === 'locations') {
                         const locSnap = await db.collection('locations').orderBy('name').get();
                         optionsHTML += locSnap.docs.map(doc => `<option value="${doc.data().name}">${doc.data().name}</option>`).join('');
-                    } else {
-                        optionsHTML += field.options.map(opt => `<option value="${opt}">${opt}</option>`).join('');
-                    }
+                    } else { optionsHTML += field.options.map(opt => `<option value="${opt}">${opt}</option>`).join(''); }
                     inputHTML = `<select id="form-${key}" name="${key}">${optionsHTML}</select>`;
                 }
                 fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label>${inputHTML}</div>`;
@@ -353,9 +306,12 @@ async function showFormModal(type, category = null) {
             formHTML = `<div class="inventory-form-grid">${fieldsHTML}</div>`;
             break;
         case 'maintenance':
-            title = 'Programar Nuevo Mantenimiento';
+            title = 'Programar Tarea en Calendario';
             collectionName = 'maintenance';
-            formHTML = `<div class="form-group"><label for="form-task">Tarea</label><input type="text" id="form-task" name="task" required></div><div class="form-group"><label for="form-nextDate">Próxima Fecha</label><input type="date" id="form-nextDate" name="nextDate" required></div><div class="form-group"><label for="form-frequency">Frecuencia</label><select id="form-frequency" name="frequency"><option value="unica">Vez Única</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>`;
+            formHTML = `
+                <div class="form-group"><label for="form-task">Título de la Tarea</label><input type="text" id="form-task" name="task" required></div>
+                <div class="form-group"><label for="form-date">Fecha</label><input type="date" id="form-date" name="date" required></div>
+                <div class="form-group"><label for="form-type">Tipo de Tarea</label><select id="form-type" name="type"><option value="Preventivo">Mantenimiento Preventivo</option><option value="Correctivo">Mantenimiento Correctivo</option><option value="Tarea">Tarea</option><option value="Recordatorio">Recordatorio</option></select></div>`;
             break;
         case 'credentials':
             title = 'Añadir Nueva Credencial';
@@ -371,9 +327,7 @@ async function showFormModal(type, category = null) {
         const data = {};
         if (type === 'inventory') data.category = category;
         new FormData(form).forEach((value, key) => { data[key] = value; });
-        db.collection(collectionName).add(data)
-            .then(() => { formModal.classList.add('hidden'); })
-            .catch(error => { console.error("Error al guardar: ", error); alert("Hubo un error al guardar los datos."); });
+        db.collection(collectionName).add(data).then(() => { formModal.classList.add('hidden'); }).catch(error => { console.error("Error al guardar: ", error); alert("Hubo un error al guardar los datos."); });
     });
 }
 
@@ -395,10 +349,7 @@ async function showTicketModal(ticketId) {
     ticketModal.classList.remove('hidden');
     if (ticket.status !== 'cerrado') {
         const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución aplicada...' });
-        document.getElementById('solution-form').addEventListener('submit', e => {
-            e.preventDefault();
-            db.collection('tickets').doc(ticketId).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => ticketModal.classList.add('hidden'));
-        });
+        document.getElementById('solution-form').addEventListener('submit', e => { e.preventDefault(); db.collection('tickets').doc(ticketId).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => ticketModal.classList.add('hidden')); });
     }
 }
 
@@ -407,31 +358,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const appContent = document.getElementById('app-content');
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
-
-    // Listener de eventos principal para botones dentro del contenido dinámico
     appContent.addEventListener('click', e => {
         const target = e.target.closest('button');
         if (!target) return;
-        if (target.classList.contains('delete-btn')) {
-            const id = target.dataset.id;
-            const collection = target.dataset.collection;
-            if (confirm(`¿Seguro que quieres eliminar este elemento de ${collection}?`)) { db.collection(collection).doc(id).delete(); }
-        }
+        if (target.classList.contains('delete-btn')) { const id = target.dataset.id; const collection = target.dataset.collection; if (confirm(`¿Seguro que quieres eliminar este elemento de ${collection}?`)) { db.collection(collection).doc(id).delete(); } }
         if (target.classList.contains('view-ticket-btn')) { const id = target.dataset.id; showTicketModal(id); }
-        if (target.classList.contains('open-form-modal-btn') || target.id === 'add-inventory-item-btn') {
-            const type = target.dataset.type;
-            const category = target.dataset.category;
-            showFormModal(type, category);
-        }
+        if (target.classList.contains('open-form-modal-btn') || target.id === 'add-inventory-item-btn') { const type = target.dataset.type; const category = target.dataset.category; showFormModal(type, category); }
     });
-
-    // Listeners para cerrar los modals
     ticketModal.querySelector('.modal-close-btn').addEventListener('click', () => ticketModal.classList.add('hidden'));
     formModal.querySelector('.modal-close-btn').addEventListener('click', () => formModal.classList.add('hidden'));
     ticketModal.addEventListener('click', e => { if (e.target === ticketModal) ticketModal.classList.add('hidden'); });
     formModal.addEventListener('click', e => { if (e.target === formModal) formModal.classList.add('hidden'); });
     
-    // Listener para el menú desplegable
+    // LÓGICA DEL MENÚ CORREGIDA
     const submenuToggle = document.querySelector('.nav-item-with-submenu > a');
     if (submenuToggle) {
         submenuToggle.addEventListener('click', (e) => {
@@ -440,7 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Lógica de autenticación
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     loginContainer.innerHTML = `<div class="login-box"><h2>Iniciar Sesión</h2><input type="email" id="email" placeholder="Correo electrónico"><input type="password" id="password" placeholder="Contraseña"><button id="login-btn">Entrar</button><p id="login-error" class="error-message"></p></div>`;
