@@ -11,6 +11,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+const storage = firebase.storage();
 
 
 // --- 3. TEMPLATES HTML PARA CADA SECCIÓN ---
@@ -19,11 +20,9 @@ const ticketListHTML = `<div class="card"><h2 id="tickets-list-title">Tickets</h
 const newTicketFormHTML = `<h1>➕ Crear Nuevo Ticket</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div style="display: flex; gap: 20px; flex-wrap: wrap;"><div class="form-group" style="flex: 1; min-width: 200px;"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group" style="flex: 1; min-width: 200px;"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group" style="flex: 1; min-width: 150px;"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 const statisticsHTML = `<h1>📈 Estadísticas</h1><div class="card"><h2>Reporte de Tickets por Rango de Fechas</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div><canvas id="stats-chart"></canvas></div>`;
 const inventoryPageHTML = `<h1 id="inventory-title"></h1><div class="add-new-button-container"><button id="add-inventory-item-btn" class="primary open-form-modal-btn">Añadir Nuevo</button></div><div class="card"><h2 id="inventory-list-title"></h2><table id="inventory-table"><thead id="inventory-table-head"></thead><tbody id="inventory-table-body"></tbody></table></div>`;
+const maintenanceCalendarHTML = `<h1>📅 Planificación</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="maintenance">Programar Tarea</button></div><div class="card"><div id="maintenance-calendar"></div></div>`;
 const credentialsPageHTML = `<h1>🔑 Gestor de Credenciales (No Críticas)</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="credentials">Añadir Nueva Credencial</button></div><div class="card" style="border-left: 5px solid var(--danger-color);"><h2 style="color: var(--danger-color);">⚠️ ADVERTENCIA DE SEGURIDAD ⚠️</h2><p>Nunca guardes aquí contraseñas de administrador o de cuentas importantes.</p></div><div class="card"><h2>Credenciales Guardadas</h2><table id="credentials-table"><thead><tr><th>Sistema</th><th>Usuario</th><th>Contraseña</th><th>Notas</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
 const configHTML = `<h1>⚙️ Configuración</h1><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"><div class="card"><h2>Gestionar Solicitantes</h2><form id="add-requester-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="requester-name" placeholder="Nombre del solicitante" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="requesters-list" class="config-list"></ul></div><div class="card"><h2>Gestionar Ubicaciones</h2><form id="add-location-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="location-name" placeholder="Nombre de la ubicación" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="locations-list" class="config-list"></ul></div></div>`;
-
-// NUEVO TEMPLATE PARA EL CALENDARIO
-const maintenanceCalendarHTML = `<h1>📅 Planificación</h1><div class="add-new-button-container"><button class="primary open-form-modal-btn" data-type="maintenance">Programar Tarea</button></div><div class="card"><div id="maintenance-calendar"></div></div>`;
 
 
 // --- 4. FUNCIONES PARA RENDERIZAR CADA SECCIÓN ---
@@ -79,7 +78,7 @@ async function renderNewTicketForm(container) {
 
 async function renderTicketList(container, params = {}) {
     container.innerHTML = ticketListHTML;
-    const [reqSnap, locSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get() ]);
+    const [reqSnap] = await Promise.all([ db.collection('requesters').get() ]);
     const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name);
     const tableBody = document.querySelector('#tickets-table tbody');
     const tableTitle = document.getElementById('tickets-list-title');
@@ -169,7 +168,7 @@ function renderMaintenanceCalendar(container) {
     container.innerHTML = maintenanceCalendarHTML;
     const calendarEl = document.getElementById('maintenance-calendar');
 
-    db.collection('maintenance').onSnapshot(snapshot => {
+    db.collection('maintenance').where('status', 'in', ['planificada', 'completada']).onSnapshot(snapshot => {
         const eventColors = {
             'Preventivo': '#dc3545', // Rojo
             'Correctivo': '#ffc107', // Amarillo
@@ -179,32 +178,30 @@ function renderMaintenanceCalendar(container) {
 
         const events = snapshot.docs.map(doc => {
             const data = doc.data();
+            let color = eventColors[data.type] || '#6c757d';
+            if (data.status === 'completada') {
+                color = '#28a745';
+            }
             return {
                 id: doc.id,
                 title: data.task,
                 start: data.date,
-                color: eventColors[data.type] || '#6c757d' // Color por defecto gris
+                color: color,
+                extendedProps: {
+                    status: data.status,
+                    ...data // Pasar todos los datos para el modal
+                }
             };
         });
 
         const calendar = new FullCalendar.Calendar(calendarEl, {
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' },
             initialView: 'dayGridMonth',
             locale: 'es',
+            buttonText: { today: 'hoy', month: 'mes', week: 'semana', day: 'día', list: 'agenda' },
             events: events,
             eventClick: function(info) {
-                if (confirm(`¿Marcar la tarea "${info.event.title}" como completada y eliminarla del calendario?`)) {
-                    db.collection('maintenance').doc(info.event.id).delete()
-                        .then(() => {
-                            console.log("Evento eliminado con éxito");
-                            info.event.remove(); // Eliminar visualmente del calendario
-                        })
-                        .catch(error => console.error("Error al eliminar evento: ", error));
-                }
+                showEventActionChoiceModal(info.event.id, info.event.title, info.event.extendedProps);
             }
         });
         calendar.render();
@@ -280,6 +277,101 @@ function router() {
     } else { appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; }
 }
 
+function showEventActionChoiceModal(eventId, eventTitle, eventProps) {
+    const actionModal = document.getElementById('action-modal');
+    const modalBody = actionModal.querySelector('#action-modal-body');
+
+    let completedInfo = '';
+    if (eventProps.status === 'completada') {
+        completedInfo = `
+            <hr>
+            <h4>Información de Finalización</h4>
+            <p><strong>Fecha:</strong> ${new Date(eventProps.completedDate + 'T00:00:00').toLocaleDateString('es-ES')}</p>
+            <p><strong>A tiempo:</strong> ${eventProps.onTimeStatus}</p>
+            <p><strong>Evidencias:</strong></p>
+            ${eventProps.evidenceFiles && eventProps.evidenceFiles.length > 0
+                ? `<ul>${eventProps.evidenceFiles.map(url => `<li><a href="${url}" target="_blank">Ver archivo</a></li>`).join('')}</ul>`
+                : '<p>No se subieron archivos.</p>'
+            }`;
+    }
+
+    const actionButtons = eventProps.status === 'planificada' ? `
+        <div style="display: flex; justify-content: space-around; margin-top: 20px;">
+            <button class="primary" id="finalize-task-btn">✅ Finalizar Tarea</button>
+            <button class="danger" id="cancel-task-btn">❌ Cancelar Tarea</button>
+        </div>
+    ` : '';
+    
+    modalBody.innerHTML = `
+        <h2>${eventTitle}</h2>
+        <p><strong>Estado:</strong> ${eventProps.status}</p>
+        ${completedInfo}
+        ${actionButtons}
+    `;
+    actionModal.classList.remove('hidden');
+
+    if (eventProps.status === 'planificada') {
+        document.getElementById('finalize-task-btn').onclick = () => { actionModal.classList.add('hidden'); showFinalizeTaskModal(eventId, eventTitle); };
+        document.getElementById('cancel-task-btn').onclick = () => { actionModal.classList.add('hidden'); showCancelTaskModal(eventId, eventTitle); };
+    }
+}
+
+function showFinalizeTaskModal(eventId, eventTitle) {
+    const actionModal = document.getElementById('action-modal');
+    const modalBody = actionModal.querySelector('#action-modal-body');
+    const today = new Date().toISOString().split('T')[0];
+    modalBody.innerHTML = `
+        <h2>Finalizar Tarea: "${eventTitle}"</h2>
+        <form id="finalize-form">
+            <div class="form-group"><label for="completedDate">Fecha de Realización</label><input type="date" id="completedDate" name="completedDate" value="${today}" required></div>
+            <div class="form-group"><label for="onTimeStatus">¿Se realizó a tiempo?</label><select id="onTimeStatus" name="onTimeStatus"><option value="Sí">Sí</option><option value="No">No</option></select></div>
+            <div class="form-group"><label for="evidenceFiles">Documentos de Evidencia (opcional)</label><input type="file" id="evidenceFiles" name="evidenceFiles" multiple><progress id="uploadProgress" value="0" max="100" style="width: 100%; display: none;"></progress></div>
+            <div style="text-align: right; margin-top: 20px;"><button type="submit" class="primary">Guardar Finalización</button></div>
+        </form>`;
+    actionModal.classList.remove('hidden');
+    document.getElementById('finalize-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const files = form.evidenceFiles.files;
+        const progressEl = document.getElementById('uploadProgress');
+        let fileURLs = [];
+        if (files.length > 0) {
+            progressEl.style.display = 'block';
+            const uploadPromises = Array.from(files).map(file => {
+                const storageRef = storage.ref(`maintenance-evidence/${eventId}/${Date.now()}-${file.name}`);
+                const task = storageRef.put(file);
+                return new Promise((resolve, reject) => {
+                    task.on('state_changed', 
+                        snapshot => { progressEl.value = (snapshot.bytesTransferred / snapshot.totalBytes) * 100; }, 
+                        error => reject(error), 
+                        async () => { const downloadURL = await task.snapshot.ref.getDownloadURL(); resolve(downloadURL); }
+                    );
+                });
+            });
+            fileURLs = await Promise.all(uploadPromises);
+        }
+        const updateData = { status: 'completada', completedDate: form.completedDate.value, onTimeStatus: form.onTimeStatus.value, evidenceFiles: fileURLs };
+        db.collection('maintenance').doc(eventId).update(updateData).then(() => actionModal.classList.add('hidden')).catch(error => console.error("Error al finalizar la tarea: ", error));
+    });
+}
+
+function showCancelTaskModal(eventId, eventTitle) {
+    const actionModal = document.getElementById('action-modal');
+    const modalBody = actionModal.querySelector('#action-modal-body');
+    modalBody.innerHTML = `
+        <h2>Cancelar Tarea: "${eventTitle}"</h2>
+        <form id="cancel-form">
+            <div class="form-group"><label for="cancellationReason">Razón de la Cancelación</label><textarea id="cancellationReason" name="cancellationReason" rows="4" required></textarea></div>
+            <div style="text-align: right; margin-top: 20px;"><button type="submit" class="danger">Confirmar Cancelación</button></div>
+        </form>`;
+    actionModal.classList.remove('hidden');
+    document.getElementById('cancel-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const reason = e.target.cancellationReason.value;
+        db.collection('maintenance').doc(eventId).update({ status: 'cancelada', cancellationReason: reason }).then(() => actionModal.classList.add('hidden'));
+    });
+}
+
 async function showFormModal(type, category = null) {
     const formModal = document.getElementById('form-modal');
     const modalBody = formModal.querySelector('#form-modal-body');
@@ -325,6 +417,7 @@ async function showFormModal(type, category = null) {
         e.preventDefault();
         const form = e.target;
         const data = {};
+        if (type === 'maintenance') data.status = 'planificada';
         if (type === 'inventory') data.category = category;
         new FormData(form).forEach((value, key) => { data[key] = value; });
         db.collection(collectionName).add(data).then(() => { formModal.classList.add('hidden'); }).catch(error => { console.error("Error al guardar: ", error); alert("Hubo un error al guardar los datos."); });
@@ -341,11 +434,7 @@ async function showTicketModal(ticketId) {
     const locationName = ticket.locationId || 'N/A';
     let solutionHTML = `<hr><h3>Añadir Solución</h3><form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`;
     if (ticket.status === 'cerrado') { solutionHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`; }
-    modalBody.innerHTML = `
-        <div class="ticket-modal-layout">
-            <div class="ticket-modal-main"><h2>${ticket.title}</h2><hr><h3>Descripción</h3><div class="card">${ticket.description}</div>${solutionHTML}</div>
-            <div class="ticket-modal-sidebar"><h3>Detalles del Ticket</h3><div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${ticket.status}</span></div><div class="ticket-detail-item"><strong>Prioridad:</strong> ${ticket.priority}</div><div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div><div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div><div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}</div>
-        </div>`;
+    modalBody.innerHTML = `<div class="ticket-modal-layout"><div class="ticket-modal-main"><h2>${ticket.title}</h2><hr><h3>Descripción</h3><div class="card">${ticket.description}</div>${solutionHTML}</div><div class="ticket-modal-sidebar"><h3>Detalles del Ticket</h3><div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${ticket.status}</span></div><div class="ticket-detail-item"><strong>Prioridad:</strong> ${ticket.priority}</div><div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div><div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div><div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}</div></div>`;
     ticketModal.classList.remove('hidden');
     if (ticket.status !== 'cerrado') {
         const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución aplicada...' });
@@ -358,6 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const appContent = document.getElementById('app-content');
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
+    const actionModal = document.getElementById('action-modal');
     appContent.addEventListener('click', e => {
         const target = e.target.closest('button');
         if (!target) return;
@@ -367,17 +457,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     ticketModal.querySelector('.modal-close-btn').addEventListener('click', () => ticketModal.classList.add('hidden'));
     formModal.querySelector('.modal-close-btn').addEventListener('click', () => formModal.classList.add('hidden'));
+    actionModal.querySelector('.modal-close-btn').addEventListener('click', () => actionModal.classList.add('hidden'));
     ticketModal.addEventListener('click', e => { if (e.target === ticketModal) ticketModal.classList.add('hidden'); });
     formModal.addEventListener('click', e => { if (e.target === formModal) formModal.classList.add('hidden'); });
+    actionModal.addEventListener('click', e => { if (e.target === actionModal) actionModal.classList.add('hidden'); });
     
-    // LÓGICA DEL MENÚ CORREGIDA
     const submenuToggle = document.querySelector('.nav-item-with-submenu > a');
-    if (submenuToggle) {
-        submenuToggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            submenuToggle.parentElement.classList.toggle('open');
-        });
-    }
+    if (submenuToggle) { submenuToggle.addEventListener('click', (e) => { e.preventDefault(); submenuToggle.parentElement.classList.toggle('open'); }); }
 
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
