@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Gestor de TI</title>
     
-    <!-- NUEVA TIPOGRAFÍA PROFESIONAL (INTER) -->
+    <!-- Tipografía Profesional (Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,64 +24,67 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <!-- ELIMINADO: Ya no necesitamos el SDK de Storage -->
     
     <!-- Gráficos (Chart.js) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- El resto del body no cambia... -->
+    
     <div id="login-container" class="visible"></div>
+
     <div id="app-container" class="hidden">
         <nav class="sidebar">
-            <div class="sidebar-header"><h3>Mi Gestor TI</h3></div>
-            <!-- Reemplaza esta sección en tu index.html -->
-<ul class="nav-list">
-    <li><a href="#dashboard" class="nav-link active">📊 Dashboard</a></li>
-    <li><a href="#crear-ticket" class="nav-link">➕ Crear Ticket</a></li>
-    <li><a href="#tickets" class="nav-link">🎟️ Tickets (Ver todos)</a></li>
-    <li><a href="#estadisticas" class="nav-link">📈 Estadísticas</a></li>
+            <div class="sidebar-header">
+                <h3>Mi Gestor TI</h3>
+            </div>
+            <ul class="nav-list">
+                <li><a href="#dashboard" class="nav-link active">📊 Dashboard</a></li>
+                <li><a href="#crear-ticket" class="nav-link">➕ Crear Ticket</a></li>
+                <li><a href="#tickets" class="nav-link">🎟️ Tickets (Ver todos)</a></li>
+                <li><a href="#estadisticas" class="nav-link">📈 Estadísticas</a></li>
 
-    <li class="nav-item-with-submenu">
-        <a href="#" class="nav-link">💻 Inventario</a>
-        <ul class="submenu">
-            <li><a href="#inventory-computers">Computadores</a></li>
-            <li><a href="#inventory-phones">Teléfonos</a></li>
-            <li><a href="#inventory-cameras">Cámaras</a></li>
-            <li><a href="#inventory-modems">Módems</a></li>
-            <li><a href="#inventory-communicators">Comunicadores</a></li>
-            <li><a href="#inventory-network">Dispositivos de Red</a></li>
-            <li><a href="#inventory-printers">Impresoras</a></li>
-        </ul>
-    </li>
-    
-    <li><a href="#maintenance" class="nav-link">📅 Planificación</a></li>
-
-    <!-- NUEVO MENÚ DESPLEGABLE DE CREDENCIALES -->
-    <li class="nav-item-with-submenu">
-        <a href="#" class="nav-link">🔑 Credenciales</a>
-        <ul class="submenu">
-            <li><a href="#credentials-emails">Correos Electrónicos</a></li>
-            <li><a href="#credentials-computers">Usuarios de Equipos</a></li>
-            <li><a href="#credentials-phones">Usuarios de Teléfonos</a></li>
-            <li><a href="#credentials-internet">Usuarios de Internet</a></li>
-            <li><a href="#credentials-servers">Servidores y BD</a></li>
-            <li><a href="#credentials-software">Licencias de Software</a></li>
-            <li><a href="#credentials-others">Otras Credenciales</a></li>
-        </ul>
-    </li>
-
-    <li><a href="#configuracion" class="nav-link">⚙️ Configuración</a></li>
-</ul>
+                <!-- Menú de Inventario -->
+                <li class="nav-item-with-submenu">
+                    <a href="#" class="nav-link">💻 Inventario</a>
+                    <ul class="submenu">
+                        <li><a href="#inventory-computers">Computadores</a></li>
+                        <li><a href="#inventory-phones">Teléfonos</a></li>
+                        <li><a href="#inventory-cameras">Cámaras</a></li>
+                        <li><a href="#inventory-modems">Módems</a></li>
+                        <li><a href="#inventory-communicators">Comunicadores</a></li>
+                        <li><a href="#inventory-network">Dispositivos de Red</a></li>
+                        <li><a href="#inventory-printers">Impresoras</a></li>
+                    </ul>
                 </li>
+                
+                <!-- Enlaces normales (corregidos) -->
                 <li><a href="#maintenance" class="nav-link">📅 Planificación</a></li>
-                <li><a href="#credentials" class="nav-link">🔑 Credenciales</a></li>
+
+                <!-- Menú de Credenciales -->
+                <li class="nav-item-with-submenu">
+                    <a href="#" class="nav-link">🔑 Credenciales</a>
+                    <ul class="submenu">
+                        <li><a href="#credentials-emails">Correos Electrónicos</a></li>
+                        <li><a href="#credentials-computers">Usuarios de Equipos</a></li>
+                        <li><a href="#credentials-phones">Usuarios de Teléfonos</a></li>
+                        <li><a href="#credentials-internet">Usuarios de Internet</a></li>
+                        <li><a href="#credentials-servers">Servidores y BD</a></li>
+                        <li><a href="#credentials-software">Licencias de Software</a></li>
+                        <li><a href="#credentials-others">Otras Credenciales</a></li>
+                    </ul>
+                </li>
+
+                <!-- Enlaces normales (corregidos) -->
                 <li><a href="#configuracion" class="nav-link">⚙️ Configuración</a></li>
             </ul>
-            <div class="sidebar-footer"><a href="#" id="logout-btn">Cerrar Sesión</a></div>
+            <div class="sidebar-footer">
+                <a href="#" id="logout-btn">Cerrar Sesión</a>
+            </div>
         </nav>
         <main id="app-content"></main>
     </div>
+    
+    <!-- Ventanas Emergentes (Modals) -->
     <div id="ticket-modal" class="modal-overlay hidden"><div class="modal-content large"><span class="modal-close-btn">×</span><div id="modal-body"></div></div></div>
     <div id="form-modal" class="modal-overlay hidden"><div class="modal-content"><span class="modal-close-btn">×</span><div id="form-modal-body"></div></div></div>
     <div id="action-modal" class="modal-overlay hidden"><div class="modal-content"><span class="modal-close-btn">×</span><div id="action-modal-body"></div></div></div>
