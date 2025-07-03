@@ -15,142 +15,41 @@ const auth = firebase.auth();
 
 // --- 3. TEMPLATES HTML PARA CADA SECCIÓN ---
 
-const dashboardHTML = `
-    <h1>📊 Dashboard</h1>
-    <div class="dashboard-stats" id="dashboard-cards"></div>
-    <div class="card" style="margin-top: 30px;">
-        <h2>Tickets por Día (Últimos 7 días)</h2>
-        <canvas id="ticketsChart"></canvas>
-    </div>
-`;
+const dashboardHTML = `<h1>📊 Dashboard</h1><div class="dashboard-stats" id="dashboard-cards"></div><div class="card" style="margin-top: 30px;"><h2>Tickets por Día (Últimos 7 días)</h2><canvas id="ticketsChart"></canvas></div>`;
 
-const ticketListHTML = `
-    <div class="card">
-        <h2 id="tickets-list-title">Tickets</h2>
-        <table id="tickets-table">
-            <thead><tr><th>Título</th><th>Solicitante</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody></tbody>
-        </table>
-    </div>
-`;
+const ticketListHTML = `<div class="card"><h2 id="tickets-list-title">Tickets</h2><table id="tickets-table"><thead><tr><th>Título</th><th>Solicitante</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
 
-const newTicketFormHTML = `
-    <h1>➕ Crear Nuevo Ticket</h1>
+const newTicketFormHTML = `<h1>➕ Crear Nuevo Ticket</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div style="display: flex; gap: 20px; flex-wrap: wrap;"><div class="form-group" style="flex: 1; min-width: 200px;"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group" style="flex: 1; min-width: 200px;"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group" style="flex: 1; min-width: 150px;"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
+
+const statisticsHTML = `<h1>📈 Estadísticas</h1><div class="card"><h2>Reporte de Tickets por Rango de Fechas</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div><canvas id="stats-chart"></canvas></div>`;
+
+const inventoryPageHTML = `
+    <h1 id="inventory-title"></h1>
     <div class="card">
-        <form id="new-ticket-form">
-            <div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div>
-            <div class="form-group"><label>Descripción</label><div id="description-editor"></div></div>
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <div class="form-group" style="flex: 1; min-width: 200px;"><label for="requester">Solicitante</label><select id="requester" required></select></div>
-                <div class="form-group" style="flex: 1; min-width: 200px;"><label for="location">Ubicación</label><select id="location" required></select></div>
-                <div class="form-group" style="flex: 1; min-width: 150px;"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div>
+        <h2>Añadir Nuevo Dispositivo</h2>
+        <form id="new-device-form">
+            <div id="inventory-form-fields" class="inventory-form-grid">
+                <!-- Los campos se generarán aquí -->
             </div>
-            <button type="submit" class="primary">Crear Ticket</button>
-        </form>
-    </div>
-`;
-
-const statisticsHTML = `
-    <h1>📈 Estadísticas</h1>
-    <div class="card">
-        <h2>Reporte de Tickets por Rango de Fechas</h2>
-        <div class="stats-filters">
-            <div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div>
-            <div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div>
-            <button id="generate-report-btn" class="primary">Generar Reporte</button>
-        </div>
-        <canvas id="stats-chart"></canvas>
-    </div>
-`;
-
-const inventoryHTML = `
-    <h1>💻 Inventario de Dispositivos</h1>
-    <div class="card">
-        <h2>Añadir Dispositivo</h2>
-        <form id="new-device-form" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="device-type" placeholder="Tipo (ej. Laptop)" required style="flex: 1;">
-            <input type="text" id="device-brand" placeholder="Marca" required style="flex: 1;">
-            <input type="text" id="device-model" placeholder="Modelo" required style="flex: 1;">
-            <input type="text" id="device-serial" placeholder="N/Serie" required style="flex: 1;">
-            <input type="text" id="device-user" placeholder="Usuario Asignado" style="flex: 1;">
-            <button type="submit" class="primary">Añadir</button>
+            <div style="margin-top: 20px;">
+                <button type="submit" class="primary">Añadir al Inventario</button>
+            </div>
         </form>
     </div>
     <div class="card">
-        <h2>Dispositivos</h2>
+        <h2 id="inventory-list-title">Dispositivos</h2>
         <table id="inventory-table">
-            <thead><tr><th>Tipo</th><th>Marca</th><th>Modelo</th><th>Serie</th><th>Usuario</th><th>Acciones</th></tr></thead>
-            <tbody></tbody>
+            <thead id="inventory-table-head"></thead>
+            <tbody id="inventory-table-body"></tbody>
         </table>
     </div>
 `;
 
-const maintenanceHTML = `
-    <h1>⚙️ Plan de Mantenimiento</h1>
-    <div class="card">
-        <h2>Programar Mantenimiento</h2>
-        <form id="new-maintenance-form" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="maint-task" placeholder="Tarea" required style="flex: 2;">
-            <input type="date" id="maint-date" required style="flex: 1;">
-            <select id="maint-freq" style="flex: 1;"><option value="unica">Vez Única</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select>
-            <button type="submit" class="primary">Programar</button>
-        </form>
-    </div>
-    <div class="card">
-        <h2>Próximos Mantenimientos</h2>
-        <table id="maintenance-table">
-            <thead><tr><th>Tarea</th><th>Próxima Fecha</th><th>Frecuencia</th><th>Acciones</th></tr></thead>
-            <tbody></tbody>
-        </table>
-    </div>
-`;
+const maintenanceHTML = `<h1>⚙️ Plan de Mantenimiento</h1><div class="card"><h2>Programar Mantenimiento</h2><form id="new-maintenance-form" style="display: flex; gap: 10px; flex-wrap: wrap;"><input type="text" id="maint-task" placeholder="Tarea" required style="flex: 2;"><input type="date" id="maint-date" required style="flex: 1;"><select id="maint-freq" style="flex: 1;"><option value="unica">Vez Única</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select><button type="submit" class="primary">Programar</button></form></div><div class="card"><h2>Próximos Mantenimientos</h2><table id="maintenance-table"><thead><tr><th>Tarea</th><th>Próxima Fecha</th><th>Frecuencia</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
 
-const credentialsHTML = `
-    <h1>🔑 Gestor de Credenciales (No Críticas)</h1>
-    <div class="card" style="border-left: 5px solid var(--danger-color);">
-        <h2 style="color: var(--danger-color);">⚠️ ADVERTENCIA DE SEGURIDAD ⚠️</h2>
-        <p>Almacenar credenciales aquí no es seguro. Úsalo <strong>SOLAMENTE</strong> para información no sensible (contraseñas de impresoras, usuarios de prueba, etc.). <strong>NUNCA guardes aquí contraseñas de administrador o de cuentas importantes.</strong></p>
-    </div>
-    <div class="card">
-        <h2>Añadir Credencial</h2>
-        <form id="new-credential-form">
-            <div class="form-group"><input type="text" id="cred-system" placeholder="Sistema/Servicio" required></div>
-            <div class="form-group"><input type="text" id="cred-user" placeholder="Usuario"></div>
-            <div class="form-group"><input type="text" id="cred-pass" placeholder="Contraseña/Clave"></div>
-            <div class="form-group"><textarea id="cred-notes" placeholder="Notas adicionales"></textarea></div>
-            <button type="submit" class="primary">Guardar</button>
-        </form>
-    </div>
-    <div class="card">
-        <h2>Credenciales Guardadas</h2>
-        <table id="credentials-table">
-            <thead><tr><th>Sistema</th><th>Usuario</th><th>Contraseña</th><th>Notas</th><th>Acciones</th></tr></thead>
-            <tbody></tbody>
-        </table>
-    </div>
-`;
+const credentialsHTML = `<h1>🔑 Gestor de Credenciales (No Críticas)</h1><div class="card" style="border-left: 5px solid var(--danger-color);"><h2 style="color: var(--danger-color);">⚠️ ADVERTENCIA DE SEGURIDAD ⚠️</h2><p>Almacenar credenciales aquí no es seguro. Úsalo <strong>SOLAMENTE</strong> para información no sensible (contraseñas de impresoras, usuarios de prueba, etc.). <strong>NUNCA guardes aquí contraseñas de administrador o de cuentas importantes.</strong></p></div><div class="card"><h2>Añadir Credencial</h2><form id="new-credential-form"><div class="form-group"><input type="text" id="cred-system" placeholder="Sistema/Servicio" required></div><div class="form-group"><input type="text" id="cred-user" placeholder="Usuario"></div><div class="form-group"><input type="text" id="cred-pass" placeholder="Contraseña/Clave"></div><div class="form-group"><textarea id="cred-notes" placeholder="Notas adicionales"></textarea></div><button type="submit" class="primary">Guardar</button></form></div><div class="card"><h2>Credenciales Guardadas</h2><table id="credentials-table"><thead><tr><th>Sistema</th><th>Usuario</th><th>Contraseña</th><th>Notas</th><th>Acciones</th></tr></thead><tbody></tbody></table></div>`;
 
-const configHTML = `
-    <h1>⚙️ Configuración</h1>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-        <div class="card">
-            <h2>Gestionar Solicitantes</h2>
-            <form id="add-requester-form" style="display:flex; gap:10px; margin-bottom: 20px;">
-                <input type="text" id="requester-name" placeholder="Nombre del solicitante" required style="flex-grow:1;">
-                <button type="submit" class="primary">Añadir</button>
-            </form>
-            <ul id="requesters-list" class="config-list"></ul>
-        </div>
-        <div class="card">
-            <h2>Gestionar Ubicaciones</h2>
-            <form id="add-location-form" style="display:flex; gap:10px; margin-bottom: 20px;">
-                <input type="text" id="location-name" placeholder="Nombre de la ubicación" required style="flex-grow:1;">
-                <button type="submit" class="primary">Añadir</button>
-            </form>
-            <ul id="locations-list" class="config-list"></ul>
-        </div>
-    </div>
-`;
+const configHTML = `<h1>⚙️ Configuración</h1><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"><div class="card"><h2>Gestionar Solicitantes</h2><form id="add-requester-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="requester-name" placeholder="Nombre del solicitante" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="requesters-list" class="config-list"></ul></div><div class="card"><h2>Gestionar Ubicaciones</h2><form id="add-location-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="location-name" placeholder="Nombre de la ubicación" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="locations-list" class="config-list"></ul></div></div>`;
 
 
 // --- 4. FUNCIONES PARA RENDERIZAR CADA SECCIÓN ---
@@ -253,48 +152,33 @@ function renderEstadisticas(container) {
     
     generateBtn.addEventListener('click', async () => {
         const startDate = new Date(startDateInput.value);
-        startDate.setHours(0, 0, 0, 0); // Asegurar que empieza al inicio del día
+        startDate.setHours(0, 0, 0, 0);
         const endDate = new Date(endDateInput.value);
-        endDate.setHours(23, 59, 59, 999); // Asegurar que termina al final del día
-
-        // **INICIO DE LA LÓGICA CORREGIDA**
+        endDate.setHours(23, 59, 59, 999);
         const dataByDay = {};
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             const dayKey = d.toISOString().split('T')[0];
             dataByDay[dayKey] = { created: 0, closed: 0 };
         }
-
-        // Query 1: Tickets CREADOS en el rango
         const createdQuery = db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get();
-        // Query 2: Tickets CERRADOS en el rango
         const closedQuery = db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get();
-        
         try {
             const [createdSnapshot, closedSnapshot] = await Promise.all([createdQuery, closedQuery]);
-    
             createdSnapshot.forEach(doc => {
                 const ticket = doc.data();
                 const createdDay = ticket.createdAt.toDate().toISOString().split('T')[0];
-                if (dataByDay[createdDay]) {
-                    dataByDay[createdDay].created++;
-                }
+                if (dataByDay[createdDay]) dataByDay[createdDay].created++;
             });
-    
             closedSnapshot.forEach(doc => {
                 const ticket = doc.data();
                 if (ticket.closedAt) {
                     const closedDay = ticket.closedAt.toDate().toISOString().split('T')[0];
-                    if (dataByDay[closedDay]) {
-                        dataByDay[closedDay].closed++;
-                    }
+                    if (dataByDay[closedDay]) dataByDay[closedDay].closed++;
                 }
             });
-            // **FIN DE LA LÓGICA CORREGIDA**
-    
             const labels = Object.keys(dataByDay);
             const createdData = labels.map(day => dataByDay[day].created);
             const closedData = labels.map(day => dataByDay[day].closed);
-    
             if (chart) chart.destroy();
             chart = new Chart(ctx, {
                 type: 'line',
@@ -315,17 +199,48 @@ function renderEstadisticas(container) {
     generateBtn.click();
 }
 
-function renderInventory(container) {
-    container.innerHTML = inventoryHTML;
+function renderInventoryPage(container, params) {
+    const category = params.category;
+    container.innerHTML = inventoryPageHTML;
+
+    const categoryConfig = {
+        computers: { title: 'Computadores', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', user: 'Usuario', cpu: 'CPU', ram: 'RAM (GB)', storage: 'Almacenamiento (GB)', os: 'Sistema Operativo' }},
+        phones: { title: 'Teléfonos', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', imei: 'IMEI', phoneNumber: 'N/Teléfono', user: 'Usuario' }},
+        cameras: { title: 'Cámaras', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', ipAddress: 'Dirección IP', location: 'Ubicación Física' }},
+        modems: { title: 'Módems', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', serviceProvider: 'Proveedor de Internet' }},
+        communicators: { title: 'Comunicadores', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', type: 'Tipo (Satelital, Radio)' }},
+        network: { title: 'Dispositivos de Red', fields: { type: 'Tipo (Switch, Router, AP)', brand: 'Marca', model: 'Modelo', ipAddress: 'Dirección IP', location: 'Ubicación Física' }},
+        printers: { title: 'Impresoras', fields: { brand: 'Marca', model: 'Modelo', serial: 'N/Serie', ipAddress: 'Dirección IP', type: 'Tipo (Láser, Tinta)' }}
+    };
+
+    const config = categoryConfig[category];
+    if (!config) { container.innerHTML = `<h1>Error: Categoría de inventario no encontrada.</h1>`; return; }
+
+    document.getElementById('inventory-title').innerText = `💻 Inventario de ${config.title}`;
+    document.getElementById('inventory-list-title').innerText = `Lista de ${config.title}`;
+    const formFieldsContainer = document.getElementById('inventory-form-fields');
+    const tableHeadContainer = document.getElementById('inventory-table-head');
+    
+    formFieldsContainer.innerHTML = Object.entries(config.fields).map(([key, label]) => `<div class="form-group"><label for="device-${key}">${label}</label><input type="text" id="device-${key}" name="${key}" required></div>`).join('');
+    const tableHeaders = Object.values(config.fields);
+    tableHeadContainer.innerHTML = `<tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`;
+
     const form = document.getElementById('new-device-form');
-    form.addEventListener('submit', e => { e.preventDefault(); db.collection('inventory').add({ type: form['device-type'].value, brand: form['device-brand'].value, model: form['device-model'].value, serial: form['device-serial'].value, user: form['device-user'].value, }).then(() => form.reset()); });
-    const tableBody = document.querySelector('#inventory-table tbody');
-    db.collection('inventory').orderBy('type').onSnapshot(snapshot => {
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+        const deviceData = { category: category };
+        Object.keys(config.fields).forEach(key => { deviceData[key] = form[key].value; });
+        db.collection('inventory').add(deviceData).then(() => form.reset());
+    });
+
+    const tableBody = document.getElementById('inventory-table-body');
+    db.collection('inventory').where('category', '==', category).onSnapshot(snapshot => {
         tableBody.innerHTML = '';
         snapshot.forEach(doc => {
             const device = { id: doc.id, ...doc.data() };
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${device.type}</td><td>${device.brand}</td><td>${device.model}</td><td>${device.serial}</td><td>${device.user}</td><td><button class="danger delete-btn" data-id="${device.id}" data-collection="inventory">Eliminar</button></td>`;
+            const cells = Object.keys(config.fields).map(key => `<td>${device[key] || 'N/A'}</td>`).join('');
+            tr.innerHTML = `${cells}<td><button class="danger delete-btn" data-id="${device.id}" data-collection="inventory">Eliminar</button></td>`;
             tableBody.appendChild(tr);
         });
     });
@@ -398,14 +313,37 @@ const navLinks = document.querySelectorAll('.nav-link');
 const modal = document.getElementById('ticket-modal');
 const modalBody = document.getElementById('modal-body');
 const modalCloseBtn = document.querySelector('.modal-close-btn');
+
 const routes = {
-    '#dashboard': renderDashboard, '#crear-ticket': renderNewTicketForm, '#tickets': renderTicketList, '#estadisticas': renderEstadisticas,
-    '#inventory': renderInventory, '#maintenance': renderMaintenance, '#credentials': renderCredentials, '#configuracion': renderConfiguracion
+    '#dashboard': renderDashboard,
+    '#crear-ticket': renderNewTicketForm,
+    '#tickets': renderTicketList,
+    '#estadisticas': renderEstadisticas,
+    '#maintenance': renderMaintenance,
+    '#credentials': renderCredentials,
+    '#configuracion': renderConfiguracion
 };
+
 function router() {
     const fullHash = window.location.hash || '#dashboard';
     const [path, queryString] = fullHash.split('?');
     const params = new URLSearchParams(queryString);
+    
+    document.querySelectorAll('.nav-item-with-submenu').forEach(item => item.classList.remove('open'));
+    if (path.startsWith('#inventory-')) {
+        const category = path.replace('#inventory-', '');
+        params.set('category', category);
+        renderInventoryPage(appContent, Object.fromEntries(params.entries()));
+        
+        const inventoryLink = document.querySelector('.nav-item-with-submenu > a');
+        if (inventoryLink) {
+            inventoryLink.parentElement.classList.add('open');
+            navLinks.forEach(link => link.classList.remove('active'));
+            inventoryLink.classList.add('active');
+        }
+        return;
+    }
+    
     const paramsObj = Object.fromEntries(params.entries());
     const renderFunction = routes[path];
     if (renderFunction) {
@@ -417,6 +355,7 @@ function router() {
         });
     } else { appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; }
 }
+
 async function showTicketModal(ticketId) {
     const ticketDoc = await db.collection('tickets').doc(ticketId).get();
     if (!ticketDoc.exists) { alert('Error: No se encontró el ticket.'); return; }
@@ -439,6 +378,7 @@ async function showTicketModal(ticketId) {
         });
     }
 }
+
 appContent.addEventListener('click', e => {
     const target = e.target.closest('button');
     if (!target) return;
@@ -449,15 +389,25 @@ appContent.addEventListener('click', e => {
     }
     if (target.classList.contains('view-ticket-btn')) { const id = target.dataset.id; showTicketModal(id); }
 });
+
 modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
 modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
 
 // --- 6. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
 document.addEventListener('DOMContentLoaded', () => {
+    const submenuToggle = document.querySelector('.nav-item-with-submenu > a');
+    if (submenuToggle) {
+        submenuToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            submenuToggle.parentElement.classList.toggle('open');
+        });
+    }
+
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     const logoutBtn = document.getElementById('logout-btn');
     loginContainer.innerHTML = `<div class="login-box"><h2>Iniciar Sesión</h2><input type="email" id="email" placeholder="Correo electrónico"><input type="password" id="password" placeholder="Contraseña"><button id="login-btn">Entrar</button><p id="login-error" class="error-message"></p></div>`;
+    
     document.getElementById('login-btn').addEventListener('click', () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -465,20 +415,17 @@ document.addEventListener('DOMContentLoaded', () => {
         errorEl.textContent = '';
         auth.signInWithEmailAndPassword(email, password).catch(error => { console.error("Error de inicio de sesión:", error); errorEl.textContent = "Correo o contraseña incorrectos."; });
     });
+
     logoutBtn.addEventListener('click', () => auth.signOut());
+
     auth.onAuthStateChanged(user => {
         if (user) {
-            loginContainer.classList.remove('visible');
-            loginContainer.classList.add('hidden');
-            appContainer.classList.add('visible');
-            appContainer.classList.remove('hidden');
-            window.addEventListener('hashchange', router);
-            router();
+            loginContainer.classList.remove('visible'); loginContainer.classList.add('hidden');
+            appContainer.classList.add('visible'); appContainer.classList.remove('hidden');
+            window.addEventListener('hashchange', router); router();
         } else {
-            loginContainer.classList.add('visible');
-            loginContainer.classList.remove('hidden');
-            appContainer.classList.remove('visible');
-            appContainer.classList.add('hidden');
+            loginContainer.classList.add('visible'); loginContainer.classList.remove('hidden');
+            appContainer.classList.remove('visible'); appContainer.classList.add('hidden');
             window.removeEventListener('hashchange', router);
         }
     });
