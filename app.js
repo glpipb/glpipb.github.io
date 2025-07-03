@@ -7,17 +7,6 @@ const firebaseConfig = {
   appId: "1:195664374847:web:88412be75b4ff8600adc8a",
   measurementId: "G-QJD3VS1V5Y"
 };
-
-// --- 1. CONFIGURACIÓN DE FIREBASE ---
-const firebaseConfig = {
-    apiKey: "TU_API_KEY",
-    authDomain: "TU_AUTH_DOMAIN",
-    projectId: "TU_PROJECT_ID",
-    storageBucket: "TU_STORAGE_BUCKET",
-    messagingSenderId: "TU_MESSAGING_SENDER_ID",
-    appId: "TU_APP_ID"
-};
-
 // --- 2. INICIALIZACIÓN DE FIREBASE ---
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -116,7 +105,6 @@ async function renderTicketList(container, params = {}) {
     container.innerHTML = ticketListHTML;
     const [reqSnap, locSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get() ]);
     const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name);
-    const locationsMap = {}; locSnap.forEach(doc => locationsMap[doc.id] = doc.data().name);
     const tableBody = document.querySelector('#tickets-table tbody');
     const tableTitle = document.getElementById('tickets-list-title');
     const filterStatus = params.status;
@@ -210,18 +198,15 @@ function renderInventoryPage(container, params) {
     container.innerHTML = inventoryPageHTML;
     const config = inventoryCategoryConfig[category];
     if (!config) { container.innerHTML = `<h1>Error: Categoría de inventario no encontrada.</h1>`; return; }
-
     document.getElementById('inventory-title').innerText = `💻 Inventario de ${config.title}`;
     document.getElementById('inventory-list-title').innerText = `Lista de ${config.title}`;
     const addButton = document.getElementById('add-inventory-item-btn');
     addButton.innerText = `Añadir Nuevo ${config.titleSingular}`;
     addButton.dataset.type = 'inventory';
     addButton.dataset.category = category;
-
     const tableHeadContainer = document.getElementById('inventory-table-head');
     const tableHeaders = Object.values(config.fields).map(field => field.label);
     tableHeadContainer.innerHTML = `<tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`;
-
     const tableBody = document.getElementById('inventory-table-body');
     db.collection('inventory').where('category', '==', category).onSnapshot(snapshot => {
         tableBody.innerHTML = '';
@@ -312,13 +297,11 @@ function router() {
     const fullHash = window.location.hash || '#dashboard';
     const [path, queryString] = fullHash.split('?');
     const params = new URLSearchParams(queryString);
-    
     document.querySelectorAll('.nav-item-with-submenu').forEach(item => item.classList.remove('open'));
     if (path.startsWith('#inventory-')) {
         const category = path.replace('#inventory-', '');
         params.set('category', category);
         renderInventoryPage(appContent, Object.fromEntries(params.entries()));
-        
         const inventoryLink = document.querySelector('.nav-item-with-submenu > a');
         if (inventoryLink) {
             inventoryLink.parentElement.classList.add('open');
@@ -327,7 +310,6 @@ function router() {
         }
         return;
     }
-    
     const paramsObj = Object.fromEntries(params.entries());
     const renderFunction = routes[path];
     if (renderFunction) {
@@ -341,23 +323,20 @@ function router() {
 }
 
 async function showFormModal(type, category = null) {
-    const modalBody = document.getElementById('form-modal-body');
+    const modalBody = document.getElementById('form-modal').querySelector('#form-modal-body');
     let formHTML = '';
     let title = '';
     let collectionName = '';
     let formId = 'modal-form';
-    let configFields = {};
 
     switch (type) {
         case 'inventory':
             const config = inventoryCategoryConfig[category];
             title = `Añadir Nuevo ${config.titleSingular}`;
             collectionName = 'inventory';
-            configFields = config.fields;
-
             let fieldsHTML = '';
-            for (const [key, field] of Object.entries(configFields)) {
-                let inputHTML = `<input type="text" id="form-${key}" name="${key}" required>`;
+            for (const [key, field] of Object.entries(config.fields)) {
+                let inputHTML = `<input type="${field.type || 'text'}" id="form-${key}" name="${key}" required>`;
                 if (field.type === 'textarea') {
                     inputHTML = `<textarea id="form-${key}" name="${key}" rows="3"></textarea>`;
                 } else if (field.type === 'select') {
@@ -392,28 +371,17 @@ async function showFormModal(type, category = null) {
                 <div class="form-group"><label for="form-notes">Notas</label><textarea id="form-notes" name="notes" rows="3"></textarea></div>`;
             break;
     }
-
     modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">Guardar</button></div></form>`;
     formModal.classList.remove('hidden');
-
     document.getElementById(formId).addEventListener('submit', e => {
         e.preventDefault();
         const form = e.target;
         const data = {};
         if (type === 'inventory') data.category = category;
-        
-        new FormData(form).forEach((value, key) => {
-            data[key] = value;
-        });
-
+        new FormData(form).forEach((value, key) => { data[key] = value; });
         db.collection(collectionName).add(data)
-            .then(() => {
-                formModal.classList.add('hidden');
-            })
-            .catch(error => {
-                console.error("Error al guardar: ", error);
-                alert("Hubo un error al guardar los datos.");
-            });
+            .then(() => { formModal.classList.add('hidden'); })
+            .catch(error => { console.error("Error al guardar: ", error); alert("Hubo un error al guardar los datos."); });
     });
 }
 
@@ -441,29 +409,33 @@ async function showTicketModal(ticketId) {
     }
 }
 
-appContent.addEventListener('click', e => {
-    const target = e.target.closest('button');
-    if (!target) return;
-    if (target.classList.contains('delete-btn')) {
-        const id = target.dataset.id;
-        const collection = target.dataset.collection;
-        if (confirm(`¿Seguro que quieres eliminar este elemento de ${collection}?`)) { db.collection(collection).doc(id).delete(); }
-    }
-    if (target.classList.contains('view-ticket-btn')) { const id = target.dataset.id; showTicketModal(id); }
-    if (target.classList.contains('open-form-modal-btn') || target.id === 'add-inventory-item-btn') {
-        const type = target.dataset.type;
-        const category = target.dataset.category;
-        showFormModal(type, category);
-    }
-});
-
-document.getElementById('ticket-modal').querySelector('.modal-close-btn').addEventListener('click', () => document.getElementById('ticket-modal').classList.add('hidden'));
-document.getElementById('form-modal').querySelector('.modal-close-btn').addEventListener('click', () => document.getElementById('form-modal').classList.add('hidden'));
-document.getElementById('ticket-modal').addEventListener('click', e => { if (e.target === document.getElementById('ticket-modal')) document.getElementById('ticket-modal').classList.add('hidden'); });
-document.getElementById('form-modal').addEventListener('click', e => { if (e.target === document.getElementById('form-modal')) document.getElementById('form-modal').classList.add('hidden'); });
-
 // --- 6. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
 document.addEventListener('DOMContentLoaded', () => {
+    const appContent = document.getElementById('app-content');
+    const ticketModal = document.getElementById('ticket-modal');
+    const formModal = document.getElementById('form-modal');
+
+    appContent.addEventListener('click', e => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        if (target.classList.contains('delete-btn')) {
+            const id = target.dataset.id;
+            const collection = target.dataset.collection;
+            if (confirm(`¿Seguro que quieres eliminar este elemento de ${collection}?`)) { db.collection(collection).doc(id).delete(); }
+        }
+        if (target.classList.contains('view-ticket-btn')) { const id = target.dataset.id; showTicketModal(id); }
+        if (target.classList.contains('open-form-modal-btn') || target.id === 'add-inventory-item-btn') {
+            const type = target.dataset.type;
+            const category = target.dataset.category;
+            showFormModal(type, category);
+        }
+    });
+
+    ticketModal.querySelector('.modal-close-btn').addEventListener('click', () => ticketModal.classList.add('hidden'));
+    formModal.querySelector('.modal-close-btn').addEventListener('click', () => formModal.classList.add('hidden'));
+    ticketModal.addEventListener('click', e => { if (e.target === ticketModal) ticketModal.classList.add('hidden'); });
+    formModal.addEventListener('click', e => { if (e.target === formModal) formModal.classList.add('hidden'); });
+    
     const submenuToggle = document.querySelector('.nav-item-with-submenu > a');
     if (submenuToggle) {
         submenuToggle.addEventListener('click', (e) => {
