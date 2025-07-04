@@ -1,4 +1,3 @@
-/* v3.7 - Corrección de Scroll en Estadísticas */
 :root {
     --primary-color: #007bff;
     --secondary-color: #5a6268;
@@ -12,9 +11,7 @@
     --warning-color: #ffc107;
     --font-family: 'Inter', sans-serif;
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 body { font-family: var(--font-family); background-color: var(--bg-color); color: #343a40; display: flex; font-size: 16px; line-height: 1.6; }
 #login-container { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background-color: var(--bg-color); }
 .login-box { padding: 40px; background: var(--card-bg); border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; width: 350px; }
@@ -68,7 +65,7 @@ th { background-color: #f1f3f5; font-weight: 600; font-size: 14px; }
 .stat-card.open { border-color: var(--danger-color); }
 .stat-card.closed { border-color: var(--success-color); }
 .stat-card.all { border-color: var(--primary-color); }
-.stats-filters { display: flex; gap: 20px; align-items: center; margin-bottom: 20px; }
+.stats-filters { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 20px; }
 .ql-toolbar { border-top-left-radius: 6px; border-top-right-radius: 6px; }
 .ql-container { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; height: 150px; font-size: 16px; }
 .modal-content.large { width: 950px; max-width: 95%; }
@@ -92,47 +89,12 @@ th { background-color: #f1f3f5; font-weight: 600; font-size: 14px; }
 .icon-edit:hover path { fill: var(--primary-color); }
 .icon-delete path { fill: var(--secondary-color); }
 .icon-delete:hover path { fill: var(--danger-color); }
-
-/* --- NUEVA REGLA PARA CORREGIR EL SCROLL --- */
-.card canvas {
-    max-height: 350px;
-}
-/* --- Estilos para la página de Historial y Búsqueda --- */
-.search-filters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    align-items: end;
-}
-.search-filters-grid .form-group {
-    margin-bottom: 0;
-}
-
-/* --- Estilos para las tarjetas KPI de Estadísticas --- */
-.kpi-card {
-    background: var(--card-bg);
-    border-radius: 8px;
-    padding: 25px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-}
-.kpi-card h3 {
-    margin-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
-}
-.kpi-list {
-    list-style: none;
-    padding: 0;
-}
-.kpi-list li {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    font-size: 15px;
-}
-.kpi-list li span:first-child {
-    color: var(--secondary-color);
-}
-.kpi-list li span:last-child {
-    font-weight: 600;
-}
+.card canvas { max-height: 350px; }
+.search-filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: end; }
+.search-filters-grid .form-group { margin-bottom: 0; }
+.kpi-card { background: var(--card-bg); border-radius: 8px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+.kpi-card h3 { margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+.kpi-list { list-style: none; padding: 0; }
+.kpi-list li { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; }
+.kpi-list li span:first-child { color: var(--secondary-color); }
+.kpi-list li span:last-child { font-weight: 600; }
