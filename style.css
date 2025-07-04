@@ -42,7 +42,7 @@ h2 { margin-bottom: 20px; }
 button.primary { padding: 10px 20px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
 button.danger { background-color: var(--danger-color); }
 table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th, td { padding: 14px; border: 1px solid var(--border-color); text-align: left; }
+th, td { padding: 14px; border: 1px solid var(--border-color); text-align: left; white-space: nowrap; /* Evita que el texto se parta en varias líneas */ }
 th { background-color: #f1f3f5; font-weight: 600; font-size: 14px; }
 .status { padding: 5px 12px; border-radius: 12px; color: white; font-size: 12px; text-align: center; font-weight: 600; }
 .status-abierto { background-color: var(--danger-color); }
@@ -98,3 +98,9 @@ th { background-color: #f1f3f5; font-weight: 600; font-size: 14px; }
 .kpi-list li { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; }
 .kpi-list li span:first-child { color: var(--secondary-color); }
 .kpi-list li span:last-child { font-weight: 600; }
+
+/* --- Contenedor de Tabla Desplazable --- */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Para un scroll suave en iOS */
+}
