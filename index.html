@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <!-- v4.7 - Archivo Final y Verificado -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Gestor de TI</title>
@@ -19,8 +20,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- NUEVAS LIBRERÍAS DE REPORTES -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
@@ -28,10 +27,14 @@
 
 </head>
 <body>
+    
     <div id="login-container" class="visible"></div>
+
     <div id="app-container" class="hidden">
         <nav class="sidebar">
-            <div class="sidebar-header"><h3>Mi Gestor TI</h3></div>
+            <div class="sidebar-header">
+                <h3>Mi Gestor TI</h3>
+            </div>
             <ul class="nav-list">
                 <li><a href="#dashboard" class="nav-link active">📊 Dashboard</a></li>
                 <li><a href="#crear-ticket" class="nav-link">➕ Crear Ticket</a></li>
@@ -65,13 +68,17 @@
                 </li>
                 <li><a href="#configuracion" class="nav-link">⚙️ Configuración</a></li>
             </ul>
-            <div class="sidebar-footer"><a href="#" id="logout-btn">Cerrar Sesión</a></div>
+            <div class="sidebar-footer">
+                <a href="#" id="logout-btn">Cerrar Sesión</a>
+            </div>
         </nav>
         <main id="app-content"></main>
     </div>
+    
     <div id="ticket-modal" class="modal-overlay hidden"><div class="modal-content large"><span class="modal-close-btn">×</span><div id="modal-body"></div></div></div>
     <div id="form-modal" class="modal-overlay hidden"><div class="modal-content"><span class="modal-close-btn">×</span><div id="form-modal-body"></div></div></div>
     <div id="action-modal" class="modal-overlay hidden"><div class="modal-content"><span class="modal-close-btn">×</span><div id="action-modal-body"></div></div></div>
+    
     <script src="app.js"></script>
 </body>
 </html>
