@@ -1,3 +1,4 @@
+/* v3.7 - Corrección de Scroll en Estadísticas */
 :root {
     --primary-color: #007bff;
     --secondary-color: #5a6268;
@@ -91,3 +92,8 @@ th { background-color: #f1f3f5; font-weight: 600; font-size: 14px; }
 .icon-edit:hover path { fill: var(--primary-color); }
 .icon-delete path { fill: var(--secondary-color); }
 .icon-delete:hover path { fill: var(--danger-color); }
+
+/* --- NUEVA REGLA PARA CORREGIR EL SCROLL --- */
+.card canvas {
+    max-height: 350px;
+}
