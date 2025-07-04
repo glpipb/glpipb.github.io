@@ -1,4 +1,4 @@
-/* v4.5 - Reportes PDF y Excel */
+/* v4.7 - Archivo Final y Verificado */
 :root { --primary-color: #007bff; --secondary-color: #5a6268; --bg-color: #f8f9fa; --sidebar-bg: #212529; --sidebar-text: #e9ecef; --card-bg: #ffffff; --border-color: #dee2e6; --success-color: #28a745; --danger-color: #dc3545; --warning-color: #ffc107; --font-family: 'Inter', sans-serif; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--font-family); background-color: var(--bg-color); color: #343a40; display: flex; font-size: 16px; line-height: 1.6; }
@@ -28,8 +28,9 @@ h2 { margin-bottom: 20px; }
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px; color: var(--secondary-color); }
 .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: var(--font-family); font-size: 16px; }
-button.primary { padding: 10px 20px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
-button.danger { background-color: var(--danger-color); }
+button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-family: var(--font-family); font-size: 15px; }
+button.primary { background-color: var(--primary-color); color: white; }
+button.danger { background-color: var(--danger-color); color: white; }
 table { width: 100%; border-collapse: collapse; margin-top: 20px; }
 th, td { padding: 14px; border: 1px solid var(--border-color); text-align: left; white-space: nowrap; }
 th { background-color: #f1f3f5; font-weight: 600; font-size: 14px; }
@@ -88,3 +89,6 @@ th { background-color: #f1f3f5; font-weight: 600; font-size: 14px; }
 .kpi-list li span:first-child { color: var(--secondary-color); }
 .kpi-list li span:last-child { font-weight: 600; }
 .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.export-btn { color: white; }
+.export-btn.csv { background-color: var(--success-color); }
+.export-btn.pdf { background-color: var(--danger-color); }
