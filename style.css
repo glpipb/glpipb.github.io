@@ -97,3 +97,42 @@ th { background-color: #f1f3f5; font-weight: 600; font-size: 14px; }
 .card canvas {
     max-height: 350px;
 }
+/* --- Estilos para la página de Historial y Búsqueda --- */
+.search-filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    align-items: end;
+}
+.search-filters-grid .form-group {
+    margin-bottom: 0;
+}
+
+/* --- Estilos para las tarjetas KPI de Estadísticas --- */
+.kpi-card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.kpi-card h3 {
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+.kpi-list {
+    list-style: none;
+    padding: 0;
+}
+.kpi-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 15px;
+}
+.kpi-list li span:first-child {
+    color: var(--secondary-color);
+}
+.kpi-list li span:last-child {
+    font-weight: 600;
+}
