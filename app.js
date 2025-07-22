@@ -36,7 +36,7 @@ const credentialsCategoryConfig = { emails: { title: 'Correos Electrónicos', ti
 function handleFirestoreError(error, element) {
     console.error("Firestore Error:", error);
     const table = element.closest('table');
-    const colspan = table ? table.querySelector('thead tr').childElementCount : 6;
+    const colspan = table ? table.querySelector('thead tr').childElementCount : 6; // Calcula el número de columnas dinámicamente
 
     const indexLinkRegex = /(https:\/\/console\.firebase\.google\.com\/project\/.*?\/firestore\/indexes\?create_composite=.*?)"/;
     const match = error.message.match(indexLinkRegex);
@@ -62,6 +62,7 @@ function handleFirestoreError(error, element) {
     } else {
         errorMessage = `Error al cargar los datos: ${error.message}`;
     }
+    // 'element' es el tbody de la tabla
     element.innerHTML = `<tr><td colspan="${colspan}" style="color:red; text-align:left; padding: 20px; line-height: 1.6;">${errorMessage}</td></tr>`;
 }
 async function renderDashboard(container) { container.innerHTML = dashboardHTML; const cardsContainer = document.getElementById('dashboard-cards'); cardsContainer.innerHTML = 'Cargando estadísticas...'; const ticketsSnapshot = await db.collection('tickets').get(); const tickets = ticketsSnapshot.docs.map(doc => doc.data()); const openCount = tickets.filter(t => t.status === 'abierto').length; const closedCount = tickets.filter(t => t.status === 'cerrado').length; const totalCount = tickets.length; cardsContainer.innerHTML = `<a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a><a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a><a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>`; const last7Days = Array(7).fill(0).reduce((acc, _, i) => { const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc; }, {}); tickets.forEach(ticket => { if (ticket.createdAt) { const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0]; if (last7Days.hasOwnProperty(ticketDate)) { last7Days[ticketDate]++; } } }); const ctx = document.getElementById('ticketsChart').getContext('2d'); new Chart(ctx, { type: 'bar', data: { labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(), datasets: [{ label: '# de Tickets Creados', data: Object.values(last7Days).reverse(), backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 1 }] }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); }
@@ -80,7 +81,6 @@ const routes = { '#dashboard': renderDashboard, '#crear-ticket': renderNewTicket
 function router() { const fullHash = window.location.hash || '#dashboard'; const [path, queryString] = fullHash.split('?'); const params = new URLSearchParams(queryString); document.querySelectorAll('.nav-item-with-submenu').forEach(item => item.classList.remove('open')); let isHandled = false; if (path.startsWith('#inventory-')) { const category = path.replace('#inventory-', ''); params.set('category', category); renderGenericListPage(appContent, Object.fromEntries(params.entries()), inventoryCategoryConfig, 'inventory', '💻'); const parentLink = document.querySelector('a[href="#inventory-computers"]').closest('.nav-item-with-submenu'); if(parentLink) parentLink.parentElement.classList.add('open'); isHandled = true; } if (path.startsWith('#credentials-')) { const category = path.replace('#credentials-', ''); params.set('category', category); renderGenericListPage(appContent, Object.fromEntries(params.entries()), credentialsCategoryConfig, 'credentials', '🔑'); const parentLink = document.querySelector('a[href="#credentials-emails"]').closest('.nav-item-with-submenu'); if(parentLink) parentLink.parentElement.classList.add('open'); isHandled = true; } if(isHandled) { navLinks.forEach(link => link.classList.remove('active')); const activeParent = document.querySelector('.nav-item-with-submenu.open > a'); if(activeParent) activeParent.classList.add('active'); return; } const paramsObj = Object.fromEntries(params.entries()); const renderFunction = routes[path]; if (renderFunction) { appContent.innerHTML = '<div class="card"><h1>Cargando...</h1></div>'; renderFunction(appContent, paramsObj); navLinks.forEach(link => { const linkPath = link.getAttribute('href').split('?')[0]; link.classList.toggle('active', linkPath === path); }); } else { appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; } }
 async function showFormModal(type, category = null) { const formModal = document.getElementById('form-modal'); const modalBody = formModal.querySelector('#form-modal-body'); let formHTML = '', title = '', collectionName = '', formId = 'modal-form'; let configObject, config; switch (type) { case 'inventory': case 'credentials': configObject = type === 'inventory' ? inventoryCategoryConfig : credentialsCategoryConfig; config = configObject[category]; title = `Añadir ${config.titleSingular}`; collectionName = type; let fieldsHTML = ''; for (const [key, field] of Object.entries(config.fields)) { let inputHTML = `<input type="${field.type || 'text'}" id="form-${key}" name="${key}" required>`; if (field.type === 'textarea') inputHTML = `<textarea id="form-${key}" name="${key}" rows="3"></textarea>`; else if (field.type === 'select') { let optionsHTML = '<option value="">Selecciona...</option>'; if (field.optionsSource === 'locations') { const locSnap = await db.collection('locations').orderBy('name').get(); optionsHTML += locSnap.docs.map(doc => `<option value="${doc.data().name}">${doc.data().name}</option>`).join(''); } else { optionsHTML += field.options.map(opt => `<option value="${opt}">${opt}</option>`).join(''); } inputHTML = `<select id="form-${key}" name="${key}">${optionsHTML}</select>`; } fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label>${inputHTML}</div>`; } formHTML = `<div class="inventory-form-grid">${fieldsHTML}</div>`; break; case 'maintenance': title = 'Programar Tarea en Calendario'; collectionName = 'maintenance'; formHTML = `<div class="form-group"><label for="form-task">Título de la Tarea</label><input type="text" id="form-task" name="task" required></div><div class="form-group"><label for="form-date">Fecha</label><input type="date" id="form-date" name="date" required></div><div class="form-group"><label for="form-type">Tipo de Tarea</label><select id="form-type" name="type"><option value="Preventivo">Mantenimiento Preventivo</option><option value="Correctivo">Mantenimiento Correctivo</option><option value="Tarea">Tarea</option><option value="Recordatorio">Recordatorio</option></select></div>`; break; } modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">Guardar</button></div></form>`; formModal.classList.remove('hidden'); document.getElementById(formId).addEventListener('submit', e => { e.preventDefault(); const form = e.target; const data = {}; if (type === 'maintenance') data.status = 'planificada'; if (type === 'inventory' || type === 'credentials') data.category = category; new FormData(form).forEach((value, key) => { data[key] = value; }); db.collection(collectionName).add(data).then(() => { formModal.classList.add('hidden'); }).catch(error => { console.error("Error al guardar: ", error); alert("Hubo un error al guardar los datos."); }); }); }
 async function showTicketModal(ticketId) { const ticketModal = document.getElementById('ticket-modal'); const modalBody = ticketModal.querySelector('#modal-body'); const ticketDoc = await db.collection('tickets').doc(ticketId).get(); if (!ticketDoc.exists) { alert('Error: No se encontró el ticket.'); return; } const ticket = ticketDoc.data(); const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || 'N/A' : 'N/A'; const locationName = ticket.locationId || 'N/A'; let deviceInfoHTML = ''; if (ticket.deviceId) { const deviceDoc = await db.collection('inventory').doc(ticket.deviceId).get(); if(deviceDoc.exists) { const device = deviceDoc.data(); deviceInfoHTML = `<div class="ticket-detail-item"><strong>Dispositivo:</strong> ${device.brand} ${device.model} (S/N: ${device.serial || device.imei || 'N/A'})</div>`; } } let solutionHTML = `<hr><h3>Añadir Solución</h3><form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`; if (ticket.status === 'cerrado') { solutionHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`; } modalBody.innerHTML = `<div class="ticket-modal-layout"><div class="ticket-modal-main"><h2>Ticket #${ticket.ticketNumber || ticket.id.substring(0,6)}: ${ticket.title}</h2><hr><h3>Descripción</h3><div class="card">${ticket.description}</div>${solutionHTML}</div><div class="ticket-modal-sidebar"><h3>Detalles del Ticket</h3><div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${ticket.status}</span></div><div class="ticket-detail-item"><strong>Prioridad:</strong> ${ticket.priority}</div><div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div><div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div>${deviceInfoHTML}<div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}</div></div>`; ticketModal.classList.remove('hidden'); if (ticket.status !== 'cerrado') { const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución aplicada...' }); document.getElementById('solution-form').addEventListener('submit', e => { e.preventDefault(); db.collection('tickets').doc(ticketId).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => ticketModal.classList.add('hidden')); }); } }
-
 function showEventActionChoiceModal(eventId, eventTitle, eventProps) {
     const actionModal = document.getElementById('action-modal');
     const modalBody = actionModal.querySelector('#action-modal-body');
@@ -100,7 +100,7 @@ function showEventActionChoiceModal(eventId, eventTitle, eventProps) {
     if (eventProps.status === 'planificada') {
         document.getElementById('edit-task-btn').onclick = () => {
             actionModal.classList.add('hidden');
-            showEditTaskModal(eventId, eventProps);
+            showEditTaskModal(eventId, eventProps); // Llamada a la nueva función de edición
         };
         document.getElementById('finalize-task-btn').onclick = () => {
             actionModal.classList.add('hidden');
@@ -118,17 +118,18 @@ function showEventActionChoiceModal(eventId, eventTitle, eventProps) {
         };
     }
 }
-
 function showEditTaskModal(eventId, eventProps) {
     const formModal = document.getElementById('form-modal');
     const modalBody = formModal.querySelector('#form-modal-body');
     const title = 'Editar Tarea Programada';
     const formId = 'edit-maintenance-form';
 
+    // Obtener valores actuales para pre-llenar el formulario
     const taskTitle = eventProps.task || '';
     const taskDate = eventProps.date || '';
     const taskType = eventProps.type || 'Tarea';
 
+    // HTML del formulario
     let formHTML = `
         <div class="form-group">
             <label for="form-task">Título de la Tarea</label>
@@ -152,6 +153,7 @@ function showEditTaskModal(eventId, eventProps) {
     modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">Guardar Cambios</button></div></form>`;
     formModal.classList.remove('hidden');
 
+    // Manejar el envío del formulario para actualizar los datos
     document.getElementById(formId).addEventListener('submit', e => {
         e.preventDefault();
         const form = e.target;
@@ -160,9 +162,11 @@ function showEditTaskModal(eventId, eventProps) {
             data[key] = value;
         });
 
+        // Usar 'update' para modificar el documento existente en Firebase
         db.collection('maintenance').doc(eventId).update(data)
             .then(() => {
                 formModal.classList.add('hidden');
+                // Forzar la recarga de la vista actual para reflejar los cambios
                 router(); 
             })
             .catch(error => {
@@ -171,7 +175,6 @@ function showEditTaskModal(eventId, eventProps) {
             });
     });
 }
-
 function showFinalizeTaskModal(eventId, eventTitle) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); const today = new Date().toISOString().split('T')[0]; modalBody.innerHTML = `<h2>Finalizar Tarea: "${eventTitle}"</h2><form id="finalize-form"><div class="form-group"><label for="completedDate">Fecha de Realización</label><input type="date" id="completedDate" name="completedDate" value="${today}" required></div><div class="form-group"><label for="onTimeStatus">¿Se realizó a tiempo?</label><select id="onTimeStatus" name="onTimeStatus"><option value="Sí">Sí</option><option value="No">No</option></select></div><div class="form-group"><label>Observaciones (opcional)</label><textarea name="completionNotes" rows="3"></textarea></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="primary">Guardar Finalización</button></div></form>`; actionModal.classList.remove('hidden'); document.getElementById('finalize-form').addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target; form.querySelector('button[type="submit"]').disabled = true; try { const updateData = { status: 'completada', completedDate: form.completedDate.value, onTimeStatus: form.onTimeStatus.value, completionNotes: form.completionNotes.value }; await db.collection('maintenance').doc(eventId).set(updateData, { merge: true }); actionModal.classList.add('hidden'); } catch (error) { console.error("Error al finalizar la tarea: ", error); alert("Hubo un error al finalizar la tarea. Revisa la consola para más detalles."); form.querySelector('button[type="submit"]').disabled = false; } }); }
 function showCancelTaskModal(eventId, eventTitle) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); modalBody.innerHTML = `<h2>Cancelar Tarea: "${eventTitle}"</h2><form id="cancel-form"><div class="form-group"><label for="cancellationReason">Razón de la Cancelación</label><textarea id="cancellationReason" name="cancellationReason" rows="4" required></textarea></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="danger">Confirmar Cancelación</button></div></form>`; actionModal.classList.remove('hidden'); document.getElementById('cancel-form').addEventListener('submit', e => { e.preventDefault(); const reason = e.target.cancellationReason.value; db.collection('maintenance').doc(eventId).update({ status: 'cancelada', cancellationReason: reason }).then(() => actionModal.classList.add('hidden')); }); }
 
@@ -181,111 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
     const actionModal = document.getElementById('action-modal');
-
-    appContent.addEventListener('click', e => {
-        const target = e.target.closest('button, span.edit-btn, span.delete-btn');
-        if (!target) return;
-
-        if (target.matches('.delete-btn, .delete-btn *')) {
-            const button = target.closest('.delete-btn');
-            const id = button.dataset.id;
-            const collection = button.dataset.collection;
-            if (confirm(`¿Seguro que quieres eliminar este elemento?`)) {
-                db.collection(collection).doc(id).delete();
-            }
-            return;
-        }
-
-        if (target.matches('.edit-btn, .edit-btn *')) {
-            const button = target.closest('.edit-btn');
-            const row = button.closest('tr, .config-list-item');
-            if (row.classList.contains('is-editing')) return;
-            row.classList.add('is-editing');
-            const docId = button.dataset.id;
-            const collectionName = button.dataset.collection;
-            const category = button.dataset.category;
-            let config;
-            if (collectionName === 'inventory' || collectionName === 'credentials') {
-                config = collectionName === 'inventory' ? inventoryCategoryConfig[category] : credentialsCategoryConfig[category];
-            } else {
-                config = { fields: { name: { label: 'Nombre' } } };
-            }
-            row.querySelectorAll('td[data-field], span.config-item-name').forEach(cell => {
-                const fieldKey = cell.dataset.field || 'name';
-                const fieldConfig = config.fields[fieldKey] || {};
-                const currentText = cell.textContent;
-                cell.dataset.originalValue = currentText;
-                if (fieldConfig.type === 'select') {
-                    let optionsHTML = '';
-                    if (fieldConfig.optionsSource === 'locations') {
-                        db.collection('locations').orderBy('name').get().then(snap => {
-                            snap.forEach(doc => {
-                                optionsHTML += `<option value="${doc.data().name}" ${doc.data().name === currentText ? 'selected' : ''}>${doc.data().name}</option>`;
-                            });
-                            cell.innerHTML = `<select class="edit-input" data-field="${fieldKey}">${optionsHTML}</select>`;
-                        });
-                    } else {
-                        optionsHTML = fieldConfig.options.map(opt => `<option value="${opt}" ${opt === currentText ? 'selected' : ''}>${opt}</option>`).join('');
-                        cell.innerHTML = `<select class="edit-input" data-field="${fieldKey}">${optionsHTML}</select>`;
-                    }
-                } else {
-                    cell.innerHTML = `<input type="text" class="edit-input" value="${currentText}" data-field="${fieldKey}" />`;
-                }
-            });
-            const actionsCell = row.querySelector('.config-item-actions');
-            const originalActionsHTML = actionsCell.innerHTML;
-            actionsCell.innerHTML = `<span class="save-btn" style="cursor:pointer; font-size: 20px;">💾</span> <span class="cancel-btn" style="cursor:pointer; font-size: 20px;">↩️</span>`;
-            const saveChanges = () => {
-                const updates = {};
-                row.querySelectorAll('.edit-input').forEach(input => {
-                    updates[input.dataset.field] = input.value;
-                });
-                db.collection(collectionName).doc(docId).update(updates).catch(err => console.error("Error al guardar:", err));
-            };
-            const cancelChanges = () => {
-                row.querySelectorAll('td[data-field], span.config-item-name').forEach(cell => {
-                    cell.innerHTML = `<span class="cell-text">${cell.dataset.originalValue}</span>`;
-                });
-                actionsCell.innerHTML = originalActionsHTML;
-                row.classList.remove('is-editing');
-            };
-            actionsCell.querySelector('.save-btn').onclick = saveChanges;
-            actionsCell.querySelector('.cancel-btn').onclick = cancelChanges;
-            return;
-        }
-
-        if (target.closest('button')?.classList.contains('view-ticket-btn')) {
-            const id = target.closest('button').dataset.id;
-            showTicketModal(id);
-        }
-
-        if (target.closest('button')?.classList.contains('open-form-modal-btn') || target.id === 'add-item-btn') {
-            const button = target.closest('button');
-            const type = button.dataset.type;
-            const category = button.dataset.category;
-            showFormModal(type, category);
-        }
-
-        if (target.closest('button')?.classList.contains('export-btn')) {
-            const format = target.dataset.format;
-            const table = document.getElementById('data-table');
-
-            if (!table) {
-                alert("Error: No se pudo encontrar la tabla con ID 'data-table' para exportar.");
-                return;
-            }
-
-            const tableId = table.id;
-            const filename = document.getElementById('page-title')?.textContent || document.querySelector('h1').textContent || 'reporte';
-
-            if (format === 'csv') {
-                exportToCSV(tableId, filename);
-            } else if (format === 'pdf') {
-                exportToPDF(tableId, filename);
-            }
-        }
-    });
-
+    appContent.addEventListener('click', e => { const target = e.target.closest('button, span.edit-btn, span.delete-btn'); if (!target) return; if (target.matches('.delete-btn, .delete-btn *')) { const button = target.closest('.delete-btn'); const id = button.dataset.id; const collection = button.dataset.collection; if (confirm(`¿Seguro que quieres eliminar este elemento?`)) { db.collection(collection).doc(id).delete(); } return; } if (target.matches('.edit-btn, .edit-btn *')) { const button = target.closest('.edit-btn'); const row = button.closest('tr, .config-list-item'); if (row.classList.contains('is-editing')) return; row.classList.add('is-editing'); const docId = button.dataset.id; const collectionName = button.dataset.collection; const category = button.dataset.category; let config; if (collectionName === 'inventory' || collectionName === 'credentials') { config = collectionName === 'inventory' ? inventoryCategoryConfig[category] : credentialsCategoryConfig[category]; } else { config = { fields: { name: { label: 'Nombre' } } }; } row.querySelectorAll('td[data-field], span.config-item-name').forEach(cell => { const fieldKey = cell.dataset.field || 'name'; const fieldConfig = config.fields[fieldKey] || {}; const currentText = cell.textContent; cell.dataset.originalValue = currentText; if (fieldConfig.type === 'select') { let optionsHTML = ''; if (fieldConfig.optionsSource === 'locations') { db.collection('locations').orderBy('name').get().then(snap => { snap.forEach(doc => { optionsHTML += `<option value="${doc.data().name}" ${doc.data().name === currentText ? 'selected' : ''}>${doc.data().name}</option>`; }); cell.innerHTML = `<select class="edit-input" data-field="${fieldKey}">${optionsHTML}</select>`; }); } else { optionsHTML = fieldConfig.options.map(opt => `<option value="${opt}" ${opt === currentText ? 'selected' : ''}>${opt}</option>`).join(''); cell.innerHTML = `<select class="edit-input" data-field="${fieldKey}">${optionsHTML}</select>`; } } else { cell.innerHTML = `<input type="text" class="edit-input" value="${currentText}" data-field="${fieldKey}" />`; } }); const actionsCell = row.querySelector('.config-item-actions'); const originalActionsHTML = actionsCell.innerHTML; actionsCell.innerHTML = `<span class="save-btn" style="cursor:pointer; font-size: 20px;">💾</span> <span class="cancel-btn" style="cursor:pointer; font-size: 20px;">↩️</span>`; const saveChanges = () => { const updates = {}; row.querySelectorAll('.edit-input').forEach(input => { updates[input.dataset.field] = input.value; }); db.collection(collectionName).doc(docId).update(updates).catch(err => console.error("Error al guardar:", err)); }; const cancelChanges = () => { row.querySelectorAll('td[data-field], span.config-item-name').forEach(cell => { cell.innerHTML = `<span class="cell-text">${cell.dataset.originalValue}</span>`; }); actionsCell.innerHTML = originalActionsHTML; row.classList.remove('is-editing'); }; actionsCell.querySelector('.save-btn').onclick = saveChanges; actionsCell.querySelector('.cancel-btn').onclick = cancelChanges; return; } if (target.closest('button')?.classList.contains('view-ticket-btn')) { const id = target.closest('button').dataset.id; showTicketModal(id); } if (target.closest('button')?.classList.contains('open-form-modal-btn') || target.id === 'add-item-btn') { const button = target.closest('button'); const type = button.dataset.type; const category = button.dataset.category; showFormModal(type, category); } if (target.closest('button')?.classList.contains('export-btn')) { const format = target.dataset.format; const tableId = target.closest('.add-new-button-container').nextElementSibling.querySelector('table').id; const filename = document.getElementById('page-title')?.textContent || document.querySelector('h1').textContent || 'reporte'; if (format === 'csv') { exportToCSV(tableId, filename); } else if (format === 'pdf') { exportToPDF(tableId, filename); } }});
     ticketModal.querySelector('.modal-close-btn').addEventListener('click', () => ticketModal.classList.add('hidden'));
     formModal.querySelector('.modal-close-btn').addEventListener('click', () => formModal.classList.add('hidden'));
     actionModal.querySelector('.modal-close-btn').addEventListener('click', () => actionModal.classList.add('hidden'));
