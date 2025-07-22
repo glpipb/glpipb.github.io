@@ -178,11 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
     const actionModal = document.getElementById('action-modal');
-
     appContent.addEventListener('click', e => {
         const target = e.target.closest('button, span.edit-btn, span.delete-btn');
         if (!target) return;
-
+        
         if (target.matches('.delete-btn, .delete-btn *')) {
             const button = target.closest('.delete-btn');
             const id = button.dataset.id;
@@ -192,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return;
         }
-
+        
         if (target.matches('.edit-btn, .edit-btn *')) {
             const button = target.closest('.edit-btn');
             const row = button.closest('tr, .config-list-item');
@@ -250,26 +249,24 @@ document.addEventListener('DOMContentLoaded', () => {
             actionsCell.querySelector('.cancel-btn').onclick = cancelChanges;
             return;
         }
-
+        
         if (target.closest('button')?.classList.contains('view-ticket-btn')) {
             const id = target.closest('button').dataset.id;
             showTicketModal(id);
         }
-
+        
         if (target.closest('button')?.classList.contains('open-form-modal-btn') || target.id === 'add-item-btn') {
             const button = target.closest('button');
             const type = button.dataset.type;
             const category = button.dataset.category;
             showFormModal(type, category);
         }
-
-        // --- INICIO DEL CÓDIGO CORREGIDO ---
+        
         if (target.closest('button')?.classList.contains('export-btn')) {
             const format = target.dataset.format;
-            const table = document.getElementById('data-table'); // Búsqueda directa y robusta de la tabla
+            const table = document.getElementById('data-table');
 
             if (!table) {
-                // Esta alerta solo se mostrará si la tabla no existe en la página
                 alert("Error: No se pudo encontrar la tabla con ID 'data-table' para exportar.");
                 return;
             }
@@ -283,7 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 exportToPDF(tableId, filename);
             }
         }
-        // --- FIN DEL CÓDIGO CORREGIDO ---
     });
 
     ticketModal.querySelector('.modal-close-btn').addEventListener('click', () => ticketModal.classList.add('hidden'));
