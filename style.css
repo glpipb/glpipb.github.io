@@ -38,7 +38,7 @@ body {
     justify-content: center;
     align-items: center;
     /* CAMBIO: Se usa la imagen de fondo */
-    background-image: url('logo-background.png');
+    background-image: url('https://glpipb.github.io/logo-background.png');
     background-size: cover;
     background-position: center;
     position: relative;
