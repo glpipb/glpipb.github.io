@@ -1,3 +1,4 @@
+/* === INTERFAZ CREATIVA - v5.1 (Final) === */
 :root {
     /* Paleta de colores con el rojo como primario */
     --primary-color: #D32F2F; /* Rojo profesional */
@@ -36,14 +37,13 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Fondo con tu logo */
+    /* CAMBIO: Se usa la imagen de fondo */
     background-image: url('logo-background.png');
     background-size: cover;
     background-position: center;
     position: relative;
 }
 
-/* Overlay oscuro para legibilidad */
 #login-container::before {
     content: '';
     position: absolute;
@@ -56,7 +56,6 @@ body {
 
 .login-box {
     padding: 40px;
-    /* Efecto "Glassmorphism" */
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -64,7 +63,13 @@ body {
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     text-align: center;
     width: 380px;
-    z-index: 1; /* Para que esté por encima del overlay */
+    z-index: 1;
+}
+
+/* CAMBIO: Se añade el logo dentro del cuadro de login */
+.login-logo {
+    max-width: 80px;
+    margin: 0 auto 20px auto; /* Centrado y con espacio debajo */
 }
 
 .login-box h2 {
@@ -139,10 +144,13 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 15px;
+    /* Se asegura que la cabecera no se encoja */
+    flex-shrink: 0;
 }
 
+/* CAMBIO: Logo más grande */
 .sidebar-logo {
-    max-width: 60px; /* Ajusta el tamaño de tu logo */
+    max-width: 80px; /* Aumentado de 60px a 80px */
     height: auto;
 }
 
@@ -151,11 +159,28 @@ body {
     letter-spacing: 0.5px;
 }
 
-.nav-list { list-style: none; flex-grow: 1; padding: 10px 0; }
+/* CAMBIO: Se añade scroll a la lista de navegación */
+.nav-list {
+    list-style: none;
+    padding: 10px 0;
+    /* Permite que la lista crezca y ocupe el espacio disponible */
+    flex-grow: 1;
+    /* ¡LA MAGIA! Añade un scrollbar vertical solo cuando es necesario */
+    overflow-y: auto;
+}
+
 .nav-list li a { display: block; padding: 15px 30px; color: var(--sidebar-text); text-decoration: none; transition: all 0.2s ease-in-out; font-weight: 500; border-left: 4px solid transparent; }
 .nav-list li a:hover { background-color: rgba(255, 255, 255, 0.05); border-left-color: var(--sidebar-text); }
 .nav-list li a.active { background-color: var(--primary-color); color: white; border-left-color: var(--warning-color); }
-.sidebar-footer { padding: 25px; border-top: 1px solid #343a40; text-align: center; }
+
+.sidebar-footer {
+    padding: 25px;
+    border-top: 1px solid #343a40;
+    text-align: center;
+    /* Se asegura que el pie de página no se encoja */
+    flex-shrink: 0;
+}
+
 .sidebar-footer a { color: var(--warning-color); text-decoration: none; font-weight: 500; }
 
 /* --- CONTENIDO PRINCIPAL --- */
@@ -212,7 +237,7 @@ tr:hover { background-color: #f8f9fa; }
 .modal-close-btn:hover { color: #333; }
 .modal-content.large { width: 950px; max-width: 95%; }
 
-/* RESTO DE ESTILOS... (la mayoría ya están bien y se adaptan a la nueva paleta) */
+/* RESTO DE ESTILOS... */
 .dashboard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; }
 .stat-card { display: block; text-decoration: none; color: #333; background-color: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: all 0.3s ease; border-left: 5px solid; }
 .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
@@ -220,7 +245,7 @@ tr:hover { background-color: #f8f9fa; }
 .stat-card .stat-label { font-size: 1em; color: var(--secondary-color); font-weight: 500; }
 .stat-card.open { border-color: var(--danger-color); }
 .stat-card.closed { border-color: var(--success-color); }
-.stat-card.all { border-color: #0d6efd; } /* Azul para 'todos' como color neutral */
+.stat-card.all { border-color: #0d6efd; }
 .add-new-button-container { display: flex; justify-content: flex-end; align-items: center; gap: 15px; margin-bottom: 25px; padding: 20px; background-color: var(--card-bg); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
 .export-btn.csv { background-color: var(--success-color); }
 .export-btn.pdf { background-color: var(--primary-color); }
