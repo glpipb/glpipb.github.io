@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     appContent.addEventListener('click', e => {
         const target = e.target.closest('button, span.edit-btn, span.delete-btn');
         if (!target) return;
-
+        
         if (target.matches('.delete-btn, .delete-btn *')) {
             const button = target.closest('.delete-btn');
             const id = button.dataset.id;
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return;
         }
-
+        
         if (target.matches('.edit-btn, .edit-btn *')) {
             const button = target.closest('.edit-btn');
             const row = button.closest('tr, .config-list-item');
@@ -250,58 +250,44 @@ document.addEventListener('DOMContentLoaded', () => {
             actionsCell.querySelector('.cancel-btn').onclick = cancelChanges;
             return;
         }
-
+        
         if (target.closest('button')?.classList.contains('view-ticket-btn')) {
             const id = target.closest('button').dataset.id;
             showTicketModal(id);
         }
-
+        
         if (target.closest('button')?.classList.contains('open-form-modal-btn') || target.id === 'add-item-btn') {
             const button = target.closest('button');
             const type = button.dataset.type;
             const category = button.dataset.category;
             showFormModal(type, category);
         }
-
-        // --- CÓDIGO DE DEPURACIÓN ---
-        if (target.closest('button')?.classList.contains('export-btn')) {
-            console.log("--- DEBUG: Botón de Exportación Presionado ---");
-            
-            const format = target.dataset.format;
-            console.log(`Paso 1: Formato de exportación solicitado: '${format}'`);
         
+        if (target.closest('button')?.classList.contains('export-btn')) {
+            const format = target.dataset.format;
             const table = document.getElementById('data-table');
-            
+
             if (!table) {
-                console.error("Paso 2: ¡FALLO! No se encontró ningún elemento con id='data-table'.");
-                alert("Error de depuración: No se pudo encontrar la tabla con ID 'data-table'. Revisa la consola (F12) para más detalles.");
+                alert("Error: No se pudo encontrar la tabla con ID 'data-table' para exportar.");
                 return;
             }
+
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Obtener el título de la manera más robusta posible
+            let titleElement = document.getElementById('page-title') || 
+                               document.getElementById('tickets-list-title') || 
+                               document.getElementById('item-list-title') || 
+                               document.querySelector('h1');
             
-            console.log("Paso 2: ¡ÉXITO! Se encontró la tabla con id='data-table'.", table);
-            
+            const filename = titleElement ? titleElement.textContent.trim() : 'reporte';
+            // --- FIN DE LA CORRECCIÓN ---
+
             const tableId = table.id;
-            const filenameBase = document.getElementById('page-title')?.textContent || document.querySelector('h1').textContent || 'reporte';
-            const filename = filenameBase.trim();
-            console.log(`Paso 3: Se usará el nombre de archivo: '${filename}.${format}'`);
-            
-            console.log("Paso 4: Intentando llamar a la función de exportación...");
-        
-            try {
-                if (format === 'csv') {
-                    console.log("Llamando a exportToCSV...");
-                    exportToCSV(tableId, filename);
-                    console.log("Llamada a exportToCSV completada.");
-                } else if (format === 'pdf') {
-                    console.log("Llamando a exportToPDF...");
-                    exportToPDF(tableId, filename);
-                    console.log("Llamada a exportToPDF completada.");
-                }
-                console.log("--- DEBUG: Proceso de Exportación Finalizado (aparentemente sin errores) ---");
-            } catch (error) {
-                console.error("--- DEBUG: ¡ERROR CRÍTICO DURANTE LA EXPORTACIÓN! ---");
-                console.error("Ocurrió un error al ejecutar la función de exportación:", error);
-                alert("Ocurrió un error al exportar. Por favor, revisa la consola (F12).");
+
+            if (format === 'csv') {
+                exportToCSV(tableId, filename);
+            } else if (format === 'pdf') {
+                exportToPDF(tableId, filename);
             }
         }
     });
@@ -337,4 +323,4 @@ document.addEventListener('DOMContentLoaded', () => {
             window.removeEventListener('hashchange', router);
         }
     });
-});
+});```
