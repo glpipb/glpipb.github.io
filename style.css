@@ -1,4 +1,4 @@
-/* === INTERFAZ CREATIVA - v5.1 (Final) === */
+/* === INTERFAZ CREATIVA - v5.2 (Logos Grandes) === */
 :root {
     /* Paleta de colores con el rojo como primario */
     --primary-color: #D32F2F; /* Rojo profesional */
@@ -37,7 +37,6 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    /* CAMBIO: Se usa la imagen de fondo */
     background-image: url('https://glpipb.github.io/logo-background.png');
     background-size: cover;
     background-position: center;
@@ -66,10 +65,10 @@ body {
     z-index: 1;
 }
 
-/* CAMBIO: Se añade el logo dentro del cuadro de login */
+/* ===== CAMBIO 1: Logo del login más grande ===== */
 .login-logo {
-    max-width: 80px;
-    margin: 0 auto 20px auto; /* Centrado y con espacio debajo */
+    max-width: 120px; /* Aumentado de 80px a 120px, puedes ajustarlo */
+    margin: 0 auto 20px auto;
 }
 
 .login-box h2 {
@@ -144,13 +143,12 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 15px;
-    /* Se asegura que la cabecera no se encoja */
     flex-shrink: 0;
 }
 
-/* CAMBIO: Logo más grande */
+/* ===== CAMBIO 2: Logo de la barra lateral más grande ===== */
 .sidebar-logo {
-    max-width: 80px; /* Aumentado de 60px a 80px */
+    max-width: 100px; /* Aumentado de 80px a 100px, puedes ajustarlo */
     height: auto;
 }
 
@@ -159,13 +157,10 @@ body {
     letter-spacing: 0.5px;
 }
 
-/* CAMBIO: Se añade scroll a la lista de navegación */
 .nav-list {
     list-style: none;
     padding: 10px 0;
-    /* Permite que la lista crezca y ocupe el espacio disponible */
     flex-grow: 1;
-    /* ¡LA MAGIA! Añade un scrollbar vertical solo cuando es necesario */
     overflow-y: auto;
 }
 
@@ -177,7 +172,6 @@ body {
     padding: 25px;
     border-top: 1px solid #343a40;
     text-align: center;
-    /* Se asegura que el pie de página no se encoja */
     flex-shrink: 0;
 }
 
