@@ -36,7 +36,7 @@ const credentialsCategoryConfig = { emails: { title: 'Correos Electrónicos', ti
 function handleFirestoreError(error, element) {
     console.error("Firestore Error:", error);
     const table = element.closest('table');
-    const colspan = table ? table.querySelector('thead tr').childElementCount : 6; // Calcula el número de columnas dinámicamente
+    const colspan = table ? table.querySelector('thead tr').childElementCount : 6;
 
     const indexLinkRegex = /(https:\/\/console\.firebase\.google\.com\/project\/.*?\/firestore\/indexes\?create_composite=.*?)"/;
     const match = error.message.match(indexLinkRegex);
@@ -62,7 +62,6 @@ function handleFirestoreError(error, element) {
     } else {
         errorMessage = `Error al cargar los datos: ${error.message}`;
     }
-    // 'element' es el tbody de la tabla
     element.innerHTML = `<tr><td colspan="${colspan}" style="color:red; text-align:left; padding: 20px; line-height: 1.6;">${errorMessage}</td></tr>`;
 }
 async function renderDashboard(container) { container.innerHTML = dashboardHTML; const cardsContainer = document.getElementById('dashboard-cards'); cardsContainer.innerHTML = 'Cargando estadísticas...'; const ticketsSnapshot = await db.collection('tickets').get(); const tickets = ticketsSnapshot.docs.map(doc => doc.data()); const openCount = tickets.filter(t => t.status === 'abierto').length; const closedCount = tickets.filter(t => t.status === 'cerrado').length; const totalCount = tickets.length; cardsContainer.innerHTML = `<a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a><a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a><a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>`; const last7Days = Array(7).fill(0).reduce((acc, _, i) => { const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc; }, {}); tickets.forEach(ticket => { if (ticket.createdAt) { const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0]; if (last7Days.hasOwnProperty(ticketDate)) { last7Days[ticketDate]++; } } }); const ctx = document.getElementById('ticketsChart').getContext('2d'); new Chart(ctx, { type: 'bar', data: { labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(), datasets: [{ label: '# de Tickets Creados', data: Object.values(last7Days).reverse(), backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 1 }] }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); }
@@ -100,7 +99,7 @@ function showEventActionChoiceModal(eventId, eventTitle, eventProps) {
     if (eventProps.status === 'planificada') {
         document.getElementById('edit-task-btn').onclick = () => {
             actionModal.classList.add('hidden');
-            showEditTaskModal(eventId, eventProps); // Llamada a la nueva función de edición
+            showEditTaskModal(eventId, eventProps);
         };
         document.getElementById('finalize-task-btn').onclick = () => {
             actionModal.classList.add('hidden');
@@ -124,12 +123,10 @@ function showEditTaskModal(eventId, eventProps) {
     const title = 'Editar Tarea Programada';
     const formId = 'edit-maintenance-form';
 
-    // Obtener valores actuales para pre-llenar el formulario
     const taskTitle = eventProps.task || '';
     const taskDate = eventProps.date || '';
     const taskType = eventProps.type || 'Tarea';
 
-    // HTML del formulario
     let formHTML = `
         <div class="form-group">
             <label for="form-task">Título de la Tarea</label>
@@ -153,7 +150,6 @@ function showEditTaskModal(eventId, eventProps) {
     modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">Guardar Cambios</button></div></form>`;
     formModal.classList.remove('hidden');
 
-    // Manejar el envío del formulario para actualizar los datos
     document.getElementById(formId).addEventListener('submit', e => {
         e.preventDefault();
         const form = e.target;
@@ -162,11 +158,9 @@ function showEditTaskModal(eventId, eventProps) {
             data[key] = value;
         });
 
-        // Usar 'update' para modificar el documento existente en Firebase
         db.collection('maintenance').doc(eventId).update(data)
             .then(() => {
                 formModal.classList.add('hidden');
-                // Forzar la recarga de la vista actual para reflejar los cambios
                 router(); 
             })
             .catch(error => {
@@ -184,7 +178,114 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
     const actionModal = document.getElementById('action-modal');
-    appContent.addEventListener('click', e => { const target = e.target.closest('button, span.edit-btn, span.delete-btn'); if (!target) return; if (target.matches('.delete-btn, .delete-btn *')) { const button = target.closest('.delete-btn'); const id = button.dataset.id; const collection = button.dataset.collection; if (confirm(`¿Seguro que quieres eliminar este elemento?`)) { db.collection(collection).doc(id).delete(); } return; } if (target.matches('.edit-btn, .edit-btn *')) { const button = target.closest('.edit-btn'); const row = button.closest('tr, .config-list-item'); if (row.classList.contains('is-editing')) return; row.classList.add('is-editing'); const docId = button.dataset.id; const collectionName = button.dataset.collection; const category = button.dataset.category; let config; if (collectionName === 'inventory' || collectionName === 'credentials') { config = collectionName === 'inventory' ? inventoryCategoryConfig[category] : credentialsCategoryConfig[category]; } else { config = { fields: { name: { label: 'Nombre' } } }; } row.querySelectorAll('td[data-field], span.config-item-name').forEach(cell => { const fieldKey = cell.dataset.field || 'name'; const fieldConfig = config.fields[fieldKey] || {}; const currentText = cell.textContent; cell.dataset.originalValue = currentText; if (fieldConfig.type === 'select') { let optionsHTML = ''; if (fieldConfig.optionsSource === 'locations') { db.collection('locations').orderBy('name').get().then(snap => { snap.forEach(doc => { optionsHTML += `<option value="${doc.data().name}" ${doc.data().name === currentText ? 'selected' : ''}>${doc.data().name}</option>`; }); cell.innerHTML = `<select class="edit-input" data-field="${fieldKey}">${optionsHTML}</select>`; }); } else { optionsHTML = fieldConfig.options.map(opt => `<option value="${opt}" ${opt === currentText ? 'selected' : ''}>${opt}</option>`).join(''); cell.innerHTML = `<select class="edit-input" data-field="${fieldKey}">${optionsHTML}</select>`; } } else { cell.innerHTML = `<input type="text" class="edit-input" value="${currentText}" data-field="${fieldKey}" />`; } }); const actionsCell = row.querySelector('.config-item-actions'); const originalActionsHTML = actionsCell.innerHTML; actionsCell.innerHTML = `<span class="save-btn" style="cursor:pointer; font-size: 20px;">💾</span> <span class="cancel-btn" style="cursor:pointer; font-size: 20px;">↩️</span>`; const saveChanges = () => { const updates = {}; row.querySelectorAll('.edit-input').forEach(input => { updates[input.dataset.field] = input.value; }); db.collection(collectionName).doc(docId).update(updates).catch(err => console.error("Error al guardar:", err)); }; const cancelChanges = () => { row.querySelectorAll('td[data-field], span.config-item-name').forEach(cell => { cell.innerHTML = `<span class="cell-text">${cell.dataset.originalValue}</span>`; }); actionsCell.innerHTML = originalActionsHTML; row.classList.remove('is-editing'); }; actionsCell.querySelector('.save-btn').onclick = saveChanges; actionsCell.querySelector('.cancel-btn').onclick = cancelChanges; return; } if (target.closest('button')?.classList.contains('view-ticket-btn')) { const id = target.closest('button').dataset.id; showTicketModal(id); } if (target.closest('button')?.classList.contains('open-form-modal-btn') || target.id === 'add-item-btn') { const button = target.closest('button'); const type = button.dataset.type; const category = button.dataset.category; showFormModal(type, category); } if (target.closest('button')?.classList.contains('export-btn')) { const format = target.dataset.format; const tableId = target.closest('.add-new-button-container').nextElementSibling.querySelector('table').id; const filename = document.getElementById('page-title')?.textContent || document.querySelector('h1').textContent || 'reporte'; if (format === 'csv') { exportToCSV(tableId, filename); } else if (format === 'pdf') { exportToPDF(tableId, filename); } }});
+
+    appContent.addEventListener('click', e => {
+        const target = e.target.closest('button, span.edit-btn, span.delete-btn');
+        if (!target) return;
+
+        if (target.matches('.delete-btn, .delete-btn *')) {
+            const button = target.closest('.delete-btn');
+            const id = button.dataset.id;
+            const collection = button.dataset.collection;
+            if (confirm(`¿Seguro que quieres eliminar este elemento?`)) {
+                db.collection(collection).doc(id).delete();
+            }
+            return;
+        }
+
+        if (target.matches('.edit-btn, .edit-btn *')) {
+            const button = target.closest('.edit-btn');
+            const row = button.closest('tr, .config-list-item');
+            if (row.classList.contains('is-editing')) return;
+            row.classList.add('is-editing');
+            const docId = button.dataset.id;
+            const collectionName = button.dataset.collection;
+            const category = button.dataset.category;
+            let config;
+            if (collectionName === 'inventory' || collectionName === 'credentials') {
+                config = collectionName === 'inventory' ? inventoryCategoryConfig[category] : credentialsCategoryConfig[category];
+            } else {
+                config = { fields: { name: { label: 'Nombre' } } };
+            }
+            row.querySelectorAll('td[data-field], span.config-item-name').forEach(cell => {
+                const fieldKey = cell.dataset.field || 'name';
+                const fieldConfig = config.fields[fieldKey] || {};
+                const currentText = cell.textContent;
+                cell.dataset.originalValue = currentText;
+                if (fieldConfig.type === 'select') {
+                    let optionsHTML = '';
+                    if (fieldConfig.optionsSource === 'locations') {
+                        db.collection('locations').orderBy('name').get().then(snap => {
+                            snap.forEach(doc => {
+                                optionsHTML += `<option value="${doc.data().name}" ${doc.data().name === currentText ? 'selected' : ''}>${doc.data().name}</option>`;
+                            });
+                            cell.innerHTML = `<select class="edit-input" data-field="${fieldKey}">${optionsHTML}</select>`;
+                        });
+                    } else {
+                        optionsHTML = fieldConfig.options.map(opt => `<option value="${opt}" ${opt === currentText ? 'selected' : ''}>${opt}</option>`).join('');
+                        cell.innerHTML = `<select class="edit-input" data-field="${fieldKey}">${optionsHTML}</select>`;
+                    }
+                } else {
+                    cell.innerHTML = `<input type="text" class="edit-input" value="${currentText}" data-field="${fieldKey}" />`;
+                }
+            });
+            const actionsCell = row.querySelector('.config-item-actions');
+            const originalActionsHTML = actionsCell.innerHTML;
+            actionsCell.innerHTML = `<span class="save-btn" style="cursor:pointer; font-size: 20px;">💾</span> <span class="cancel-btn" style="cursor:pointer; font-size: 20px;">↩️</span>`;
+            const saveChanges = () => {
+                const updates = {};
+                row.querySelectorAll('.edit-input').forEach(input => {
+                    updates[input.dataset.field] = input.value;
+                });
+                db.collection(collectionName).doc(docId).update(updates).catch(err => console.error("Error al guardar:", err));
+            };
+            const cancelChanges = () => {
+                row.querySelectorAll('td[data-field], span.config-item-name').forEach(cell => {
+                    cell.innerHTML = `<span class="cell-text">${cell.dataset.originalValue}</span>`;
+                });
+                actionsCell.innerHTML = originalActionsHTML;
+                row.classList.remove('is-editing');
+            };
+            actionsCell.querySelector('.save-btn').onclick = saveChanges;
+            actionsCell.querySelector('.cancel-btn').onclick = cancelChanges;
+            return;
+        }
+
+        if (target.closest('button')?.classList.contains('view-ticket-btn')) {
+            const id = target.closest('button').dataset.id;
+            showTicketModal(id);
+        }
+
+        if (target.closest('button')?.classList.contains('open-form-modal-btn') || target.id === 'add-item-btn') {
+            const button = target.closest('button');
+            const type = button.dataset.type;
+            const category = button.dataset.category;
+            showFormModal(type, category);
+        }
+
+        // --- INICIO DEL CÓDIGO CORREGIDO ---
+        if (target.closest('button')?.classList.contains('export-btn')) {
+            const format = target.dataset.format;
+            const table = document.getElementById('data-table'); // Búsqueda directa y robusta de la tabla
+
+            if (!table) {
+                // Esta alerta solo se mostrará si la tabla no existe en la página
+                alert("Error: No se pudo encontrar la tabla con ID 'data-table' para exportar.");
+                return;
+            }
+
+            const tableId = table.id;
+            const filename = document.getElementById('page-title')?.textContent || document.querySelector('h1').textContent || 'reporte';
+
+            if (format === 'csv') {
+                exportToCSV(tableId, filename);
+            } else if (format === 'pdf') {
+                exportToPDF(tableId, filename);
+            }
+        }
+        // --- FIN DEL CÓDIGO CORREGIDO ---
+    });
+
     ticketModal.querySelector('.modal-close-btn').addEventListener('click', () => ticketModal.classList.add('hidden'));
     formModal.querySelector('.modal-close-btn').addEventListener('click', () => formModal.classList.add('hidden'));
     actionModal.querySelector('.modal-close-btn').addEventListener('click', () => actionModal.classList.add('hidden'));
