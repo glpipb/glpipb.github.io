@@ -178,7 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
     const actionModal = document.getElementById('action-modal');
-
     appContent.addEventListener('click', e => {
         const target = e.target.closest('button, span.edit-btn, span.delete-btn');
         if (!target) return;
@@ -272,15 +271,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // --- INICIO DE LA CORRECCIÓN ---
-            // Obtener el título de la manera más robusta posible
+            // --- INICIO DE LA CORRECCIÓN FINAL ---
+            // Manera robusta de obtener el título para el nombre del archivo.
+            // Busca primero los títulos específicos de las listas y, si no los encuentra, usa el H1 principal.
             let titleElement = document.getElementById('page-title') || 
                                document.getElementById('tickets-list-title') || 
-                               document.getElementById('item-list-title') || 
+                               document.getElementById('item-list-title') ||
+                               document.getElementById('history-results-title') ||
                                document.querySelector('h1');
             
             const filename = titleElement ? titleElement.textContent.trim() : 'reporte';
-            // --- FIN DE LA CORRECCIÓN ---
+            // --- FIN DE LA CORRECCIÓN FINAL ---
 
             const tableId = table.id;
 
@@ -323,4 +324,4 @@ document.addEventListener('DOMContentLoaded', () => {
             window.removeEventListener('hashchange', router);
         }
     });
-});
+});```
