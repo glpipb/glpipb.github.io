@@ -435,4 +435,4 @@ document.addEventListener('DOMContentLoaded', () => {
             window.removeEventListener('hashchange', router);
         }
     });
-});```
+});
