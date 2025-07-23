@@ -83,7 +83,91 @@ async function renderNewTicketForm(container) { container.innerHTML = newTicketF
 async function renderTicketList(container, params = {}) { container.innerHTML = ticketListHTML; const [reqSnap] = await Promise.all([ db.collection('requesters').get() ]); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); const tableBody = document.querySelector('#data-table tbody'); const tableTitle = document.getElementById('tickets-list-title'); const filterStatus = params.status; let query = db.collection('tickets'); if (filterStatus) { query = query.where('status', '==', filterStatus); tableTitle.innerText = `Tickets ${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}s`; } else { tableTitle.innerText = 'Todos los Tickets'; } query.orderBy('createdAt', 'desc').onSnapshot(snapshot => { tableBody.innerHTML = ''; if (snapshot.empty) { tableBody.innerHTML = `<tr><td colspan="6">No hay tickets que coincidan con este filtro.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.locationId || 'N/A'}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
 async function renderHistoryPage(container) { container.innerHTML = historyPageHTML; const form = document.getElementById('history-search-form'); const deviceDatalist = document.getElementById('device-list-search'); const requesterSelect = document.getElementById('search-requester'); const locationSelect = document.getElementById('search-location'); const resultsTableBody = document.getElementById('data-table').querySelector('tbody'); const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); form.addEventListener('submit', async e => { e.preventDefault(); const filters = { deviceId: form['search-device'].value, requesterId: form['search-requester'].value, locationId: form['search-location'].value, status: form['search-status'].value, priority: form['search-priority'].value, }; let query = db.collection('tickets'); Object.entries(filters).forEach(([key, value]) => { if (value) { query = query.where(key, '==', value); } }); try { const snapshot = await query.orderBy('createdAt', 'desc').get(); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); resultsTableBody.innerHTML = ''; if (snapshot.empty) { resultsTableBody.innerHTML = `<tr><td colspan="6">No se encontraron tickets con esos criterios.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.createdAt.toDate().toLocaleDateString('es-ES')}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver</button></td>`; resultsTableBody.appendChild(tr); }); } catch(error) { handleFirestoreError(error, resultsTableBody); } }); }
 async function renderEstadisticas(container) { container.innerHTML = statisticsHTML; const generateBtn = document.getElementById('generate-report-btn'); document.getElementById('export-stats-pdf').addEventListener('click', exportStatsToPDF); let charts = {}; const chartContexts = { ticketsByPriority: document.getElementById('ticketsByPriorityChart').getContext('2d'), ticketsByDeviceCategory: document.getElementById('ticketsByDeviceCategoryChart').getContext('2d'), ticketFlow: document.getElementById('ticket-flow-chart').getContext('2d'), inventoryByCategory: document.getElementById('inventoryByCategoryChart').getContext('2d'), computersByOs: document.getElementById('computersByOsChart').getContext('2d') }; const topDevicesList = document.getElementById('top-devices-list'); const topRequestersList = document.getElementById('top-requesters-list'); const startDateInput = document.getElementById('start-date'); const endDateInput = document.getElementById('end-date'); const today = new Date(); const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1)); startDateInput.value = oneMonthAgo.toISOString().split('T')[0]; endDateInput.value = today.toISOString().split('T')[0]; const generateReports = async () => { /* tu lógica de reportes */ }; generateBtn.addEventListener('click', generateReports); }
-function renderGenericListPage(container, params, configObject, collectionName, icon) { container.innerHTML = genericListPageHTML; const category = params.category; const config = configObject[category]; if (!config) { container.innerHTML = `<h1>Error: Categoría no encontrada.</h1>`; return; } const iconEdit = `<svg class="icon-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`; const iconDelete = `<svg class="icon-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`; document.getElementById('page-title').innerText = `${icon} ${config.title}`; document.getElementById('item-list-title').innerText = `Lista de ${config.title}`; const addButton = document.getElementById('add-item-btn'); addButton.innerText = `Añadir ${config.titleSingular}`; addButton.dataset.type = collectionName; addButton.dataset.category = category; const tableHeadContainer = document.getElementById('item-table-head'); const tableHeaders = Object.values(config.fields).map(field => field.label); tableHeadContainer.innerHTML = `<tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`; const tableBody = document.getElementById('item-table-body'); db.collection(collectionName).where('category', '==', category).onSnapshot(snapshot => { tableBody.innerHTML = ''; snapshot.forEach(doc => { const item = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.dataset.id = item.id; let cellsHTML = ''; for (const key of Object.keys(config.fields)) { let cellContent = key === 'id' ? item.id : (item[key] || 'N/A'); if (key === 'assignedTo' && cellContent !== 'N/A' && cellContent !== null && cellContent !== "") { cellContent = `<a href="#inventory-computers" style="color: blue; text-decoration: underline;">${cellContent}</a>`; } cellsHTML += `<td data-field="${key}"><span class="cell-text">${cellContent}</span></td>`; } tr.innerHTML = `${cellsHTML}<td><div class="config-item-actions"><span class="edit-btn" data-id="${item.id}" data-collection="${collectionName}" data-category="${category}">${iconEdit}</span><span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span></div></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
+// REEMPLAZA ESTA FUNCIÓN COMPLETA
+function renderGenericListPage(container, params, configObject, collectionName, icon) {
+    container.innerHTML = genericListPageHTML;
+    const category = params.category;
+    const config = configObject[category];
+    if (!config) { container.innerHTML = `<h1>Error: Categoría no encontrada.</h1>`; return; }
+
+    const iconEdit = `<svg class="icon-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
+    const iconDelete = `<svg class="icon-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
+    const iconHistory = `<svg class="icon-history" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.25 2.52.77-1.28-3.52-2.09V8H12z"/></svg>`;
+
+    document.getElementById('page-title').innerText = `${icon} ${config.title}`;
+    document.getElementById('item-list-title').innerText = `Lista de ${config.title}`;
+    const addButton = document.getElementById('add-item-btn');
+    addButton.innerText = `Añadir ${config.titleSingular}`;
+    addButton.dataset.type = collectionName;
+    addButton.dataset.category = category;
+
+    const tableHeadContainer = document.getElementById('item-table-head');
+    const tableHeaders = Object.values(config.fields).map(field => field.label);
+    tableHeadContainer.innerHTML = `<tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`;
+    
+    const tableBody = document.getElementById('item-table-body');
+    db.collection(collectionName).where('category', '==', category).onSnapshot(snapshot => {
+        tableBody.innerHTML = '';
+        snapshot.forEach(doc => {
+            const item = { id: doc.id, ...doc.data() };
+            const tr = document.createElement('tr');
+            tr.dataset.id = item.id;
+            let cellsHTML = '';
+            for (const key of Object.keys(config.fields)) {
+                let cellContent = key === 'id' ? item.id : (item[key] || 'N/A');
+                if (key === 'assignedTo' && cellContent !== 'N/A' && cellContent !== null && cellContent !== "") {
+                    cellContent = `<a href="#inventory-computers" style="color: blue; text-decoration: underline;">${cellContent}</a>`;
+                }
+                cellsHTML += `<td data-field="${key}"><span class="cell-text">${cellContent}</span></td>`;
+            }
+            
+            let actionsHTML = `<span class="edit-btn" data-id="${item.id}" data-collection="${collectionName}" data-category="${category}">${iconEdit}</span>`;
+            if (collectionName === 'inventory') {
+                actionsHTML += `<span class="history-btn" data-id="${item.id}">${iconHistory}</span>`;
+            }
+            actionsHTML += `<span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span>`;
+
+            tr.innerHTML = `${cellsHTML}<td><div class="config-item-actions">${actionsHTML}</div></td>`;
+            tableBody.appendChild(tr);
+        });
+    }, error => handleFirestoreError(error, tableBody));
+}
+async function showDeviceHistoryModal(deviceId) {
+    const historyModal = document.getElementById('history-modal');
+    const modalBody = historyModal.querySelector('#history-modal-body');
+    
+    modalBody.innerHTML = `<h2>Historial de Tickets para ${deviceId}</h2><p>Cargando historial...</p>`;
+    historyModal.classList.remove('hidden');
+
+    try {
+        const snapshot = await db.collection('tickets')
+                                 .where('deviceId', '==', deviceId)
+                                 .orderBy('createdAt', 'desc')
+                                 .get();
+
+        if (snapshot.empty) {
+            modalBody.innerHTML = `<h2>Historial de Tickets para ${deviceId}</h2><p>No hay tickets asociados a este dispositivo.</p>`;
+            return;
+        }
+
+        let historyHTML = `<h2>Historial de Tickets para ${deviceId}</h2><ul class="simple-list" style="list-style-type: none; padding-left: 0;">`;
+        snapshot.forEach(doc => {
+            const ticket = doc.data();
+            const ticketDate = ticket.createdAt ? ticket.createdAt.toDate().toLocaleDateString('es-ES') : 'Fecha N/A';
+            historyHTML += `<li style="display:flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
+                              <span><a href="#" class="view-ticket-btn" data-id="${doc.id}" style="color:blue; text-decoration:underline;">#${doc.id}</a>: ${ticket.title} (${ticketDate})</span>
+                              <span class="status status-${ticket.status}">${ticket.status}</span>
+                            </li>`;
+        });
+        historyHTML += '</ul>';
+        modalBody.innerHTML = historyHTML;
+
+    } catch (error) {
+        console.error("Error al cargar historial de tickets:", error);
+        modalBody.innerHTML = `<h2>Historial de Tickets para ${deviceId}</h2><p style="color:red;">Error al cargar el historial. Asegúrate de que el índice de Firestore se haya creado correctamente.</p>`;
+        handleFirestoreError(error, modalBody); // Reutilizamos tu función de error para mostrar el link si es necesario.
+    }
+}
 function renderMaintenanceCalendar(container) { container.innerHTML = maintenanceCalendarHTML; const calendarEl = document.getElementById('maintenance-calendar'); const dataTable = document.getElementById('data-table'); db.collection('maintenance').where('status', 'in', ['planificada', 'completada']).onSnapshot(snapshot => { const eventColors = { 'Mantenimiento Preventivo': '#dc3545', 'Mantenimiento Correctivo': '#ffc107', 'Mantenimiento Lógico': '#6f42c1', 'Backup': '#fd7e14', 'Tarea': '#007bff', 'Recordatorio': '#17a2b8' }; const events = snapshot.docs.map(doc => { const data = doc.data(); let color = eventColors[data.type] || '#6c757d'; if (data.status === 'completada') color = '#28a745'; return { id: doc.id, title: data.task, start: data.date, color: color, extendedProps: { status: data.status, ...data } }; }); const calendar = new FullCalendar.Calendar(calendarEl, { headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' }, initialView: 'dayGridMonth', locale: 'es', buttonText: { today: 'hoy', month: 'mes', week: 'semana', day: 'día', list: 'agenda' }, events: events, eventClick: function(info) { showEventActionChoiceModal(info.event.id, info.event.title, info.event.extendedProps); } }); calendar.render(); const tableHeaders = ['Tarea', 'Fecha Programada', 'Tipo', 'Estado']; const tableRows = snapshot.docs.map(doc => { const data = doc.data(); return [data.task, data.date, data.type, data.status]; }); dataTable.innerHTML = `<thead><tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${tableRows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody>`; }, error => handleFirestoreError(error, calendarEl)); }
 function renderConfiguracion(container) { container.innerHTML = configHTML; const setupConfigSection = (type, collectionName, prefix, counterName) => { const form = document.getElementById(`add-${type}-form`); const input = document.getElementById(`${type}-name`); const list = document.getElementById(`${type}s-list`); const iconEdit = `<svg class="icon-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`; const iconDelete = `<svg class="icon-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`; form.addEventListener('submit', async (e) => { e.preventDefault(); const name = input.value.trim(); if (!name) return; const counterRef = db.collection('counters').doc(counterName); try { const newId = await db.runTransaction(async (transaction) => { const counterDoc = await transaction.get(counterRef); if (!counterDoc.exists) { throw `El contador '${counterName}' no existe en Firebase.`; } const newNumber = counterDoc.data().currentNumber + 1; transaction.update(counterRef, { currentNumber: newNumber }); return `${prefix}${newNumber}`; }); await db.collection(collectionName).doc(newId).set({ name }); form.reset(); } catch (error) { console.error("Error al crear item:", error); alert("No se pudo crear el nuevo ítem. Revisa la consola."); } }); db.collection(collectionName).onSnapshot(snapshot => { list.innerHTML = ''; snapshot.forEach(doc => { const item = { id: doc.id, ...doc.data() }; const li = document.createElement('li'); li.className = 'config-list-item'; li.innerHTML = `<div><strong style="margin-right: 10px;">${item.id}</strong><span class="config-item-name">${item.name}</span></div><div class="config-item-actions"><span class="edit-btn" data-collection="${collectionName}" data-id="${item.id}" data-type="config">${iconEdit}</span><span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span></div>`; list.appendChild(li); }); }); }; setupConfigSection('requester', 'requesters', 'REQ-', 'requesterCounter'); setupConfigSection('location', 'locations', 'LOC-', 'locationCounter'); }
 async function showItemFormModal(type, category = null, docId = null) {
@@ -95,19 +179,16 @@ async function showItemFormModal(type, category = null, docId = null) {
     let existingData = {};
     if (isEditing) {
         const docSnap = await db.collection(type === 'config' ? category : type).doc(docId).get();
-        if (docSnap.exists) {
-            existingData = docSnap.data();
-        } else {
-            alert("Error: No se encontró el elemento a editar.");
-            return;
-        }
+        if (docSnap.exists) { existingData = docSnap.data(); } 
+        else { alert("Error: No se encontró el elemento a editar."); return; }
     }
 
     const configObject = (type === 'inventory') ? inventoryCategoryConfig : 
                          (type === 'credentials') ? credentialsCategoryConfig : {};
     config = configObject[category];
-
+    
     if (!config) {
+        // Lógica para tipos sin configuración, como maintenance y config
         if (type === 'maintenance') {
              title = isEditing ? 'Editar Tarea' : 'Programar Tarea';
              collectionName = 'maintenance';
@@ -127,13 +208,13 @@ async function showItemFormModal(type, category = null, docId = null) {
         let fieldsHTML = '';
         for (const [key, field] of Object.entries(config.fields)) {
             if (key === 'id') continue;
-            if (field.readonly) {
-                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label><input type="text" id="form-${key}" name="${key}" value="${existingData[key] || 'N/A'}" readonly style="background:#eee;"></div>`;
-                continue;
-            }
-
             const value = existingData[key] || '';
             let inputHTML = '';
+
+            if (field.readonly) {
+                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label><input type="text" id="form-${key}" name="${key}" value="${value || 'N/A'}" readonly style="background:#eee;"></div>`;
+                continue;
+            }
 
             if (field.type === 'select') {
                 let optionsHTML = '<option value="">(No asignar)</option>';
@@ -162,41 +243,11 @@ async function showItemFormModal(type, category = null, docId = null) {
             fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label>${inputHTML}</div>`;
         }
         formHTML = `<div class="inventory-form-grid">${fieldsHTML}</div>`;
-
-        if (isEditing && type === 'inventory') {
-            formHTML += `<hr style="margin-top: 25px; margin-bottom: 15px;"><h3>Historial de Tickets Asociados</h3><div id="device-ticket-history" style="max-height: 200px; overflow-y: auto;">Cargando historial...</div>`;
-        }
     }
-    
+
     modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">${isEditing ? 'Guardar Cambios' : 'Guardar'}</button></div></form>`;
     formModal.classList.remove('hidden');
 
-    if (isEditing && type === 'inventory') {
-        setTimeout(() => {
-            const historyContainer = document.getElementById('device-ticket-history');
-            if (historyContainer) {
-                db.collection('tickets').where('deviceId', '==', docId).orderBy('createdAt', 'desc').get()
-                    .then(snapshot => {
-                        if (snapshot.empty) {
-                            historyContainer.innerHTML = '<p>No hay tickets asociados a este dispositivo.</p>';
-                            return;
-                        }
-                        let historyHTML = '<ul class="simple-list" style="list-style-type: none; padding-left: 0;">';
-                        snapshot.forEach(doc => {
-                            const ticket = doc.data();
-                            const ticketDate = ticket.createdAt ? ticket.createdAt.toDate().toLocaleDateString('es-ES') : 'Fecha N/A';
-                            historyHTML += `<li style="display:flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
-                                            <span><a href="#" class="view-ticket-btn" data-id="${doc.id}" style="color:blue; text-decoration:underline;">#${doc.id}</a>: ${ticket.title} (${ticketDate})</span>
-                                            <span class="status status-${ticket.status}">${ticket.status}</span>
-                                          </li>`;
-                        });
-                        historyHTML += '</ul>';
-                        historyContainer.innerHTML = historyHTML;
-                    });
-            }
-        }, 100);
-    }
-    
     document.getElementById(formId).addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
@@ -228,7 +279,7 @@ async function showItemFormModal(type, category = null, docId = null) {
                 } else {
                     await db.collection(collectionName).doc(docId).update(data);
                 }
-            } else { // Creando nuevo
+            } else {
                 if (type === 'inventory' || type === 'credentials') {
                     data.category = category;
                     const { prefix, counter } = config;
@@ -249,7 +300,7 @@ async function showItemFormModal(type, category = null, docId = null) {
                         const compRef = db.collection('inventory').doc(data.assignedTo);
                         await compRef.update({ os: newId });
                     }
-                } else { // maintenance, config
+                } else {
                     if (type === 'maintenance') data.status = 'planificada';
                     await db.collection(collectionName).add(data);
                 }
@@ -272,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
     const actionModal = document.getElementById('action-modal');
+    const historyModal = document.getElementById('history-modal'); // Referencia al nuevo modal
     const navLinks = document.querySelectorAll('.nav-link');
 
     const routes = { 
@@ -332,9 +384,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     }
 
-    appContent.addEventListener('click', e => {
-        const target = e.target.closest('button, span.edit-btn, span.delete-btn, a.view-ticket-btn');
+    // Un solo Event Listener para toda la aplicación
+    document.body.addEventListener('click', e => {
+        const target = e.target.closest('button, span.edit-btn, span.delete-btn, span.history-btn, a.view-ticket-btn, .modal-close-btn');
         if (!target) return;
+
+        if (target.matches('.modal-close-btn')) {
+            target.closest('.modal-overlay').classList.add('hidden');
+        }
         
         if (target.matches('.delete-btn, .delete-btn *')) {
             const button = target.closest('.delete-btn');
@@ -355,10 +412,20 @@ document.addEventListener('DOMContentLoaded', () => {
             showItemFormModal(type || collectionName, category || collectionName, docId);
             return;
         }
+
+        if (target.matches('.history-btn, .history-btn *')) {
+            const deviceId = target.closest('.history-btn').dataset.id;
+            showDeviceHistoryModal(deviceId);
+            return;
+        }
         
         if (target.matches('.view-ticket-btn, .view-ticket-btn *')) {
             e.preventDefault();
             const id = target.closest('.view-ticket-btn').dataset.id;
+            // Ocultamos el modal de historial si está abierto para mostrar el del ticket
+            if (!historyModal.classList.contains('hidden')) {
+                historyModal.classList.add('hidden');
+            }
             showTicketModal(id);
         }
         
@@ -381,13 +448,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    ticketModal.querySelector('.modal-close-btn').addEventListener('click', () => ticketModal.classList.add('hidden'));
-    formModal.querySelector('.modal-close-btn').addEventListener('click', () => formModal.classList.add('hidden'));
-    actionModal.querySelector('.modal-close-btn').addEventListener('click', () => actionModal.classList.add('hidden'));
+    // Cierre de modales al hacer clic fuera
     ticketModal.addEventListener('click', e => { if (e.target === ticketModal) ticketModal.classList.add('hidden'); });
     formModal.addEventListener('click', e => { if (e.target === formModal) formModal.classList.add('hidden'); });
     actionModal.addEventListener('click', e => { if (e.target === actionModal) actionModal.classList.add('hidden'); });
+    historyModal.addEventListener('click', e => { if (e.target === historyModal) historyModal.classList.add('hidden'); });
     
+    // Lógica de Autenticación
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     loginContainer.innerHTML = `<div class="login-box"><img src="https://glpipb.github.io/logo.png" alt="Logo" class="login-logo"><h2>Iniciar Sesión</h2><input type="email" id="email" placeholder="Correo electrónico"><input type="password" id="password" placeholder="Contraseña"><button id="login-btn">Entrar</button><p id="login-error" class="error-message"></p></div>`;
@@ -395,14 +462,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     auth.onAuthStateChanged(user => {
         if (user) {
-            loginContainer.classList.remove('visible');
-            loginContainer.classList.add('hidden');
-            appContainer.classList.add('visible');
-            appContainer.classList.remove('hidden');
-
+            loginContainer.classList.remove('visible'); loginContainer.classList.add('hidden');
+            appContainer.classList.add('visible'); appContainer.classList.remove('hidden');
             window.addEventListener('hashchange', router); 
-            router(); // Llama al router una vez que el usuario ha iniciado sesión
-
+            router();
             document.querySelectorAll('.nav-item-with-submenu > a').forEach(submenuToggle => {
                 submenuToggle.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -411,10 +474,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
         } else {
-            loginContainer.classList.add('visible');
-            loginContainer.classList.remove('hidden');
-            appContainer.classList.remove('visible');
-            appContainer.classList.add('hidden');
+            loginContainer.classList.add('visible'); loginContainer.classList.remove('hidden');
+            appContainer.classList.remove('visible'); appContainer.classList.add('hidden');
             window.removeEventListener('hashchange', router);
         }
     });
