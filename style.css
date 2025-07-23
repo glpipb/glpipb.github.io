@@ -197,8 +197,8 @@ body {
 /* --- CONTENIDO PRINCIPAL --- */
 #app-content { 
     flex-grow: 1; 
-    padding: 40px; 
-    /* Sin alto fijo y sin overflow para que el contenido crezca y use el scroll del body */
+    padding: 40px;
+    overflow-y: auto;
 }
 h1, h2 { font-weight: 700; letter-spacing: -0.5px; }
 h1 { margin-bottom: 30px; }
