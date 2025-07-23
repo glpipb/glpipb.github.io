@@ -131,15 +131,16 @@ body {
 .visible { display: flex !important; }
 
 /* --- BARRA LATERAL (SIDEBAR) --- */
+/* --- BARRA LATERAL (SIDEBAR) --- */
 .sidebar {
-width: 260px;
-background-color: var(--sidebar-bg);
-color: var(--sidebar-text);
-display: flex;
-flex-direction: column;
-box-shadow: 3px 0px 15px rgba(0,0,0,0.1);
-height: 100%; / Ocupa el 100% del padre (#app-container) /
-flex-shrink: 0; / Evita que se encoja */
+    width: 260px;
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 3px 0px 15px rgba(0,0,0,0.1);
+    height: 100%; /* Ocupa el 100% del padre (#app-container) */
+    flex-shrink: 0; /* Evita que se encoja */
 }
 
 .sidebar-header {
