@@ -26,13 +26,12 @@ html {
     height: 100%; /* Asegura que el documento base ocupe toda la altura de la ventana. */
 }
 
-/* --- REGLA CLAVE #2: El Body --- */
+/* --- REGLA CLAVE #2: El Body (MODIFICADO) --- */
 body {
     font-family: var(--font-family);
     background-color: var(--bg-color);
     color: #333;
-    height: 100%;        /* ¡CRÍTICO! El body ocupa el 100% de la altura del HTML. */
-    overflow: hidden;    /* ¡LA MÁS CRÍTICA! Prohíbe que la barra de scroll aparezca en el body. */
+    /* Ya no controlamos la altura ni el overflow aquí. Lo dejamos ser un contenedor simple. */
     font-size: 16px;
     line-height: 1.6;
 }
@@ -60,11 +59,17 @@ body {
 .error-message { color: var(--danger-color); margin-top: 15px; font-size: 14px; }
 
 
-/* --- REGLA CLAVE #3: El Contenedor Principal --- */
+/* --- REGLA CLAVE #3: El Contenedor Principal (MODIFICADO) --- */
 #app-container {
+    /* ¡CAMBIO DRÁSTICO! Usamos posicionamiento absoluto para fijar el contenedor a la ventana. */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    /* Dentro de este marco absoluto, seguimos usando flexbox para organizar la sidebar y el contenido. */
     display: flex;
-    width: 100%;         /* Ocupa el 100% del ancho del body. */
-    height: 100%;        /* Ocupa el 100% de la altura del body (que ya está limitada y sin scroll). */
 }
 .hidden { display: none !important; }
 .visible { display: flex !important; }
@@ -94,12 +99,13 @@ body {
 .sidebar-footer { padding: 25px; border-top: 1px solid #343a40; text-align: center; flex-shrink: 0; }
 .sidebar-footer a { color: var(--warning-color); text-decoration: none; font-weight: 500; }
 
-/* --- REGLA CLAVE #4: El Contenido Principal (Mantenemos la corrección anterior) --- */
+/* --- REGLA CLAVE #4: El Contenido Principal (VERIFICAR) --- */
+/* Asegúrate de que esta regla siga exactamente así. Es vital. */
 #app-content { 
     flex-grow: 1;        
     padding: 40px;
-    overflow-y: auto;    /* Crea el scroll vertical SÓLO para esta área. */
-    min-height: 0;       /* Permite que el contenedor se encoja, fundamental en un layout flex. */
+    overflow-y: auto;    /* La única barra de scroll que debería aparecer. */
+    min-height: 0;       /* Le dice que no crezca más de la cuenta. */
 }
 
 /* --- RESTO DE ESTILOS (Sin cambios críticos) --- */
