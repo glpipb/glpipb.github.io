@@ -91,9 +91,10 @@ body {
 
 /* --- REGLA CLAVE #3: El Contenido Principal --- */
 #app-content { 
-    flex-grow: 1;        /* Le dice que ocupe el resto del espacio disponible. */
+    flex-grow: 1;       
     padding: 40px;
-    overflow-y: auto;    /* ¡CRÍTICO! Crea la barra de scroll vertical SÓLO para este elemento cuando su contenido interno se desborda. */
+    overflow-y: auto;
+    min-height: 0;
 }
 
 /* --- RESTO DE ESTILOS (Sin cambios críticos) --- */
