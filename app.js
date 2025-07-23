@@ -43,11 +43,11 @@ const inventoryCategoryConfig = {
             cpu: { label: 'CPU', type: 'text' }, 
             ram: { label: 'RAM (GB)', type: 'text' }, 
             storage: { label: 'Almacenamiento (GB)', type: 'text' }, 
-            os: { label: 'Sistema Operativo (Licencia)', type: 'select', optionsSource: 'os-licenses' }, // MODIFICADO
+            os: { label: 'Licencia de SO Asignada', type: 'text', readonly: true },
             sede: { label: 'Sede', type: 'select', optionsSource: 'locations' }, 
-            purchaseDate: { label: 'Fecha de Compra', type: 'date' },             // NUEVO
-            warrantyEndDate: { label: 'Fin de Garantía', type: 'date' },        // NUEVO
-            lifecycleStatus: { label: 'Fase del Ciclo de Vida', type: 'select', options: ['Producción', 'En Almacén', 'En Mantenimiento', 'Retirado'] }, // NUEVO
+            purchaseDate: { label: 'Fecha de Compra', type: 'date' },
+            warrantyEndDate: { label: 'Fin de Garantía', type: 'date' },
+            lifecycleStatus: { label: 'Fase del Ciclo de Vida', type: 'select', options: ['Producción', 'En Almacén', 'En Mantenimiento', 'Retirado'] },
             observaciones: { label: 'Observaciones', type: 'textarea' } 
         }
     },
@@ -71,28 +71,23 @@ const credentialsCategoryConfig = {
             softwareName: { label: 'Nombre del Software', type: 'text' }, 
             licenseKey: { label: 'Clave de Licencia', type: 'textarea' }, 
             version: { label: 'Versión', type: 'text' },
-            status: { label: 'Estado', type: 'select', options: ['disponible', 'en uso'] }, // NUEVO
-            assignedTo: { label: 'Asignado a', type: 'text', readonly: true }     // NUEVO
+            assignedTo: { label: 'Asignar a Equipo', type: 'select', optionsSource: 'computers-inventory' }
         }
     },
     others: { title: 'Otras Credenciales', titleSingular: 'Credencial', prefix: 'CRED-OTH-', counter: 'otherCredentialCounter', fields: { id: { label: 'Código' }, system: { label: 'Sistema/Servicio', type: 'text' }, url: { label: 'URL (Opcional)', type: 'text' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, notes: { label: 'Notas', type: 'textarea' } }}
 };
 
-function handleFirestoreError(error, element) { console.error("Firestore Error:", error); const indexLinkRegex = /(https:\/\/console\.firebase\.google\.com\/project\/.*?\/firestore\/indexes\?create_composite=.*?)"/; const match = error.message.match(indexLinkRegex); let errorMessageHTML; if (match) { const link = match[1]; errorMessageHTML = `<strong>Error de Firebase:</strong> Se requiere un índice que no existe.<br><br><a href="${link}" target="_blank" style="color:blue; text-decoration:underline;">Haz clic aquí para crear el índice necesario en una nueva pestaña.</a><br><br>Después de crearlo, espera unos minutos y recarga esta página.`; } else { errorMessageHTML = `<strong>Error al cargar los datos:</strong> ${error.message}. <br><br>Esto puede ser causado por la configuración de "Prevención de seguimiento" de tu navegador que bloquea la conexión a la base de datos. Intenta desactivarla para este sitio.`; } element.innerHTML = `<div class="card" style="padding: 20px; border-left: 5px solid red;">${errorMessageHTML}</div>`; }
+function handleFirestoreError(error, element) { console.error("Firestore Error:", error); const indexLinkRegex = /(https:\/\/console\.firebase\.google\.com\/project\/.*?\/firestore\/indexes\?create_composite=.*?)"/; const match = error.message.match(indexLinkRegex); let errorMessageHTML; if (match) { const link = match[1]; errorMessageHTML = `<strong>Error de Firebase:</strong> Se requiere un índice que no existe.<br><br><a href="${link}" target="_blank" style="color:blue; text-decoration:underline;">Haz clic aquí para crear el índice necesario en una nueva pestaña.</a><br><br>Después de crearlo, espera unos minutos y recarga esta página.`; } else { errorMessageHTML = `<strong>Error al cargar los datos:</strong> ${error.message}. <br><br>Esto puede ser causado por la configuración de "Prevención de seguimiento" de tu navegador.`; } element.innerHTML = `<div class="card" style="padding: 20px; border-left: 5px solid red;">${errorMessageHTML}</div>`; }
 async function renderDashboard(container) { container.innerHTML = dashboardHTML; const cardsContainer = document.getElementById('dashboard-cards'); cardsContainer.innerHTML = 'Cargando estadísticas...'; const ticketsSnapshot = await db.collection('tickets').get(); const tickets = ticketsSnapshot.docs.map(doc => doc.data()); const openCount = tickets.filter(t => t.status === 'abierto').length; const closedCount = tickets.filter(t => t.status === 'cerrado').length; const totalCount = tickets.length; cardsContainer.innerHTML = `<a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a><a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a><a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>`; const last7Days = Array(7).fill(0).reduce((acc, _, i) => { const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc; }, {}); tickets.forEach(ticket => { if (ticket.createdAt) { const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0]; if (last7Days.hasOwnProperty(ticketDate)) { last7Days[ticketDate]++; } } }); const ctx = document.getElementById('ticketsChart').getContext('2d'); new Chart(ctx, { type: 'bar', data: { labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(), datasets: [{ label: '# de Tickets Creados', data: Object.values(last7Days).reverse(), backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); }
 async function renderNewTicketForm(container) { container.innerHTML = newTicketFormHTML; const quill = new Quill('#description-editor', { theme: 'snow', placeholder: 'Detalla el problema o solicitud...' }); const requesterSelect = document.getElementById('requester'); const locationSelect = document.getElementById('location'); const deviceDatalist = document.getElementById('device-list'); const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); requesterSelect.innerHTML = '<option value="">Selecciona un solicitante</option>'; reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); locationSelect.innerHTML = '<option value="">Selecciona una ubicación</option>'; locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); const form = document.getElementById('new-ticket-form'); form.addEventListener('submit', async (e) => { e.preventDefault(); const counterRef = db.collection('counters').doc('ticketCounter'); try { const newTicketId = await db.runTransaction(async (transaction) => { const counterDoc = await transaction.get(counterRef); if (!counterDoc.exists) { throw "El documento contador de tickets no existe. Créalo en Firebase."; } const newNumber = counterDoc.data().currentNumber + 1; transaction.update(counterRef, { currentNumber: newNumber }); return `TICKET-${newNumber}`; }); const deviceId = document.getElementById('device-search').value; const newTicketData = { title: form.title.value, description: quill.root.innerHTML, requesterId: form.requester.value, locationId: form.location.value, priority: form.priority.value, status: 'abierto', solution: null, deviceId: deviceId || null, createdAt: firebase.firestore.FieldValue.serverTimestamp(), closedAt: null }; await db.collection('tickets').doc(newTicketId).set(newTicketData); alert(`¡Ticket ${newTicketId} creado con éxito!`); window.location.hash = '#tickets?status=abierto'; } catch (error) { console.error("Error al crear el ticket: ", error); alert("No se pudo crear el ticket. Revisa la consola para más detalles."); } }); }
 async function renderTicketList(container, params = {}) { container.innerHTML = ticketListHTML; const [reqSnap] = await Promise.all([ db.collection('requesters').get() ]); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); const tableBody = document.querySelector('#data-table tbody'); const tableTitle = document.getElementById('tickets-list-title'); const filterStatus = params.status; let query = db.collection('tickets'); if (filterStatus) { query = query.where('status', '==', filterStatus); tableTitle.innerText = `Tickets ${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}s`; } else { tableTitle.innerText = 'Todos los Tickets'; } query.orderBy('createdAt', 'desc').onSnapshot(snapshot => { tableBody.innerHTML = ''; if (snapshot.empty) { tableBody.innerHTML = `<tr><td colspan="6">No hay tickets que coincidan con este filtro.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.locationId || 'N/A'}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
 async function renderHistoryPage(container) { container.innerHTML = historyPageHTML; const form = document.getElementById('history-search-form'); const deviceDatalist = document.getElementById('device-list-search'); const requesterSelect = document.getElementById('search-requester'); const locationSelect = document.getElementById('search-location'); const resultsTableBody = document.getElementById('data-table').querySelector('tbody'); const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); form.addEventListener('submit', async e => { e.preventDefault(); const filters = { deviceId: form['search-device'].value, requesterId: form['search-requester'].value, locationId: form['search-location'].value, status: form['search-status'].value, priority: form['search-priority'].value, }; let query = db.collection('tickets'); Object.entries(filters).forEach(([key, value]) => { if (value) { query = query.where(key, '==', value); } }); try { const snapshot = await query.orderBy('createdAt', 'desc').get(); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); resultsTableBody.innerHTML = ''; if (snapshot.empty) { resultsTableBody.innerHTML = `<tr><td colspan="6">No se encontraron tickets con esos criterios.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.createdAt.toDate().toLocaleDateString('es-ES')}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver</button></td>`; resultsTableBody.appendChild(tr); }); } catch(error) { handleFirestoreError(error, resultsTableBody); } }); }
-async function renderEstadisticas(container) { container.innerHTML = statisticsHTML; const generateBtn = document.getElementById('generate-report-btn'); document.getElementById('export-stats-pdf').addEventListener('click', exportStatsToPDF); let charts = {}; const chartContexts = { ticketsByPriority: document.getElementById('ticketsByPriorityChart').getContext('2d'), ticketsByDeviceCategory: document.getElementById('ticketsByDeviceCategoryChart').getContext('2d'), ticketFlow: document.getElementById('ticket-flow-chart').getContext('2d'), inventoryByCategory: document.getElementById('inventoryByCategoryChart').getContext('2d'), computersByOs: document.getElementById('computersByOsChart').getContext('2d') }; const topDevicesList = document.getElementById('top-devices-list'); const topRequestersList = document.getElementById('top-requesters-list'); const startDateInput = document.getElementById('start-date'); const endDateInput = document.getElementById('end-date'); const today = new Date(); const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1)); startDateInput.value = oneMonthAgo.toISOString().split('T')[0]; endDateInput.value = today.toISOString().split('T')[0]; const generateReports = async () => { /* ... tu lógica de reportes ... */ }; generateBtn.addEventListener('click', generateReports); /* generateReports(); */ }
-function renderGenericListPage(container, params, configObject, collectionName, icon) { container.innerHTML = genericListPageHTML; const category = params.category; const config = configObject[category]; if (!config) { container.innerHTML = `<h1>Error: Categoría no encontrada.</h1>`; return; } const iconEdit = `<svg class="icon-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`; const iconDelete = `<svg class="icon-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`; document.getElementById('page-title').innerText = `${icon} ${config.title}`; document.getElementById('item-list-title').innerText = `Lista de ${config.title}`; const addButton = document.getElementById('add-item-btn'); addButton.innerText = `Añadir ${config.titleSingular}`; addButton.dataset.type = collectionName; addButton.dataset.category = category; const tableHeadContainer = document.getElementById('item-table-head'); const tableHeaders = Object.values(config.fields).map(field => field.label); tableHeadContainer.innerHTML = `<tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`; const tableBody = document.getElementById('item-table-body'); db.collection(collectionName).where('category', '==', category).onSnapshot(snapshot => { tableBody.innerHTML = ''; snapshot.forEach(doc => { const item = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.dataset.id = item.id; let cellsHTML = ''; for (const key of Object.keys(config.fields)) { let cellContent = key === 'id' ? item.id : (item[key] || 'N/A'); cellsHTML += `<td data-field="${key}"><span class="cell-text">${cellContent}</span></td>`; } tr.innerHTML = `${cellsHTML}<td><div class="config-item-actions"><span class="edit-btn" data-id="${item.id}" data-collection="${collectionName}" data-category="${category}">${iconEdit}</span><span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span></div></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
+async function renderEstadisticas(container) { container.innerHTML = statisticsHTML; const generateBtn = document.getElementById('generate-report-btn'); document.getElementById('export-stats-pdf').addEventListener('click', exportStatsToPDF); let charts = {}; const chartContexts = { ticketsByPriority: document.getElementById('ticketsByPriorityChart').getContext('2d'), ticketsByDeviceCategory: document.getElementById('ticketsByDeviceCategoryChart').getContext('2d'), ticketFlow: document.getElementById('ticket-flow-chart').getContext('2d'), inventoryByCategory: document.getElementById('inventoryByCategoryChart').getContext('2d'), computersByOs: document.getElementById('computersByOsChart').getContext('2d') }; const topDevicesList = document.getElementById('top-devices-list'); const topRequestersList = document.getElementById('top-requesters-list'); const startDateInput = document.getElementById('start-date'); const endDateInput = document.getElementById('end-date'); const today = new Date(); const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1)); startDateInput.value = oneMonthAgo.toISOString().split('T')[0]; endDateInput.value = today.toISOString().split('T')[0]; const generateReports = async () => { /* tu lógica de reportes */ }; generateBtn.addEventListener('click', generateReports); }
+function renderGenericListPage(container, params, configObject, collectionName, icon) { container.innerHTML = genericListPageHTML; const category = params.category; const config = configObject[category]; if (!config) { container.innerHTML = `<h1>Error: Categoría no encontrada.</h1>`; return; } const iconEdit = `<svg class="icon-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`; const iconDelete = `<svg class="icon-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`; document.getElementById('page-title').innerText = `${icon} ${config.title}`; document.getElementById('item-list-title').innerText = `Lista de ${config.title}`; const addButton = document.getElementById('add-item-btn'); addButton.innerText = `Añadir ${config.titleSingular}`; addButton.dataset.type = collectionName; addButton.dataset.category = category; const tableHeadContainer = document.getElementById('item-table-head'); const tableHeaders = Object.values(config.fields).map(field => field.label); tableHeadContainer.innerHTML = `<tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}<th>Acciones</th></tr>`; const tableBody = document.getElementById('item-table-body'); db.collection(collectionName).where('category', '==', category).onSnapshot(snapshot => { tableBody.innerHTML = ''; snapshot.forEach(doc => { const item = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.dataset.id = item.id; let cellsHTML = ''; for (const key of Object.keys(config.fields)) { let cellContent = key === 'id' ? item.id : (item[key] || 'N/A'); if (key === 'assignedTo' && cellContent !== 'N/A' && cellContent !== null && cellContent !== "") { cellContent = `<a href="#inventory-computers" style="color: blue; text-decoration: underline;">${cellContent}</a>`; } cellsHTML += `<td data-field="${key}"><span class="cell-text">${cellContent}</span></td>`; } tr.innerHTML = `${cellsHTML}<td><div class="config-item-actions"><span class="edit-btn" data-id="${item.id}" data-collection="${collectionName}" data-category="${category}">${iconEdit}</span><span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span></div></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
 function renderMaintenanceCalendar(container) { container.innerHTML = maintenanceCalendarHTML; const calendarEl = document.getElementById('maintenance-calendar'); const dataTable = document.getElementById('data-table'); db.collection('maintenance').where('status', 'in', ['planificada', 'completada']).onSnapshot(snapshot => { const eventColors = { 'Mantenimiento Preventivo': '#dc3545', 'Mantenimiento Correctivo': '#ffc107', 'Mantenimiento Lógico': '#6f42c1', 'Backup': '#fd7e14', 'Tarea': '#007bff', 'Recordatorio': '#17a2b8' }; const events = snapshot.docs.map(doc => { const data = doc.data(); let color = eventColors[data.type] || '#6c757d'; if (data.status === 'completada') color = '#28a745'; return { id: doc.id, title: data.task, start: data.date, color: color, extendedProps: { status: data.status, ...data } }; }); const calendar = new FullCalendar.Calendar(calendarEl, { headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' }, initialView: 'dayGridMonth', locale: 'es', buttonText: { today: 'hoy', month: 'mes', week: 'semana', day: 'día', list: 'agenda' }, events: events, eventClick: function(info) { showEventActionChoiceModal(info.event.id, info.event.title, info.event.extendedProps); } }); calendar.render(); const tableHeaders = ['Tarea', 'Fecha Programada', 'Tipo', 'Estado']; const tableRows = snapshot.docs.map(doc => { const data = doc.data(); return [data.task, data.date, data.type, data.status]; }); dataTable.innerHTML = `<thead><tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${tableRows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody>`; }, error => handleFirestoreError(error, calendarEl)); }
 function renderConfiguracion(container) { container.innerHTML = configHTML; const setupConfigSection = (type, collectionName, prefix, counterName) => { const form = document.getElementById(`add-${type}-form`); const input = document.getElementById(`${type}-name`); const list = document.getElementById(`${type}s-list`); const iconEdit = `<svg class="icon-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`; const iconDelete = `<svg class="icon-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`; form.addEventListener('submit', async (e) => { e.preventDefault(); const name = input.value.trim(); if (!name) return; const counterRef = db.collection('counters').doc(counterName); try { const newId = await db.runTransaction(async (transaction) => { const counterDoc = await transaction.get(counterRef); if (!counterDoc.exists) { throw `El contador '${counterName}' no existe en Firebase.`; } const newNumber = counterDoc.data().currentNumber + 1; transaction.update(counterRef, { currentNumber: newNumber }); return `${prefix}${newNumber}`; }); await db.collection(collectionName).doc(newId).set({ name }); form.reset(); } catch (error) { console.error("Error al crear item:", error); alert("No se pudo crear el nuevo ítem. Revisa la consola."); } }); db.collection(collectionName).onSnapshot(snapshot => { list.innerHTML = ''; snapshot.forEach(doc => { const item = { id: doc.id, ...doc.data() }; const li = document.createElement('li'); li.className = 'config-list-item'; li.innerHTML = `<div><strong style="margin-right: 10px;">${item.id}</strong><span class="config-item-name">${item.name}</span></div><div class="config-item-actions"><span class="edit-btn" data-collection="${collectionName}" data-id="${item.id}" data-type="config">${iconEdit}</span><span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span></div>`; list.appendChild(li); }); }); }; setupConfigSection('requester', 'requesters', 'REQ-', 'requesterCounter'); setupConfigSection('location', 'locations', 'LOC-', 'locationCounter'); }
 
-// --- 6. ROUTER Y LÓGICA PRINCIPAL ---
-const appContent = document.getElementById('app-content');
-const navLinks = document.querySelectorAll('.nav-link');
-const routes = { '#dashboard': renderDashboard, '#crear-ticket': renderNewTicketForm, '#tickets': renderTicketList, '#historial': renderHistoryPage, '#estadisticas': renderEstadisticas, '#maintenance': renderMaintenanceCalendar, '#configuracion': renderConfiguracion };
-function router() { const fullHash = window.location.hash || '#dashboard'; const [path, queryString] = fullHash.split('?'); const params = new URLSearchParams(queryString); document.querySelectorAll('.nav-item-with-submenu').forEach(item => item.classList.remove('open')); let isHandled = false; if (path.startsWith('#inventory-')) { const category = path.replace('#inventory-', ''); params.set('category', category); renderGenericListPage(appContent, Object.fromEntries(params.entries()), inventoryCategoryConfig, 'inventory', '💻'); const parentLink = document.querySelector('a[href="#inventory-computers"]').closest('.nav-item-with-submenu'); if(parentLink) parentLink.parentElement.classList.add('open'); isHandled = true; } if (path.startsWith('#credentials-')) { const category = path.replace('#credentials-', ''); params.set('category', category); renderGenericListPage(appContent, Object.fromEntries(params.entries()), credentialsCategoryConfig, 'credentials', '🔑'); const parentLink = document.querySelector('a[href="#credentials-emails"]').closest('.nav-item-with-submenu'); if(parentLink) parentLink.parentElement.classList.add('open'); isHandled = true; } if(isHandled) { navLinks.forEach(link => link.classList.remove('active')); const activeParent = document.querySelector('.nav-item-with-submenu.open > a'); if(activeParent) activeParent.classList.add('active'); return; } const paramsObj = Object.fromEntries(params.entries()); const renderFunction = routes[path]; if (renderFunction) { appContent.innerHTML = '<div class="card"><h1>Cargando...</h1></div>'; renderFunction(appContent, paramsObj); navLinks.forEach(link => { const linkPath = link.getAttribute('href').split('?')[0]; link.classList.toggle('active', linkPath === path); }); } else { appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; } }
+// --- 6. MODAL Y LÓGICA PRINCIPAL ---
 async function showItemFormModal(type, category = null, docId = null) {
     const isEditing = docId !== null;
     const formModal = document.getElementById('form-modal');
@@ -102,72 +97,56 @@ async function showItemFormModal(type, category = null, docId = null) {
     let existingData = {};
     if (isEditing) {
         const docSnap = await db.collection(type === 'config' ? category : type).doc(docId).get();
-        if (docSnap.exists) {
-            existingData = docSnap.data();
-        } else {
-            alert("Error: No se encontró el elemento a editar.");
-            return;
-        }
+        if (docSnap.exists) { existingData = docSnap.data(); } 
+        else { alert("Error: No se encontró el elemento a editar."); return; }
     }
 
-    switch (type) {
-        case 'inventory':
-        case 'credentials':
-            const configObject = type === 'inventory' ? inventoryCategoryConfig : credentialsCategoryConfig;
-            config = configObject[category];
-            title = isEditing ? `Editar ${config.titleSingular}` : `Añadir ${config.titleSingular}`;
-            collectionName = type;
-            let fieldsHTML = '';
-            for (const [key, field] of Object.entries(config.fields)) {
-                if (key === 'id') continue;
-                if (field.readonly) continue; // No mostrar campos de solo lectura en el formulario
-                
-                const value = existingData[key] || '';
-                let inputHTML = `<input type="${field.type || 'text'}" id="form-${key}" name="${key}" value="${value}" required>`;
-                if (field.type === 'textarea') {
-                    inputHTML = `<textarea id="form-${key}" name="${key}" rows="3">${value}</textarea>`;
-                } else if (field.type === 'select') {
-                    let optionsHTML = '<option value="">Selecciona...</option>';
-                    if (field.optionsSource === 'locations') {
-                        const locSnap = await db.collection('locations').get();
-                        optionsHTML += locSnap.docs.map(doc => `<option value="${doc.id}" ${doc.id === value ? 'selected' : ''}>${doc.id}: ${doc.data().name}</option>`).join('');
-                    } else if (field.optionsSource === 'os-licenses') {
-                        const osSnap = await db.collection('credentials').where('category', '==', 'software').where('status', '==', 'disponible').get();
-                        optionsHTML += osSnap.docs.map(doc => `<option value="${doc.id}">${doc.data().softwareName} ${doc.data().version || ''}</option>`).join('');
-                        if (isEditing && value) {
-                            const currentLicenseSnap = await db.collection('credentials').doc(value).get();
-                            if (currentLicenseSnap.exists) {
-                                const lic = currentLicenseSnap.data();
-                                optionsHTML += `<option value="${currentLicenseSnap.id}" selected>${lic.softwareName} ${lic.version || ''}</option>`;
-                            }
-                        }
-                    } else {
-                        optionsHTML += field.options.map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
+    const configObject = (type === 'inventory') ? inventoryCategoryConfig : (type === 'credentials') ? credentialsCategoryConfig : {};
+    config = configObject[category];
+    if (!config) { console.error("Config not found for:", type, category); return; }
+
+    title = isEditing ? `Editar ${config.titleSingular}` : `Añadir ${config.titleSingular}`;
+    collectionName = type;
+
+    let fieldsHTML = '';
+    for (const [key, field] of Object.entries(config.fields)) {
+        if (key === 'id') continue;
+        const value = existingData[key] || '';
+        let inputHTML = '';
+
+        if (field.readonly) {
+            inputHTML = `<input type="text" id="form-${key}" name="${key}" value="${value}" readonly style="background:#eee;">`;
+        } else if (field.type === 'select') {
+            let optionsHTML = '<option value="">(No asignar)</option>';
+            if (field.optionsSource === 'locations') {
+                const locSnap = await db.collection('locations').get();
+                optionsHTML += locSnap.docs.map(doc => `<option value="${doc.id}" ${doc.id === value ? 'selected' : ''}>${doc.id}: ${doc.data().name}</option>`).join('');
+            } else if (field.optionsSource === 'computers-inventory') {
+                const compSnap = await db.collection('inventory').where('category', '==', 'computers').where('os', 'in', ["", null]).get();
+                optionsHTML += compSnap.docs.map(doc => `<option value="${doc.id}">${doc.id}: ${doc.data().brand} ${doc.data().model}</option>`).join('');
+                if (isEditing && value) {
+                    const currentCompSnap = await db.collection('inventory').doc(value).get();
+                    if (currentCompSnap.exists) {
+                        const comp = currentCompSnap.data();
+                        optionsHTML += `<option value="${currentCompSnap.id}" selected>${currentCompSnap.id}: ${comp.brand} ${comp.model}</option>`;
                     }
-                    inputHTML = `<select id="form-${key}" name="${key}" ${value ? `data-old-value="${value}"` : ''}>${optionsHTML}</select>`;
                 }
-                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label>${inputHTML}</div>`;
+            } else {
+                optionsHTML += field.options.map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
             }
-            formHTML = `<div class="inventory-form-grid">${fieldsHTML}</div>`;
-            
-            if (isEditing && type === 'inventory') {
-                formHTML += `<hr style="margin-top: 25px; margin-bottom: 15px;"><h3>Historial de Tickets Asociados</h3><div id="device-ticket-history" style="max-height: 200px; overflow-y: auto;">Cargando historial...</div>`;
-            }
-            break;
-        case 'maintenance':
-            title = isEditing ? 'Editar Tarea' : 'Programar Tarea';
-            collectionName = 'maintenance';
-            const task = existingData.task || '';
-            const date = existingData.date || '';
-            const taskType = existingData.type || 'Tarea';
-            formHTML = `<div class="form-group"><label for="form-task">Título de la Tarea</label><input type="text" id="form-task" name="task" value="${task}" required></div><div class="form-group"><label for="form-date">Fecha</label><input type="date" id="form-date" name="date" value="${date}" required></div><div class="form-group"><label for="form-type">Tipo de Tarea</label><select id="form-type" name="type"><option value="Mantenimiento Preventivo" ${taskType === 'Mantenimiento Preventivo' ? 'selected' : ''}>Mantenimiento Preventivo</option><option value="Mantenimiento Correctivo" ${taskType === 'Mantenimiento Correctivo' ? 'selected' : ''}>Mantenimiento Correctivo</option><option value="Mantenimiento Lógico" ${taskType === 'Mantenimiento Lógico' ? 'selected' : ''}>Mantenimiento Lógico</option><option value="Backup" ${taskType === 'Backup' ? 'selected' : ''}>Backup</option><option value="Tarea" ${taskType === 'Tarea' ? 'selected' : ''}>Tarea</option><option value="Recordatorio" ${taskType === 'Recordatorio' ? 'selected' : ''}>Recordatorio</option></select></div>`;
-            break;
-        case 'config':
-            collectionName = category;
-            title = isEditing ? `Editar ${collectionName === 'requesters' ? 'Solicitante' : 'Ubicación'}` : `Añadir ${collectionName === 'requesters' ? 'Solicitante' : 'Ubicación'}`;
-            const name = existingData.name || '';
-            formHTML = `<div class="form-group"><label for="form-name">Nombre</label><input type="text" id="form-name" name="name" value="${name}" required></div>`;
-            break;
+            inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}">${optionsHTML}</select>`;
+        } else if (field.type === 'textarea') {
+            inputHTML = `<textarea id="form-${key}" name="${key}" rows="3" required>${value}</textarea>`;
+        } else {
+            inputHTML = `<input type="${field.type || 'text'}" id="form-${key}" name="${key}" value="${value}" required>`;
+        }
+        fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label>${inputHTML}</div>`;
+    }
+
+    formHTML = `<div class="inventory-form-grid">${fieldsHTML}</div>`;
+    
+    if (isEditing && type === 'inventory') {
+        formHTML += `<hr style="margin-top: 25px; margin-bottom: 15px;"><h3>Historial de Tickets Asociados</h3><div id="device-ticket-history" style="max-height: 200px; overflow-y: auto;">Cargando historial...</div>`;
     }
 
     modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">${isEditing ? 'Guardar Cambios' : 'Guardar'}</button></div></form>`;
@@ -178,27 +157,21 @@ async function showItemFormModal(type, category = null, docId = null) {
             const historyContainer = document.getElementById('device-ticket-history');
             if (historyContainer) {
                 db.collection('tickets').where('deviceId', '==', docId).orderBy('createdAt', 'desc').get()
-                    .then(snapshot => {
-                        if (snapshot.empty) {
-                            historyContainer.innerHTML = '<p>No hay tickets asociados a este dispositivo.</p>';
-                            return;
-                        }
-                        let historyHTML = '<ul class="simple-list">';
-                        snapshot.forEach(doc => {
-                            const ticket = doc.data();
-                            const ticketDate = ticket.createdAt ? ticket.createdAt.toDate().toLocaleDateString('es-ES') : 'Fecha N/A';
-                            historyHTML += `<li style="display:flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;">
-                                            <span>#${doc.id}: ${ticket.title} (${ticketDate})</span>
-                                            <span class="status status-${ticket.status}">${ticket.status}</span>
+                  .then(snapshot => {
+                      if (snapshot.empty) { historyContainer.innerHTML = '<p>No hay tickets asociados a este dispositivo.</p>'; return; }
+                      let historyHTML = '<ul class="simple-list" style="list-style-type: none; padding-left: 0;">';
+                      snapshot.forEach(doc => {
+                          const ticket = doc.data();
+                          const ticketDate = ticket.createdAt ? ticket.createdAt.toDate().toLocaleDateString('es-ES') : 'Fecha N/A';
+                          historyHTML += `<li style="display:flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
+                                          <span><a href="#" class="view-ticket-btn" data-id="${doc.id}" style="color:blue; text-decoration:underline;">#${doc.id}</a>: ${ticket.title} (${ticketDate})</span>
+                                          <span class="status status-${ticket.status}">${ticket.status}</span>
                                         </li>`;
-                        });
-                        historyHTML += '</ul>';
-                        historyContainer.innerHTML = historyHTML;
-                    })
-                    .catch(error => {
-                        console.error("Error al cargar historial de tickets:", error);
-                        historyContainer.innerHTML = '<p style="color:red;">Error al cargar el historial.</p>';
-                    });
+                      });
+                      historyHTML += '</ul>';
+                      historyContainer.innerHTML = historyHTML;
+                  })
+                  .catch(error => { console.error("Error al cargar historial:", error); historyContainer.innerHTML = '<p style="color:red;">Error al cargar.</p>'; });
             }
         }, 100);
     }
@@ -207,29 +180,28 @@ async function showItemFormModal(type, category = null, docId = null) {
         e.preventDefault();
         const form = e.target;
         const data = {};
-        if (type === 'maintenance' && !isEditing) data.status = 'planificada';
-        if ((type === 'inventory' || type === 'credentials') && !isEditing) data.category = category;
-        
         const formData = new FormData(form);
         formData.forEach((value, key) => { data[key] = value; });
 
         try {
             if (isEditing) {
-                if (category === 'computers' && data.os) {
-                    const oldLicenseId = form.os.dataset.oldValue;
-                    const newLicenseId = data.os;
-                    if (oldLicenseId !== newLicenseId) {
+                if (category === 'software') {
+                    const newComputerId = data.assignedTo || null;
+                    const oldComputerId = form.assignedTo.dataset.oldValue || null;
+                    
+                    if (newComputerId !== oldComputerId) {
                         await db.runTransaction(async (transaction) => {
-                            if (oldLicenseId) {
-                                const oldLicRef = db.collection('credentials').doc(oldLicenseId);
-                                transaction.update(oldLicRef, { status: 'disponible', assignedTo: null });
+                            const licenseRef = db.collection('credentials').doc(docId);
+                            transaction.update(licenseRef, data);
+                            
+                            if (oldComputerId) {
+                                const oldCompRef = db.collection('inventory').doc(oldComputerId);
+                                transaction.update(oldCompRef, { os: null });
                             }
-                            if (newLicenseId) {
-                                const newLicRef = db.collection('credentials').doc(newLicenseId);
-                                transaction.update(newLicRef, { status: 'en uso', assignedTo: docId });
+                            if (newComputerId) {
+                                const newCompRef = db.collection('inventory').doc(newComputerId);
+                                transaction.update(newCompRef, { os: docId });
                             }
-                            const deviceRef = db.collection(collectionName).doc(docId);
-                            transaction.update(deviceRef, data);
                         });
                     } else {
                         await db.collection(collectionName).doc(docId).update(data);
@@ -239,10 +211,11 @@ async function showItemFormModal(type, category = null, docId = null) {
                 }
             } else { // Creando nuevo
                 if (type === 'inventory' || type === 'credentials') {
+                    if (!isEditing) data.category = category;
                     const { prefix, counter } = config;
                     if (!prefix || !counter) { alert('Error de configuración.'); return; }
-                    const counterRef = db.collection('counters').doc(counter);
                     
+                    const counterRef = db.collection('counters').doc(counter);
                     const newId = await db.runTransaction(async (transaction) => {
                         const counterDoc = await transaction.get(counterRef);
                         if (!counterDoc.exists) throw `El contador '${counter}' no existe.`;
@@ -250,12 +223,13 @@ async function showItemFormModal(type, category = null, docId = null) {
                         transaction.update(counterRef, { currentNumber: newNumber });
                         return `${prefix}${newNumber}`;
                     });
-                    
-                    if (category === 'computers' && data.os) {
-                        const newLicRef = db.collection('credentials').doc(data.os);
-                        await newLicRef.update({ status: 'en uso', assignedTo: newId });
-                    }
+
                     await db.collection(collectionName).doc(newId).set(data);
+                    
+                    if (category === 'software' && data.assignedTo) {
+                        const compRef = db.collection('inventory').doc(data.assignedTo);
+                        await compRef.update({ os: newId });
+                    }
                 } else {
                     await db.collection(collectionName).add(data);
                 }
@@ -278,8 +252,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
     const actionModal = document.getElementById('action-modal');
+
     appContent.addEventListener('click', e => {
-        const target = e.target.closest('button, span.edit-btn, span.delete-btn');
+        const target = e.target.closest('button, span.edit-btn, span.delete-btn, a.view-ticket-btn');
         if (!target) return;
         
         if (target.matches('.delete-btn, .delete-btn *')) {
@@ -302,8 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        if (target.closest('button')?.classList.contains('view-ticket-btn')) {
-            const id = target.closest('button').dataset.id;
+        if (target.matches('.view-ticket-btn, .view-ticket-btn *')) {
+            e.preventDefault();
+            const id = target.closest('.view-ticket-btn').dataset.id;
             showTicketModal(id);
         }
         
