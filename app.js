@@ -20,44 +20,35 @@ const dashboardHTML = `<h1>📊 Dashboard</h1><div class="dashboard-stats" id="d
 const newTicketFormHTML = `<h1>➕ Crear Nuevo Ticket</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div class="inventory-form-grid"><div class="form-group"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><label for="device-search">Dispositivo Asociado (opcional)</label><input type="text" id="device-search" list="device-list" placeholder="Busca por código, marca o modelo..."><datalist id="device-list"></datalist></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 const ticketListHTML = `<div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="tickets-list-title">Tickets</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Título</th><th>Solicitante</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
 const historyPageHTML = `<h1>🔍 Historial y Búsqueda Avanzada</h1><div class="card"><form id="history-search-form"><div class="search-filters-grid"><div class="form-group"><label for="search-device">Dispositivo</label><input type="text" id="search-device" list="device-list-search"></div><datalist id="device-list-search"></datalist><div class="form-group"><label for="search-requester">Solicitante</label><select id="search-requester"><option value="">Todos</option></select></div><div class="form-group"><label for="search-location">Ubicación</label><select id="search-location"><option value="">Todas</option></select></div><div class="form-group"><label for="search-status">Estado</label><select id="search-status"><option value="">Todos</option><option value="abierto">Abierto</option><option value="cerrado">Cerrado</option></select></div><div class="form-group"><label for="search-priority">Prioridad</label><select id="search-priority"><option value="">Todas</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><button type="submit" class="primary" style="width:100%">Buscar</button></div></div></form></div><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="history-results-title">Resultados</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Título</th><th>Solicitante</th><th>Fecha Creación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
-// En la sección de TEMPLATES HTML
 const statisticsHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h1>📈 Centro de Análisis</h1>
         <button class="primary" id="export-stats-pdf">Exportar a PDF</button>
     </div>
-    <div class="card">
-        <h2>Filtro de Periodo (para Tickets)</h2>
-        <div class="stats-filters">
-            <div class="form-group">
-                <label for="start-date">Fecha de Inicio</label>
-                <input type="date" id="start-date">
+    <div id="stats-content">
+        <div class="card">
+            <h2>Filtro de Periodo (para Tickets)</h2>
+            <div class="stats-filters">
+                <div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div>
+                <div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div>
+                <button id="generate-report-btn" class="primary">Generar Reporte</button>
             </div>
-            <div class="form-group">
-                <label for="end-date">Fecha de Fin</label>
-                <input type="date" id="end-date">
-            </div>
-            <button id="generate-report-btn" class="primary">Generar Reporte</button>
         </div>
-    </div>
 
-    <!-- Contenedor para los errores (inicialmente oculto) -->
-    <div id="stats-error-container" class="card" style="display:none; color: red;"></div>
-
-    <!-- Contenedor para el contenido de los reportes -->
-    <div id="stats-content-wrapper">
         <h2>Análisis de Tickets</h2>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;">
-            <div class="card"><h3>Tickets por Prioridad</h3><canvas id="ticketsByPriorityChart"></canvas></div>
-            <div class="card"><h3>Tickets por Categoría de Dispositivo</h3><canvas id="ticketsByDeviceCategoryChart"></canvas></div>
+            <div class="card"><h3>Tickets por Prioridad</h3><!-- Canvas eliminado --></div>
+            <div class="card"><h3>Tickets por Categoría de Dispositivo</h3><!-- Canvas eliminado --></div>
             <div class="kpi-card"><h3>Top 5 Dispositivos Problemáticos</h3><ul id="top-devices-list" class="kpi-list"></ul></div>
             <div class="kpi-card"><h3>Top 5 Solicitantes</h3><ul id="top-requesters-list" class="kpi-list"></ul></div>
         </div>
-        <div class="card"><h3>Flujo de Tickets (Creados vs. Cerrados)</h3><canvas id="ticket-flow-chart"></canvas></div>
+
+        <div class="card"><h3>Flujo de Tickets (Creados vs. Cerrados)</h3><!-- Canvas eliminado --></div>
+
         <h2 style="margin-top: 40px;">Resumen de Inventario</h2>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;">
-            <div class="card"><h3>Dispositivos por Categoría</h3><canvas id="inventoryByCategoryChart"></canvas></div>
-            <div class="card"><h3>Computadores por SO</h3><canvas id="computersByOsChart"></canvas></div>
+            <div class="card"><h3>Dispositivos por Categoría</h3><!-- Canvas eliminado --></div>
+            <div class="card"><h3>Computadores por SO</h3><!-- Canvas eliminado --></div>
         </div>
     </div>`;
 const genericListPageHTML = `<h1 id="page-title"></h1><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button><button id="add-item-btn" class="btn-blue open-form-modal-btn">Añadir Nuevo</button></div><div class="card"><h2 id="item-list-title"></h2><div class="table-wrapper"><table id="data-table"><thead id="item-table-head"></thead><tbody id="item-table-body"></tbody></table></div></div>`;
