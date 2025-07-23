@@ -122,7 +122,6 @@ body {
 }
 
 /* --- ESTRUCTURA PRINCIPAL DE LA APP --- */
-/* ===== CORRECCIÓN ===== */
 #app-container { 
     display: flex; 
     width: 100%;
@@ -133,17 +132,14 @@ body {
 
 /* --- BARRA LATERAL (SIDEBAR) --- */
 .sidebar {
-    width: 260px;
-    background-color: var(--sidebar-bg);
-    color: var(--sidebar-text);
-    display: flex;
-    flex-direction: column;
-    box-shadow: 3px 0px 15px rgba(0,0,0,0.1);
-    /* Estas 4 propiedades son la clave para la barra lateral fija */
-    height: 100vh;
-    position: sticky;
-    top: 0;
-    flex-shrink: 0;
+width: 260px;
+background-color: var(--sidebar-bg);
+color: var(--sidebar-text);
+display: flex;
+flex-direction: column;
+box-shadow: 3px 0px 15px rgba(0,0,0,0.1);
+height: 100%; / Ocupa el 100% del padre (#app-container) /
+flex-shrink: 0; / Evita que se encoja */
 }
 
 .sidebar-header {
