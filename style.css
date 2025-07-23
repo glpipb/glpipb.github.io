@@ -126,9 +126,7 @@ body {
 #app-container { 
     display: flex; 
     width: 100%;
-    /* Se añade una altura mínima para que el contenedor flex ocupe toda la pantalla.
-       Esto es esencial para que position:sticky funcione correctamente en el sidebar. */
-    min-height: 100vh;
+    height: 100vh; 
 }
 .hidden { display: none !important; }
 .visible { display: flex !important; }
