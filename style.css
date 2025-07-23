@@ -107,6 +107,12 @@ body {
     overflow-y: auto;    /* La única barra de scroll que debería aparecer. */
     min-height: 0;       /* Le dice que no crezca más de la cuenta. */
 }
+/* --- ESTILOS PARA GRÁFICOS --- */
+.chart-container {
+    position: relative;
+    height: 300px; /* Le damos una altura fija al contenedor del gráfico. */
+    width: 100%;
+}
 
 /* --- RESTO DE ESTILOS (Sin cambios críticos) --- */
 h1, h2 { font-weight: 700; letter-spacing: -0.5px; }
