@@ -82,8 +82,143 @@ async function renderDashboard(container) { container.innerHTML = dashboardHTML;
 async function renderNewTicketForm(container) { container.innerHTML = newTicketFormHTML; const quill = new Quill('#description-editor', { theme: 'snow', placeholder: 'Detalla el problema o solicitud...' }); const requesterSelect = document.getElementById('requester'); const locationSelect = document.getElementById('location'); const deviceDatalist = document.getElementById('device-list'); const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); requesterSelect.innerHTML = '<option value="">Selecciona un solicitante</option>'; reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); locationSelect.innerHTML = '<option value="">Selecciona una ubicación</option>'; locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); const form = document.getElementById('new-ticket-form'); form.addEventListener('submit', async (e) => { e.preventDefault(); const counterRef = db.collection('counters').doc('ticketCounter'); try { const newTicketId = await db.runTransaction(async (transaction) => { const counterDoc = await transaction.get(counterRef); if (!counterDoc.exists) { throw "El documento contador de tickets no existe. Créalo en Firebase."; } const newNumber = counterDoc.data().currentNumber + 1; transaction.update(counterRef, { currentNumber: newNumber }); return `TICKET-${newNumber}`; }); const deviceId = document.getElementById('device-search').value; const newTicketData = { title: form.title.value, description: quill.root.innerHTML, requesterId: form.requester.value, locationId: form.location.value, priority: form.priority.value, status: 'abierto', solution: null, deviceId: deviceId || null, createdAt: firebase.firestore.FieldValue.serverTimestamp(), closedAt: null }; await db.collection('tickets').doc(newTicketId).set(newTicketData); alert(`¡Ticket ${newTicketId} creado con éxito!`); window.location.hash = '#tickets?status=abierto'; } catch (error) { console.error("Error al crear el ticket: ", error); alert("No se pudo crear el ticket. Revisa la consola para más detalles."); } }); }
 async function renderTicketList(container, params = {}) { container.innerHTML = ticketListHTML; const [reqSnap] = await Promise.all([ db.collection('requesters').get() ]); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); const tableBody = document.querySelector('#data-table tbody'); const tableTitle = document.getElementById('tickets-list-title'); const filterStatus = params.status; let query = db.collection('tickets'); if (filterStatus) { query = query.where('status', '==', filterStatus); tableTitle.innerText = `Tickets ${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}s`; } else { tableTitle.innerText = 'Todos los Tickets'; } query.orderBy('createdAt', 'desc').onSnapshot(snapshot => { tableBody.innerHTML = ''; if (snapshot.empty) { tableBody.innerHTML = `<tr><td colspan="6">No hay tickets que coincidan con este filtro.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.locationId || 'N/A'}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
 async function renderHistoryPage(container) { container.innerHTML = historyPageHTML; const form = document.getElementById('history-search-form'); const deviceDatalist = document.getElementById('device-list-search'); const requesterSelect = document.getElementById('search-requester'); const locationSelect = document.getElementById('search-location'); const resultsTableBody = document.getElementById('data-table').querySelector('tbody'); const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); form.addEventListener('submit', async e => { e.preventDefault(); const filters = { deviceId: form['search-device'].value, requesterId: form['search-requester'].value, locationId: form['search-location'].value, status: form['search-status'].value, priority: form['search-priority'].value, }; let query = db.collection('tickets'); Object.entries(filters).forEach(([key, value]) => { if (value) { query = query.where(key, '==', value); } }); try { const snapshot = await query.orderBy('createdAt', 'desc').get(); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); resultsTableBody.innerHTML = ''; if (snapshot.empty) { resultsTableBody.innerHTML = `<tr><td colspan="6">No se encontraron tickets con esos criterios.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.createdAt.toDate().toLocaleDateString('es-ES')}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver</button></td>`; resultsTableBody.appendChild(tr); }); } catch(error) { handleFirestoreError(error, resultsTableBody); } }); }
-async function renderEstadisticas(container) { container.innerHTML = statisticsHTML; const generateBtn = document.getElementById('generate-report-btn'); document.getElementById('export-stats-pdf').addEventListener('click', exportStatsToPDF); let charts = {}; const chartContexts = { ticketsByPriority: document.getElementById('ticketsByPriorityChart').getContext('2d'), ticketsByDeviceCategory: document.getElementById('ticketsByDeviceCategoryChart').getContext('2d'), ticketFlow: document.getElementById('ticket-flow-chart').getContext('2d'), inventoryByCategory: document.getElementById('inventoryByCategoryChart').getContext('2d'), computersByOs: document.getElementById('computersByOsChart').getContext('2d') }; const topDevicesList = document.getElementById('top-devices-list'); const topRequestersList = document.getElementById('top-requesters-list'); const startDateInput = document.getElementById('start-date'); const endDateInput = document.getElementById('end-date'); const today = new Date(); const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1)); startDateInput.value = oneMonthAgo.toISOString().split('T')[0]; endDateInput.value = today.toISOString().split('T')[0]; const generateReports = async () => { /* tu lógica de reportes */ }; generateBtn.addEventListener('click', generateReports); }
-// REEMPLAZA ESTA FUNCIÓN COMPLETA
+// ▼▼▼ REEMPLAZA ESTA FUNCIÓN COMPLETA ▼▼▼
+
+async function renderEstadisticas(container) {
+    container.innerHTML = statisticsHTML;
+    const generateBtn = document.getElementById('generate-report-btn');
+    document.getElementById('export-stats-pdf').addEventListener('click', exportStatsToPDF);
+
+    // Guardamos una referencia a los elementos del DOM una sola vez
+    let charts = {};
+    const chartContexts = {
+        ticketsByPriority: document.getElementById('ticketsByPriorityChart').getContext('2d'),
+        ticketsByDeviceCategory: document.getElementById('ticketsByDeviceCategoryChart').getContext('2d'),
+        ticketFlow: document.getElementById('ticket-flow-chart').getContext('2d'),
+        inventoryByCategory: document.getElementById('inventoryByCategoryChart').getContext('2d'),
+        computersByOs: document.getElementById('computersByOsChart').getContext('2d')
+    };
+    const topDevicesList = document.getElementById('top-devices-list');
+    const topRequestersList = document.getElementById('top-requesters-list');
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    
+    // Establecer fechas por defecto
+    const today = new Date();
+    const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1));
+    startDateInput.value = oneMonthAgo.toISOString().split('T')[0];
+    endDateInput.value = today.toISOString().split('T')[0];
+
+    // --- FUNCIÓN PRINCIPAL PARA GENERAR LOS REPORTES ---
+    const generateReports = async () => {
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Generando...';
+
+        try {
+            const startDate = new Date(startDateInput.value);
+            startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(endDateInput.value);
+            endDate.setHours(23, 59, 59, 999);
+
+            // Consultas a Firebase
+            const [ticketsSnapshot, inventorySnapshot, requestersSnapshot, closedTicketsSnapshot] = await Promise.all([
+                db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get(),
+                db.collection('inventory').get(),
+                db.collection('requesters').get(),
+                db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get()
+            ]);
+
+            const tickets = ticketsSnapshot.docs.map(doc => doc.data());
+            const inventory = inventorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const requestersMap = Object.fromEntries(requestersSnapshot.docs.map(doc => [doc.id, doc.data().name]));
+            const closedTickets = closedTicketsSnapshot.docs.map(doc => doc.data());
+            const inventoryMap = Object.fromEntries(inventory.map(item => [item.id, item]));
+
+            // Destruir gráficos antiguos antes de crear nuevos
+            Object.values(charts).forEach(chart => chart.destroy());
+
+            // 1. Gráfico: Tickets por Prioridad
+            const priorityCounts = tickets.reduce((acc, t) => { acc[t.priority] = (acc[t.priority] || 0) + 1; return acc; }, {});
+            charts.ticketsByPriority = new Chart(chartContexts.ticketsByPriority, {
+                type: 'doughnut',
+                data: { labels: Object.keys(priorityCounts), datasets: [{ data: Object.values(priorityCounts), backgroundColor: ['#28a745', '#ffc107', '#dc3545'] }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+            
+            // 2. Gráfico: Tickets por Categoría de Dispositivo
+            const deviceCategoryCounts = tickets.reduce((acc, t) => {
+                const category = t.deviceId ? (inventoryMap[t.deviceId]?.category || 'Desconocido') : 'Sin Dispositivo';
+                acc[category] = (acc[category] || 0) + 1;
+                return acc;
+            }, {});
+            charts.ticketsByDeviceCategory = new Chart(chartContexts.ticketsByDeviceCategory, {
+                type: 'pie',
+                data: { labels: Object.keys(deviceCategoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ data: Object.values(deviceCategoryCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545', '#343a40'] }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 3. KPI: Top 5 Dispositivos Problemáticos
+            const deviceCounts = tickets.reduce((acc, t) => { if(t.deviceId) acc[t.deviceId] = (acc[t.deviceId] || 0) + 1; return acc; }, {});
+            const topDevices = Object.entries(deviceCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            topDevicesList.innerHTML = topDevices.map(([id, count]) => `<li><span>${inventoryMap[id] ? `${inventoryMap[id].brand} ${inventoryMap[id].model}` : id}</span><span>${count}</span></li>`).join('') || '<li>No hay datos</li>';
+
+            // 4. KPI: Top 5 Solicitantes
+            const requesterCounts = tickets.reduce((acc, t) => { if(t.requesterId) acc[t.requesterId] = (acc[t.requesterId] || 0) + 1; return acc; }, {});
+            const topRequesters = Object.entries(requesterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            topRequestersList.innerHTML = topRequesters.map(([id, count]) => `<li><span>${requestersMap[id] || id}</span><span>${count}</span></li>`).join('') || '<li>No hay datos</li>';
+            
+            // 5. Gráfico: Flujo de Tickets (Creados vs. Cerrados)
+            const dateRange = {};
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                dateRange[d.toISOString().split('T')[0]] = { created: 0, closed: 0 };
+            }
+            tickets.forEach(t => { const day = t.createdAt.toDate().toISOString().split('T')[0]; if (dateRange[day]) dateRange[day].created++; });
+            closedTickets.forEach(t => { const day = t.closedAt.toDate().toISOString().split('T')[0]; if (dateRange[day]) dateRange[day].closed++; });
+            charts.ticketFlow = new Chart(chartContexts.ticketFlow, {
+                type: 'line',
+                data: { labels: Object.keys(dateRange), datasets: [
+                    { label: 'Creados', data: Object.values(dateRange).map(d => d.created), borderColor: '#007bff', fill: false },
+                    { label: 'Cerrados', data: Object.values(dateRange).map(d => d.closed), borderColor: '#28a745', fill: false }
+                ]},
+                options: { scales: { y: { beginAtZero: true } } }
+            });
+
+            // 6. Gráfico: Dispositivos de Inventario por Categoría
+            const invCategoryCounts = inventory.reduce((acc, item) => { acc[item.category] = (acc[item.category] || 0) + 1; return acc; }, {});
+            charts.inventoryByCategory = new Chart(chartContexts.inventoryByCategory, {
+                type: 'bar',
+                data: { labels: Object.keys(invCategoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ label: '# de Dispositivos', data: Object.values(invCategoryCounts), backgroundColor: '#17a2b8' }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
+            });
+            
+            // 7. Gráfico: Computadores por SO
+            const osCounts = inventory.filter(i => i.category === 'computers' && i.os).reduce((acc, item) => {
+                const osName = requestersMap[item.os] || item.os; // Usamos requestersMap para el nombre, si no el ID
+                acc[osName] = (acc[osName] || 0) + 1; 
+                return acc;
+            }, {});
+            charts.computersByOs = new Chart(chartContexts.computersByOs, {
+                type: 'pie',
+                data: { labels: Object.keys(osCounts), datasets: [{ data: Object.values(osCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545'] }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+        } catch (error) {
+            console.error("Error al generar reportes:", error);
+            alert("No se pudo generar el reporte. Revisa la consola para más detalles.");
+            // Aquí puedes llamar a handleFirestoreError si quieres mostrar el error en la UI
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.textContent = 'Generar Reporte';
+        }
+    };
+
+    // Asigna el evento al botón
+    generateBtn.addEventListener('click', generateReports);
+
+    // Genera el reporte inicial al cargar la página
+    generateReports();
+}
 function renderGenericListPage(container, params, configObject, collectionName, icon) {
     container.innerHTML = genericListPageHTML;
     const category = params.category;
@@ -92,10 +227,9 @@ function renderGenericListPage(container, params, configObject, collectionName, 
 
     const iconEdit = `<svg class="icon-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
     const iconDelete = `<svg class="icon-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
-    const iconHistory = `<svg class="icon-history" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.25 2.52.77-1.28-3.52-2.09V8H12z"/></svg>`;
-
+    
     document.getElementById('page-title').innerText = `${icon} ${config.title}`;
-    document.getElementById('item-list-title').innerText = `${config.title}`;
+    document.getElementById('item-list-title').innerText = `Lista de ${config.title}`;
     const addButton = document.getElementById('add-item-btn');
     addButton.innerText = `Añadir ${config.titleSingular}`;
     addButton.dataset.type = collectionName;
@@ -108,28 +242,39 @@ function renderGenericListPage(container, params, configObject, collectionName, 
     const tableBody = document.getElementById('item-table-body');
     db.collection(collectionName).where('category', '==', category).onSnapshot(snapshot => {
         tableBody.innerHTML = '';
-        snapshot.forEach(doc => {
+
+        // --- INICIO DE LA MODIFICACIÓN ---
+        
+        // 1. Guardamos todos los documentos en una lista temporal.
+        const items = snapshot.docs;
+
+        // 2. Creamos una función de ordenamiento natural.
+        const naturalSort = (a, b) => {
+            // Extrae los números de los códigos, por ejemplo de 'IMP-10' extrae el 10
+            const numA = parseInt(a.id.split('-')[1] || 0);
+            const numB = parseInt(b.id.split('-')[1] || 0);
+            return numA - numB;
+        };
+
+        // 3. Ordenamos la lista usando nuestra nueva función.
+        items.sort(naturalSort);
+
+        // 4. Recorremos la lista YA ORDENADA para crear la tabla.
+        items.forEach(doc => {
             const item = { id: doc.id, ...doc.data() };
             const tr = document.createElement('tr');
             tr.dataset.id = item.id;
             let cellsHTML = '';
             for (const key of Object.keys(config.fields)) {
                 let cellContent = key === 'id' ? item.id : (item[key] || 'N/A');
-                if (key === 'assignedTo' && cellContent !== 'N/A' && cellContent !== null && cellContent !== "") {
-                    cellContent = `<a href="#inventory-computers" style="color: blue; text-decoration: underline;">${cellContent}</a>`;
-                }
                 cellsHTML += `<td data-field="${key}"><span class="cell-text">${cellContent}</span></td>`;
             }
-            
-            let actionsHTML = `<span class="edit-btn" data-id="${item.id}" data-collection="${collectionName}" data-category="${category}">${iconEdit}</span>`;
-            if (collectionName === 'inventory') {
-                actionsHTML += `<span class="history-btn" data-id="${item.id}">${iconHistory}</span>`;
-            }
-            actionsHTML += `<span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span>`;
-
-            tr.innerHTML = `${cellsHTML}<td><div class="config-item-actions">${actionsHTML}</div></td>`;
+            tr.innerHTML = `${cellsHTML}<td><div class="config-item-actions"><span class="edit-btn" data-id="${item.id}" data-collection="${collectionName}" data-category="${category}">${iconEdit}</span><span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span></div></td>`;
             tableBody.appendChild(tr);
         });
+
+        // --- FIN DE LA MODIFICACIÓN ---
+
     }, error => handleFirestoreError(error, tableBody));
 }
 async function showDeviceHistoryModal(deviceId) {
