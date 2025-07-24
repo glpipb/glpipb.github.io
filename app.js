@@ -58,7 +58,6 @@ const inventoryCategoryConfig = {
     network: { title: 'Dispositivos de Red', titleSingular: 'Dispositivo de Red', prefix: 'NET-', counter: 'redCounter', fields: { id: { label: 'Código' }, type: { label: 'Tipo (Switch, Router, AP)', type: 'text' }, brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, ipAddress: { label: 'Dirección IP', type: 'text' }, location: { label: 'Ubicación Física', type: 'text' } }},
     printers: { title: 'Impresoras', titleSingular: 'Impresora', prefix: 'IMP-', counter: 'impresoraCounter', fields: { id: { label: 'Código' }, brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'N/Serie', type: 'text' }, ipAddress: { label: 'Dirección IP', type: 'text' }, type: { label: 'Tipo (Láser, Tinta)', type: 'text' }, location: { label: 'Ubicación Física', type: 'text' } }}
 };
-// ▼▼▼ REEMPLAZA ESTE BLOQUE COMPLETO EN TU CÓDIGO ▼▼▼
 
 const credentialsCategoryConfig = {
     emails: { 
@@ -68,13 +67,13 @@ const credentialsCategoryConfig = {
             service: { label: 'Servicio (Google, O365)', type: 'text' }, 
             email: { label: 'Correo Electrónico', type: 'email' }, 
             password: { label: 'Contraseña', type: 'text' },
-            // --- NUEVOS CAMPOS AÑADIDOS ---
             recoveryEmail: { label: 'Correo de Recuperación', type: 'email' },
             recoveryPhone: { label: 'Número de Recuperación', type: 'tel' },
             assignedUser: { label: 'Asignado a', type: 'text' },
             area: { label: 'Área', type: 'text' },
-            // --- FIN DE NUEVOS CAMPOS ---
-            notes: { label: 'Notas (MFA, etc.)', type: 'textarea' } // Etiqueta actualizada
+            notes: { label: 'Notas', type: 'textarea' }
+            status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }
+          
         }
     },
     computers: { title: 'Usuarios de Equipos', titleSingular: 'Usuario de Equipo', prefix: 'CRED-PCUSER-', counter: 'computerUserCounter', fields: { id: { label: 'Código' }, computerId: { label: 'ID/Nombre del Equipo', type: 'text' }, username: { label: 'Nombre de Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, isAdmin: { label: '¿Es Admin?', type: 'select', options: ['No', 'Sí'] } }},
