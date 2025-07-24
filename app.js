@@ -71,8 +71,9 @@ const credentialsCategoryConfig = {
             recoveryPhone: { label: 'Número de Recuperación', type: 'tel' },
             assignedUser: { label: 'Asignado a', type: 'text' },
             area: { label: 'Área', type: 'text' },
-            notes: { label: 'Notas', type: 'textarea' },
-            status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }
+            status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] },
+            notes: { label: 'Notas', type: 'textarea' }
+            
           
         }
     },
