@@ -89,7 +89,6 @@ async function renderEstadisticas(container) {
     const generateBtn = document.getElementById('generate-report-btn');
     document.getElementById('export-stats-pdf').addEventListener('click', exportStatsToPDF);
 
-    // Guardamos una referencia a los elementos del DOM una sola vez
     let charts = {};
     const chartContexts = {
         ticketsByPriority: document.getElementById('ticketsByPriorityChart').getContext('2d'),
@@ -103,13 +102,11 @@ async function renderEstadisticas(container) {
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');
     
-    // Establecer fechas por defecto
     const today = new Date();
     const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1));
     startDateInput.value = oneMonthAgo.toISOString().split('T')[0];
     endDateInput.value = today.toISOString().split('T')[0];
 
-    // --- FUNCIÓN PRINCIPAL PARA GENERAR LOS REPORTES ---
     const generateReports = async () => {
         generateBtn.disabled = true;
         generateBtn.textContent = 'Generando...';
@@ -120,43 +117,47 @@ async function renderEstadisticas(container) {
             const endDate = new Date(endDateInput.value);
             endDate.setHours(23, 59, 59, 999);
 
-            // Consultas a Firebase
-            const [ticketsSnapshot, inventorySnapshot, requestersSnapshot, closedTicketsSnapshot] = await Promise.all([
+            const [ticketsSnapshot, inventorySnapshot, requestersSnapshot, licensesSnapshot, closedTicketsSnapshot] = await Promise.all([
                 db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get(),
                 db.collection('inventory').get(),
                 db.collection('requesters').get(),
+                db.collection('credentials').where('category', '==', 'software').get(), // Para obtener nombres de licencias
                 db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get()
             ]);
 
             const tickets = ticketsSnapshot.docs.map(doc => doc.data());
             const inventory = inventorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const requestersMap = Object.fromEntries(requestersSnapshot.docs.map(doc => [doc.id, doc.data().name]));
+            const licensesMap = Object.fromEntries(licensesSnapshot.docs.map(doc => [doc.id, doc.data()]));
             const closedTickets = closedTicketsSnapshot.docs.map(doc => doc.data());
             const inventoryMap = Object.fromEntries(inventory.map(item => [item.id, item]));
 
-            // Destruir gráficos antiguos antes de crear nuevos
             Object.values(charts).forEach(chart => chart.destroy());
 
             // 1. Gráfico: Tickets por Prioridad
-            const priorityCounts = tickets.reduce((acc, t) => { acc[t.priority] = (acc[t.priority] || 0) + 1; return acc; }, {});
-            charts.ticketsByPriority = new Chart(chartContexts.ticketsByPriority, {
-                type: 'doughnut',
-                data: { labels: Object.keys(priorityCounts), datasets: [{ data: Object.values(priorityCounts), backgroundColor: ['#28a745', '#ffc107', '#dc3545'] }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-            
+            const priorityCounts = tickets.reduce((acc, t) => { if(t.priority) { acc[t.priority] = (acc[t.priority] || 0) + 1; } return acc; }, {});
+            if (Object.keys(priorityCounts).length > 0) {
+                charts.ticketsByPriority = new Chart(chartContexts.ticketsByPriority, {
+                    type: 'doughnut',
+                    data: { labels: Object.keys(priorityCounts), datasets: [{ data: Object.values(priorityCounts), backgroundColor: ['#28a745', '#ffc107', '#dc3545'] }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
             // 2. Gráfico: Tickets por Categoría de Dispositivo
             const deviceCategoryCounts = tickets.reduce((acc, t) => {
                 const category = t.deviceId ? (inventoryMap[t.deviceId]?.category || 'Desconocido') : 'Sin Dispositivo';
                 acc[category] = (acc[category] || 0) + 1;
                 return acc;
             }, {});
-            charts.ticketsByDeviceCategory = new Chart(chartContexts.ticketsByDeviceCategory, {
-                type: 'pie',
-                data: { labels: Object.keys(deviceCategoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ data: Object.values(deviceCategoryCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545', '#343a40'] }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
+            if (Object.keys(deviceCategoryCounts).length > 0) {
+                charts.ticketsByDeviceCategory = new Chart(chartContexts.ticketsByDeviceCategory, {
+                    type: 'pie',
+                    data: { labels: Object.keys(deviceCategoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ data: Object.values(deviceCategoryCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545', '#343a40'] }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+            
             // 3. KPI: Top 5 Dispositivos Problemáticos
             const deviceCounts = tickets.reduce((acc, t) => { if(t.deviceId) acc[t.deviceId] = (acc[t.deviceId] || 0) + 1; return acc; }, {});
             const topDevices = Object.entries(deviceCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -167,13 +168,13 @@ async function renderEstadisticas(container) {
             const topRequesters = Object.entries(requesterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
             topRequestersList.innerHTML = topRequesters.map(([id, count]) => `<li><span>${requestersMap[id] || id}</span><span>${count}</span></li>`).join('') || '<li>No hay datos</li>';
             
-            // 5. Gráfico: Flujo de Tickets (Creados vs. Cerrados)
+            // 5. Gráfico: Flujo de Tickets
             const dateRange = {};
             for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
                 dateRange[d.toISOString().split('T')[0]] = { created: 0, closed: 0 };
             }
-            tickets.forEach(t => { const day = t.createdAt.toDate().toISOString().split('T')[0]; if (dateRange[day]) dateRange[day].created++; });
-            closedTickets.forEach(t => { const day = t.closedAt.toDate().toISOString().split('T')[0]; if (dateRange[day]) dateRange[day].closed++; });
+            tickets.forEach(t => { if(t.createdAt) { const day = t.createdAt.toDate().toISOString().split('T')[0]; if (dateRange[day]) dateRange[day].created++; } });
+            closedTickets.forEach(t => { if(t.closedAt) { const day = t.closedAt.toDate().toISOString().split('T')[0]; if (dateRange[day]) dateRange[day].closed++; } });
             charts.ticketFlow = new Chart(chartContexts.ticketFlow, {
                 type: 'line',
                 data: { labels: Object.keys(dateRange), datasets: [
@@ -183,40 +184,40 @@ async function renderEstadisticas(container) {
                 options: { scales: { y: { beginAtZero: true } } }
             });
 
-            // 6. Gráfico: Dispositivos de Inventario por Categoría
-            const invCategoryCounts = inventory.reduce((acc, item) => { acc[item.category] = (acc[item.category] || 0) + 1; return acc; }, {});
-            charts.inventoryByCategory = new Chart(chartContexts.inventoryByCategory, {
-                type: 'bar',
-                data: { labels: Object.keys(invCategoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ label: '# de Dispositivos', data: Object.values(invCategoryCounts), backgroundColor: '#17a2b8' }] },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
-            });
+            // 6. Gráfico: Inventario por Categoría
+            const invCategoryCounts = inventory.reduce((acc, item) => { if(item.category) acc[item.category] = (acc[item.category] || 0) + 1; return acc; }, {});
+            if (Object.keys(invCategoryCounts).length > 0) {
+                charts.inventoryByCategory = new Chart(chartContexts.inventoryByCategory, {
+                    type: 'bar',
+                    data: { labels: Object.keys(invCategoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ label: '# de Dispositivos', data: Object.values(invCategoryCounts), backgroundColor: '#17a2b8' }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
+                });
+            }
             
-            // 7. Gráfico: Computadores por SO
-            const osCounts = inventory.filter(i => i.category === 'computers' && i.os).reduce((acc, item) => {
-                const osName = requestersMap[item.os] || item.os; // Usamos requestersMap para el nombre, si no el ID
+            // 7. Gráfico: Computadores por SO (LÓGICA CORREGIDA)
+            const osCounts = inventory.filter(i => i.category === 'computers').reduce((acc, item) => {
+                const osName = item.os ? (licensesMap[item.os]?.softwareName || item.os) : 'N/A'; // N/A si no tiene SO
                 acc[osName] = (acc[osName] || 0) + 1; 
                 return acc;
             }, {});
-            charts.computersByOs = new Chart(chartContexts.computersByOs, {
-                type: 'pie',
-                data: { labels: Object.keys(osCounts), datasets: [{ data: Object.values(osCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545'] }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            if (Object.keys(osCounts).length > 0) {
+                charts.computersByOs = new Chart(chartContexts.computersByOs, {
+                    type: 'pie',
+                    data: { labels: Object.keys(osCounts), datasets: [{ data: Object.values(osCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545'] }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
 
         } catch (error) {
             console.error("Error al generar reportes:", error);
             alert("No se pudo generar el reporte. Revisa la consola para más detalles.");
-            // Aquí puedes llamar a handleFirestoreError si quieres mostrar el error en la UI
         } finally {
             generateBtn.disabled = false;
             generateBtn.textContent = 'Generar Reporte';
         }
     };
 
-    // Asigna el evento al botón
     generateBtn.addEventListener('click', generateReports);
-
-    // Genera el reporte inicial al cargar la página
     generateReports();
 }
 function renderGenericListPage(container, params, configObject, collectionName, icon) {
