@@ -82,8 +82,6 @@ async function renderDashboard(container) { container.innerHTML = dashboardHTML;
 async function renderNewTicketForm(container) { container.innerHTML = newTicketFormHTML; const quill = new Quill('#description-editor', { theme: 'snow', placeholder: 'Detalla el problema o solicitud...' }); const requesterSelect = document.getElementById('requester'); const locationSelect = document.getElementById('location'); const deviceDatalist = document.getElementById('device-list'); const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); requesterSelect.innerHTML = '<option value="">Selecciona un solicitante</option>'; reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); locationSelect.innerHTML = '<option value="">Selecciona una ubicación</option>'; locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); const form = document.getElementById('new-ticket-form'); form.addEventListener('submit', async (e) => { e.preventDefault(); const counterRef = db.collection('counters').doc('ticketCounter'); try { const newTicketId = await db.runTransaction(async (transaction) => { const counterDoc = await transaction.get(counterRef); if (!counterDoc.exists) { throw "El documento contador de tickets no existe. Créalo en Firebase."; } const newNumber = counterDoc.data().currentNumber + 1; transaction.update(counterRef, { currentNumber: newNumber }); return `TICKET-${newNumber}`; }); const deviceId = document.getElementById('device-search').value; const newTicketData = { title: form.title.value, description: quill.root.innerHTML, requesterId: form.requester.value, locationId: form.location.value, priority: form.priority.value, status: 'abierto', solution: null, deviceId: deviceId || null, createdAt: firebase.firestore.FieldValue.serverTimestamp(), closedAt: null }; await db.collection('tickets').doc(newTicketId).set(newTicketData); alert(`¡Ticket ${newTicketId} creado con éxito!`); window.location.hash = '#tickets?status=abierto'; } catch (error) { console.error("Error al crear el ticket: ", error); alert("No se pudo crear el ticket. Revisa la consola para más detalles."); } }); }
 async function renderTicketList(container, params = {}) { container.innerHTML = ticketListHTML; const [reqSnap] = await Promise.all([ db.collection('requesters').get() ]); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); const tableBody = document.querySelector('#data-table tbody'); const tableTitle = document.getElementById('tickets-list-title'); const filterStatus = params.status; let query = db.collection('tickets'); if (filterStatus) { query = query.where('status', '==', filterStatus); tableTitle.innerText = `Tickets ${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}s`; } else { tableTitle.innerText = 'Todos los Tickets'; } query.orderBy('createdAt', 'desc').onSnapshot(snapshot => { tableBody.innerHTML = ''; if (snapshot.empty) { tableBody.innerHTML = `<tr><td colspan="6">No hay tickets que coincidan con este filtro.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.locationId || 'N/A'}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
 async function renderHistoryPage(container) { container.innerHTML = historyPageHTML; const form = document.getElementById('history-search-form'); const deviceDatalist = document.getElementById('device-list-search'); const requesterSelect = document.getElementById('search-requester'); const locationSelect = document.getElementById('search-location'); const resultsTableBody = document.getElementById('data-table').querySelector('tbody'); const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); form.addEventListener('submit', async e => { e.preventDefault(); const filters = { deviceId: form['search-device'].value, requesterId: form['search-requester'].value, locationId: form['search-location'].value, status: form['search-status'].value, priority: form['search-priority'].value, }; let query = db.collection('tickets'); Object.entries(filters).forEach(([key, value]) => { if (value) { query = query.where(key, '==', value); } }); try { const snapshot = await query.orderBy('createdAt', 'desc').get(); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); resultsTableBody.innerHTML = ''; if (snapshot.empty) { resultsTableBody.innerHTML = `<tr><td colspan="6">No se encontraron tickets con esos criterios.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.createdAt.toDate().toLocaleDateString('es-ES')}</td><td><span class="status status-${ticket.status}">${ticket.status}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver</button></td>`; resultsTableBody.appendChild(tr); }); } catch(error) { handleFirestoreError(error, resultsTableBody); } }); }
-// ▼▼▼ REEMPLAZA ESTA FUNCIÓN COMPLETA ▼▼▼
-
 async function renderEstadisticas(container) {
     container.innerHTML = statisticsHTML;
     const generateBtn = document.getElementById('generate-report-btn');
@@ -244,23 +242,15 @@ function renderGenericListPage(container, params, configObject, collectionName, 
     db.collection(collectionName).where('category', '==', category).onSnapshot(snapshot => {
         tableBody.innerHTML = '';
 
-        // --- INICIO DE LA MODIFICACIÓN ---
-        
-        // 1. Guardamos todos los documentos en una lista temporal.
         const items = snapshot.docs;
 
-        // 2. Creamos una función de ordenamiento natural.
         const naturalSort = (a, b) => {
-            // Extrae los números de los códigos, por ejemplo de 'IMP-10' extrae el 10
-            const numA = parseInt(a.id.split('-')[1] || 0);
-            const numB = parseInt(b.id.split('-')[1] || 0);
+            const numA = parseInt(a.id.split('-').pop() || 0);
+            const numB = parseInt(b.id.split('-').pop() || 0);
             return numA - numB;
         };
-
-        // 3. Ordenamos la lista usando nuestra nueva función.
         items.sort(naturalSort);
 
-        // 4. Recorremos la lista YA ORDENADA para crear la tabla.
         items.forEach(doc => {
             const item = { id: doc.id, ...doc.data() };
             const tr = document.createElement('tr');
@@ -268,13 +258,14 @@ function renderGenericListPage(container, params, configObject, collectionName, 
             let cellsHTML = '';
             for (const key of Object.keys(config.fields)) {
                 let cellContent = key === 'id' ? item.id : (item[key] || 'N/A');
+                 if (key === 'assignedTo' && cellContent !== 'N/A' && cellContent !== null && cellContent !== "") {
+                    cellContent = `<a href="#inventory-computers" style="color: blue; text-decoration: underline;">${cellContent}</a>`;
+                }
                 cellsHTML += `<td data-field="${key}"><span class="cell-text">${cellContent}</span></td>`;
             }
             tr.innerHTML = `${cellsHTML}<td><div class="config-item-actions"><span class="edit-btn" data-id="${item.id}" data-collection="${collectionName}" data-category="${category}">${iconEdit}</span><span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span></div></td>`;
             tableBody.appendChild(tr);
         });
-
-        // --- FIN DE LA MODIFICACIÓN ---
 
     }, error => handleFirestoreError(error, tableBody));
 }
@@ -334,7 +325,6 @@ async function showItemFormModal(type, category = null, docId = null) {
     config = configObject[category];
     
     if (!config) {
-        // Lógica para tipos sin configuración, como maintenance y config
         if (type === 'maintenance') {
              title = isEditing ? 'Editar Tarea' : 'Programar Tarea';
              collectionName = 'maintenance';
@@ -390,10 +380,10 @@ async function showItemFormModal(type, category = null, docId = null) {
         }
         formHTML = `<div class="inventory-form-grid">${fieldsHTML}</div>`;
     }
-
+    
     modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">${isEditing ? 'Guardar Cambios' : 'Guardar'}</button></div></form>`;
     formModal.classList.remove('hidden');
-
+    
     document.getElementById(formId).addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
