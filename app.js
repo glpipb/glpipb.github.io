@@ -200,8 +200,62 @@ async function showDeviceHistoryModal(deviceId) {
     }
 }
 function renderMaintenanceCalendar(container) { container.innerHTML = maintenanceCalendarHTML; const calendarEl = document.getElementById('maintenance-calendar'); const dataTable = document.getElementById('data-table'); db.collection('maintenance').where('status', 'in', ['planificada', 'completada']).onSnapshot(snapshot => { const eventColors = { 'Mantenimiento Preventivo': '#dc3545', 'Mantenimiento Correctivo': '#ffc107', 'Mantenimiento Lógico': '#6f42c1', 'Backup': '#fd7e14', 'Tarea': '#007bff', 'Recordatorio': '#17a2b8' }; const events = snapshot.docs.map(doc => { const data = doc.data(); let color = eventColors[data.type] || '#6c757d'; if (data.status === 'completada') color = '#28a745'; return { id: doc.id, title: data.task, start: data.date, color: color, extendedProps: { status: data.status, ...data } }; }); const calendar = new FullCalendar.Calendar(calendarEl, { headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' }, initialView: 'dayGridMonth', locale: 'es', buttonText: { today: 'hoy', month: 'mes', week: 'semana', day: 'día', list: 'agenda' }, events: events, eventClick: function(info) { showEventActionChoiceModal(info.event.id, info.event.title, info.event.extendedProps); } }); calendar.render(); const tableHeaders = ['Tarea', 'Fecha Programada', 'Tipo', 'Estado']; const tableRows = snapshot.docs.map(doc => { const data = doc.data(); return [data.task, data.date, data.type, data.status]; }); dataTable.innerHTML = `<thead><tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${tableRows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody>`; }, error => handleFirestoreError(error, calendarEl)); }
-function renderConfiguracion(container) { container.innerHTML = configHTML; const setupConfigSection = (type, collectionName, prefix, counterName) => { const form = document.getElementById(`add-${type}-form`); const input = document.getElementById(`${type}-name`); const list = document.getElementById(`${type}s-list`); const iconEdit = `<svg class="icon-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`; const iconDelete = `<svg class="icon-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`; form.addEventListener('submit', async (e) => { e.preventDefault(); const name = input.value.trim(); if (!name) return; const counterRef = db.collection('counters').doc(counterName); try { const newId = await db.runTransaction(async (transaction) => { const counterDoc = await transaction.get(counterRef); if (!counterDoc.exists) { throw `El contador '${counterName}' no existe en Firebase.`; } const newNumber = counterDoc.data().currentNumber + 1; transaction.update(counterRef, { currentNumber: newNumber }); return `${prefix}${newNumber}`; }); await db.collection(collectionName).doc(newId).set({ name }); form.reset(); } catch (error) { console.error("Error al crear item:", error); alert("No se pudo crear el nuevo ítem. Revisa la consola."); } }); db.collection(collectionName).onSnapshot(snapshot => { list.innerHTML = ''; snapshot.forEach(doc => { const item = { id: doc.id, ...doc.data() }; const li = document.createElement('li'); li.className = 'config-list-item'; li.innerHTML = `<div><strong style="margin-right: 10px;">${item.id}</strong><span class="config-item-name">${item.name}</span></div><div class="config-item-actions"><span class="edit-btn" data-collection="${collectionName}" data-id="${item.id}" data-type="config">${iconEdit}</span><span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span></div>`; list.appendChild(li); }); }); }; setupConfigSection('requester', 'requesters', 'REQ-', 'requesterCounter'); setupConfigSection('location', 'locations', 'LOC-', 'locationCounter'); }
 // REEMPLAZA ESTA FUNCIÓN COMPLETA
+function renderConfiguracion(container) {
+    container.innerHTML = configHTML;
+    const setupConfigSection = (type, collectionName, prefix, counterName) => {
+        const form = document.getElementById(`add-${type}-form`);
+        const input = document.getElementById(`${type}-name`);
+        const list = document.getElementById(`${type}s-list`);
+        const iconEdit = `<svg class="icon-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
+        const iconDelete = `<svg class="icon-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = input.value.trim();
+            if (!name) return;
+
+            const counterRef = db.collection('counters').doc(counterName);
+            try {
+                let newId;
+                let newNumber;
+                await db.runTransaction(async (transaction) => {
+                    const counterDoc = await transaction.get(counterRef);
+                    if (!counterDoc.exists) { throw `El contador '${counterName}' no existe en Firebase.`; }
+                    newNumber = counterDoc.data().currentNumber + 1;
+                    transaction.update(counterRef, { currentNumber: newNumber });
+                    newId = `${prefix}${newNumber}`;
+                });
+                
+                // Añadimos el campo numérico al guardar
+                await db.collection(collectionName).doc(newId).set({ name: name, numericId: newNumber });
+                form.reset();
+
+            } catch (error) {
+                console.error("Error al crear item:", error);
+                alert("No se pudo crear el nuevo ítem. Revisa la consola.");
+            }
+        });
+
+        // ▼▼▼ CAMBIO CLAVE AQUÍ ▼▼▼
+        db.collection(collectionName)
+          .orderBy("numericId", "asc") // Ordenamos por el campo numérico
+          .onSnapshot(snapshot => {
+        // ▲▲▲ FIN DEL CAMBIO ▲▲▲
+            list.innerHTML = '';
+            snapshot.forEach(doc => {
+                const item = { id: doc.id, ...doc.data() };
+                const li = document.createElement('li');
+                li.className = 'config-list-item';
+                li.innerHTML = `<div><strong style="margin-right: 10px;">${item.id}</strong><span class="config-item-name">${item.name}</span></div><div class="config-item-actions"><span class="edit-btn" data-collection="${collectionName}" data-id="${item.id}" data-type="config">${iconEdit}</span><span class="delete-btn" data-id="${item.id}" data-collection="${collectionName}">${iconDelete}</span></div>`;
+                list.appendChild(li);
+            });
+        }, error => handleFirestoreError(error, list));
+    };
+
+    setupConfigSection('requester', 'requesters', 'REQ-', 'requesterCounter');
+    setupConfigSection('location', 'locations', 'LOC-', 'locationCounter');
+}
 async function showItemFormModal(type, category = null, docId = null) {
     const isEditing = docId !== null;
     const formModal = document.getElementById('form-modal');
