@@ -73,8 +73,6 @@ const credentialsCategoryConfig = {
             area: { label: 'Área', type: 'text' },
             status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] },
             notes: { label: 'Notas', type: 'textarea' }
-            
-          
         }
     },
     computers: { title: 'Usuarios de Equipos', titleSingular: 'Usuario de Equipo', prefix: 'CRED-PCUSER-', counter: 'computerUserCounter', fields: { id: { label: 'Código' }, computerId: { label: 'ID/Nombre del Equipo', type: 'text' }, username: { label: 'Nombre de Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, isAdmin: { label: '¿Es Admin?', type: 'select', options: ['No', 'Sí'] } }},
@@ -123,9 +121,9 @@ const credentialsCategoryConfig = {
             notes: { label: 'Notas', type: 'textarea' }
         }
     },
-    // === FIN DE CONFIGURACIÓN NUEVA ===
     others: { title: 'Otras Credenciales', titleSingular: 'Credencial', prefix: 'CRED-OTH-', counter: 'otherCredentialCounter', fields: { id: { label: 'Código' }, system: { label: 'Sistema/Servicio', type: 'text' }, url: { label: 'URL (Opcional)', type: 'text' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, notes: { label: 'Notas', type: 'textarea' } }}
 };
+
 function handleFirestoreError(error, element) { console.error("Firestore Error:", error); const indexLinkRegex = /(https:\/\/console\.firebase\.google\.com\/project\/.*?\/firestore\/indexes\?create_composite=.*?)"/; const match = error.message.match(indexLinkRegex); let errorMessageHTML; if (match) { const link = match[1]; errorMessageHTML = `<strong>Error de Firebase:</strong> Se requiere un índice que no existe.<br><br><a href="${link}" target="_blank" style="color:blue; text-decoration:underline;">Haz clic aquí para crear el índice necesario en una nueva pestaña.</a><br><br>Después de crearlo, espera unos minutos y recarga esta página.`; } else { errorMessageHTML = `<strong>Error al cargar los datos:</strong> ${error.message}. <br><br>Esto puede ser causado por la configuración de "Prevención de seguimiento" de tu navegador.`; } element.innerHTML = `<div class="card" style="padding: 20px; border-left: 5px solid red;">${errorMessageHTML}</div>`; }
 async function renderDashboard(container) { container.innerHTML = dashboardHTML; const cardsContainer = document.getElementById('dashboard-cards'); cardsContainer.innerHTML = 'Cargando estadísticas...'; const ticketsSnapshot = await db.collection('tickets').get(); const tickets = ticketsSnapshot.docs.map(doc => doc.data()); const openCount = tickets.filter(t => t.status === 'abierto').length; const closedCount = tickets.filter(t => t.status === 'cerrado').length; const totalCount = tickets.length; cardsContainer.innerHTML = `<a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a><a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a><a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>`; const last7Days = Array(7).fill(0).reduce((acc, _, i) => { const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc; }, {}); tickets.forEach(ticket => { if (ticket.createdAt) { const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0]; if (last7Days.hasOwnProperty(ticketDate)) { last7Days[ticketDate]++; } } }); const ctx = document.getElementById('ticketsChart').getContext('2d'); new Chart(ctx, { type: 'bar', data: { labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(), datasets: [{ label: '# de Tickets Creados', data: Object.values(last7Days).reverse(), backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); }
 async function renderNewTicketForm(container) { container.innerHTML = newTicketFormHTML; const quill = new Quill('#description-editor', { theme: 'snow', placeholder: 'Detalla el problema o solicitud...' }); const requesterSelect = document.getElementById('requester'); const locationSelect = document.getElementById('location'); const deviceDatalist = document.getElementById('device-list'); const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); requesterSelect.innerHTML = '<option value="">Selecciona un solicitante</option>'; reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); locationSelect.innerHTML = '<option value="">Selecciona una ubicación</option>'; locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); const form = document.getElementById('new-ticket-form'); form.addEventListener('submit', async (e) => { e.preventDefault(); const counterRef = db.collection('counters').doc('ticketCounter'); try { const newTicketId = await db.runTransaction(async (transaction) => { const counterDoc = await transaction.get(counterRef); if (!counterDoc.exists) { throw "El documento contador de tickets no existe. Créalo en Firebase."; } const newNumber = counterDoc.data().currentNumber + 1; transaction.update(counterRef, { currentNumber: newNumber }); return `TICKET-${newNumber}`; }); const deviceId = document.getElementById('device-search').value; const newTicketData = { title: form.title.value, description: quill.root.innerHTML, requesterId: form.requester.value, locationId: form.location.value, priority: form.priority.value, status: 'abierto', solution: null, deviceId: deviceId || null, createdAt: firebase.firestore.FieldValue.serverTimestamp(), closedAt: null }; await db.collection('tickets').doc(newTicketId).set(newTicketData); alert(`¡Ticket ${newTicketId} creado con éxito!`); window.location.hash = '#tickets?status=abierto'; } catch (error) { console.error("Error al crear el ticket: ", error); alert("No se pudo crear el ticket. Revisa la consola para más detalles."); } }); }
@@ -155,15 +153,12 @@ function renderGenericListPage(container, params, configObject, collectionName, 
     
     const tableBody = document.getElementById('item-table-body');
     
-    // ▼▼▼ LÍNEA MODIFICADA CLAVE ▼▼▼
     db.collection(collectionName)
       .where('category', '==', category)
-      .orderBy("numericId", "asc") // Ordenamos por el nuevo campo numérico
+      .orderBy("numericId", "asc") 
       .onSnapshot(snapshot => {
-    // ▲▲▲ FIN DE LÍNEA MODIFICADA ▲▲▲
         tableBody.innerHTML = '';
         if (snapshot.empty) {
-            // Si está vacío, intentamos cargar sin el orderBy para mostrar datos antiguos
             db.collection(collectionName).where('category', '==', category).get().then(oldSnapshot => {
                 if (oldSnapshot.empty) {
                     tableBody.innerHTML = `<tr><td colspan="${tableHeaders.length + 1}">No hay elementos.</td></tr>`;
@@ -171,6 +166,7 @@ function renderGenericListPage(container, params, configObject, collectionName, 
                     tableBody.innerHTML = `<tr><td colspan="${tableHeaders.length + 1}" style="color: orange; font-weight: bold;">Hay datos antiguos que necesitan ser actualizados para ordenarse correctamente. Edita y guarda cada uno para solucionarlo.</td></tr>`;
                 }
             });
+            return;
         }
         snapshot.forEach(doc => {
             const item = { id: doc.id, ...doc.data() };
@@ -229,11 +225,10 @@ async function showDeviceHistoryModal(deviceId) {
     } catch (error) {
         console.error("Error al cargar historial de tickets:", error);
         modalBody.innerHTML = `<h2>Historial de Tickets para ${deviceId}</h2><p style="color:red;">Error al cargar el historial. Asegúrate de que el índice de Firestore se haya creado correctamente.</p>`;
-        handleFirestoreError(error, modalBody); // Reutilizamos tu función de error para mostrar el link si es necesario.
+        handleFirestoreError(error, modalBody);
     }
 }
 function renderMaintenanceCalendar(container) { container.innerHTML = maintenanceCalendarHTML; const calendarEl = document.getElementById('maintenance-calendar'); const dataTable = document.getElementById('data-table'); db.collection('maintenance').where('status', 'in', ['planificada', 'completada']).onSnapshot(snapshot => { const eventColors = { 'Mantenimiento Preventivo': '#dc3545', 'Mantenimiento Correctivo': '#ffc107', 'Mantenimiento Lógico': '#6f42c1', 'Backup': '#fd7e14', 'Tarea': '#007bff', 'Recordatorio': '#17a2b8' }; const events = snapshot.docs.map(doc => { const data = doc.data(); let color = eventColors[data.type] || '#6c757d'; if (data.status === 'completada') color = '#28a745'; return { id: doc.id, title: data.task, start: data.date, color: color, extendedProps: { status: data.status, ...data } }; }); const calendar = new FullCalendar.Calendar(calendarEl, { headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' }, initialView: 'dayGridMonth', locale: 'es', buttonText: { today: 'hoy', month: 'mes', week: 'semana', day: 'día', list: 'agenda' }, events: events, eventClick: function(info) { showEventActionChoiceModal(info.event.id, info.event.title, info.event.extendedProps); } }); calendar.render(); const tableHeaders = ['Tarea', 'Fecha Programada', 'Tipo', 'Estado']; const tableRows = snapshot.docs.map(doc => { const data = doc.data(); return [data.task, data.date, data.type, data.status]; }); dataTable.innerHTML = `<thead><tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${tableRows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody>`; }, error => handleFirestoreError(error, calendarEl)); }
-// REEMPLAZA ESTA FUNCIÓN COMPLETA
 function renderConfiguracion(container) {
     container.innerHTML = configHTML;
     const setupConfigSection = (type, collectionName, prefix, counterName) => {
@@ -260,7 +255,6 @@ function renderConfiguracion(container) {
                     newId = `${prefix}${newNumber}`;
                 });
                 
-                // Añadimos el campo numérico al guardar
                 await db.collection(collectionName).doc(newId).set({ name: name, numericId: newNumber });
                 form.reset();
 
@@ -270,11 +264,9 @@ function renderConfiguracion(container) {
             }
         });
 
-        // ▼▼▼ CAMBIO CLAVE AQUÍ ▼▼▼
         db.collection(collectionName)
-          .orderBy("numericId", "asc") // Ordenamos por el campo numérico
+          .orderBy("numericId", "asc")
           .onSnapshot(snapshot => {
-        // ▲▲▲ FIN DEL CAMBIO ▲▲▲
             list.innerHTML = '';
             snapshot.forEach(doc => {
                 const item = { id: doc.id, ...doc.data() };
@@ -435,19 +427,17 @@ async function showItemFormModal(type, category = null, docId = null) {
                     
                     const counterRef = db.collection('counters').doc(counter);
                     let newId;
-                    let newNumber; // Variable para guardar el número
+                    let newNumber; 
 
                     await db.runTransaction(async (transaction) => {
                         const counterDoc = await transaction.get(counterRef);
                         if (!counterDoc.exists) throw `El contador '${counter}' no existe.`;
-                        newNumber = counterDoc.data().currentNumber + 1; // Asignamos el número
+                        newNumber = counterDoc.data().currentNumber + 1;
                         transaction.update(counterRef, { currentNumber: newNumber });
                         newId = `${prefix}${newNumber}`;
                     });
                     
-                    // ▼▼▼ LÍNEA AÑADIDA CLAVE ▼▼▼
-                    data.numericId = newNumber; // Añadimos el campo numérico a los datos a guardar
-                    // ▲▲▲ FIN DE LÍNEA AÑADIDA ▲▲▲
+                    data.numericId = newNumber;
 
                     await db.collection(collectionName).doc(newId).set(data);
                     
@@ -475,11 +465,11 @@ function showCancelTaskModal(eventId, eventTitle) { const actionModal = document
 // --- 7. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
 document.addEventListener('DOMContentLoaded', () => {
     const appContent = document.getElementById('app-content');
+    const navList = document.querySelector('.nav-list');
     const ticketModal = document.getElementById('ticket-modal');
     const formModal = document.getElementById('form-modal');
     const actionModal = document.getElementById('action-modal');
-    const historyModal = document.getElementById('history-modal'); // Referencia al nuevo modal
-    const navLinks = document.querySelectorAll('.nav-link');
+    const historyModal = document.getElementById('history-modal');
 
     const routes = { 
         '#dashboard': renderDashboard, 
@@ -491,60 +481,71 @@ document.addEventListener('DOMContentLoaded', () => {
         '#configuracion': renderConfiguracion 
     };
 
+    // ▼▼▼ FUNCIÓN DE ROUTER CORREGIDA ▼▼▼
     function router() { 
         const fullHash = window.location.hash || '#dashboard'; 
         const [path, queryString] = fullHash.split('?'); 
         const params = new URLSearchParams(queryString); 
-        document.querySelectorAll('.nav-item-with-submenu').forEach(item => item.classList.remove('open')); 
-        
-        let isHandled = false; 
-        
+
+        // 1. Renderizar el contenido de la página
+        let isHandled = false;
         if (path.startsWith('#inventory-')) { 
             const category = path.replace('#inventory-', ''); 
             params.set('category', category); 
             renderGenericListPage(appContent, Object.fromEntries(params.entries()), inventoryCategoryConfig, 'inventory', '💻'); 
-            const parentLink = document.querySelector('a[href="#inventory-computers"]').closest('.nav-item-with-submenu'); 
-            if(parentLink) parentLink.parentElement.classList.add('open'); 
             isHandled = true; 
-        } 
-        
-        if (path.startsWith('#credentials-')) { 
+        } else if (path.startsWith('#credentials-')) { 
             const category = path.replace('#credentials-', ''); 
             params.set('category', category); 
             renderGenericListPage(appContent, Object.fromEntries(params.entries()), credentialsCategoryConfig, 'credentials', '🔑'); 
-            const parentLink = document.querySelector('a[href="#credentials-emails"]').closest('.nav-item-with-submenu');
-            if (parentLink) {
-                parentLink.parentElement.classList.add('open');
-                // Abrir también el sub-submenú si corresponde
-                const subParentLink = document.querySelector(`a[href="${path}"]`);
-                if (subParentLink && subParentLink.closest('.submenu .nav-item-with-submenu')) {
-                    subParentLink.closest('.submenu .nav-item-with-submenu').classList.add('open');
+            isHandled = true; 
+        } else {
+            const renderFunction = routes[path]; 
+            if (renderFunction) { 
+                appContent.innerHTML = '<div class="card"><h1>Cargando...</h1></div>'; 
+                renderFunction(appContent, Object.fromEntries(params.entries())); 
+            } else { 
+                appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; 
+            } 
+        }
+
+        // 2. Actualizar el estado del menú lateral
+        // Primero, cerramos todos los menús y quitamos los estados activos
+        document.querySelectorAll('.nav-list .nav-item-with-submenu').forEach(item => item.classList.remove('open'));
+        document.querySelectorAll('.nav-list .nav-link').forEach(link => link.classList.remove('active'));
+
+        // Luego, encontramos el enlace activo y abrimos sus padres
+        const activeLink = document.querySelector(`.nav-list a[href="${fullHash}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active'); // Activamos el link actual
+            let current = activeLink;
+            // Subimos por el DOM para abrir los menús padres
+            while (current.parentElement) {
+                if (current.matches('.submenu')) {
+                    const parentLi = current.parentElement;
+                    if (parentLi.matches('.nav-item-with-submenu')) {
+                        parentLi.classList.add('open');
+                        const parentToggleLink = parentLi.querySelector('a');
+                        if(parentToggleLink) parentToggleLink.classList.add('active');
+                    }
                 }
+                current = current.parentElement;
             }
-            isHandled = true;
-        } 
-        
-        if(isHandled) { 
-            navLinks.forEach(link => link.classList.remove('active')); 
-            const activeParent = document.querySelector('.nav-item-with-submenu.open > a'); 
-            if(activeParent) activeParent.classList.add('active'); 
-            return; 
-        } 
-        
-        const paramsObj = Object.fromEntries(params.entries()); 
-        const renderFunction = routes[path]; 
-        
-        if (renderFunction) { 
-            appContent.innerHTML = '<div class="card"><h1>Cargando...</h1></div>'; 
-            renderFunction(appContent, paramsObj); 
-            navLinks.forEach(link => { 
-                const linkPath = link.getAttribute('href').split('?')[0]; 
-                link.classList.toggle('active', linkPath === path); 
-            }); 
-        } else { 
-            appContent.innerHTML = '<h1>404 - Página no encontrada</h1>'; 
-        } 
+        } else {
+            // Si es una ruta sin enlace directo (como #inventory), marcamos el padre
+            const parentLink = document.querySelector(`.nav-list a[href*="${path.split('-')[0]}"]`);
+            if (parentLink && parentLink.closest('.nav-item-with-submenu')) {
+                parentLink.closest('.nav-item-with-submenu').classList.add('open');
+                parentLink.classList.add('active');
+            } else {
+                 // Fallback para la página principal
+                const dashboardLink = document.querySelector('.nav-list a[href="#dashboard"]');
+                if(dashboardLink) dashboardLink.classList.add('active');
+            }
+        }
     }
+    // ▲▲▲ FIN DE LA FUNCIÓN CORREGIDA ▲▲▲
+
 
     // Un solo Event Listener para toda la aplicación
     document.body.addEventListener('click', e => {
@@ -584,7 +585,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target.matches('.view-ticket-btn, .view-ticket-btn *')) {
             e.preventDefault();
             const id = target.closest('.view-ticket-btn').dataset.id;
-            // Ocultamos el modal de historial si está abierto para mostrar el del ticket
             if (!historyModal.classList.contains('hidden')) {
                 historyModal.classList.add('hidden');
             }
@@ -626,14 +626,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user) {
             loginContainer.classList.remove('visible'); loginContainer.classList.add('hidden');
             appContainer.classList.add('visible'); appContainer.classList.remove('hidden');
-            window.addEventListener('hashchange', router); 
-            router();
-            document.querySelectorAll('.nav-item-with-submenu > a').forEach(submenuToggle => {
-                submenuToggle.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    submenuToggle.parentElement.classList.toggle('open');
+            
+            // ▼▼▼ LISTENER DE CLICS PARA EL MENÚ CORREGIDO ▼▼▼
+            if (navList && !navList.dataset.listenerAttached) {
+                navList.addEventListener('click', (e) => {
+                    const toggleLink = e.target.closest('.nav-item-with-submenu > a');
+                    // Solo previene y despliega si es un enlace de menú con un submenú
+                    if (toggleLink && toggleLink.nextElementSibling && toggleLink.nextElementSibling.classList.contains('submenu')) {
+                        e.preventDefault();
+                        toggleLink.parentElement.classList.toggle('open');
+                    }
                 });
-            });
+                navList.dataset.listenerAttached = 'true';
+            }
+            // ▲▲▲ FIN DEL LISTENER CORREGIDO ▲▲▲
+
+            window.addEventListener('hashchange', router); 
+            router(); // Ejecutar en la carga inicial
+
             document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
         } else {
             loginContainer.classList.add('visible'); loginContainer.classList.remove('hidden');
