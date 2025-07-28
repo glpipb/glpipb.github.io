@@ -91,6 +91,40 @@ const credentialsCategoryConfig = {
             assignedTo: { label: 'Asignar a Equipo', type: 'select', optionsSource: 'computers-inventory' }
         }
     },
+    // === CONFIGURACIÓN NUEVA AÑADIDA ===
+    siigo: {
+        title: 'Usuarios Siigo', titleSingular: 'Usuario Siigo', prefix: 'CRED-SIIGO-', counter: 'siigoCounter',
+        fields: {
+            id: { label: 'Código' },
+            username: { label: 'Usuario', type: 'text' },
+            password: { label: 'Contraseña', type: 'text' },
+            assignedUser: { label: 'Asignado a', type: 'text' },
+            url: { label: 'URL de Acceso', type: 'text' },
+            notes: { label: 'Notas', type: 'textarea' }
+        }
+    },
+    velocity: {
+        title: 'Usuarios Velocity', titleSingular: 'Usuario Velocity', prefix: 'CRED-VEL-', counter: 'velocityCounter',
+        fields: {
+            id: { label: 'Código' },
+            username: { label: 'Usuario', type: 'text' },
+            password: { label: 'Contraseña', type: 'text' },
+            assignedUser: { label: 'Asignado a', type: 'text' },
+            url: { label: 'URL de Acceso', type: 'text' },
+            notes: { label: 'Notas', type: 'textarea' }
+        }
+    },
+    traslados: {
+        title: 'Usuarios App Traslados', titleSingular: 'Usuario App Traslados', prefix: 'CRED-APPTR-', counter: 'trasladosCounter',
+        fields: {
+            id: { label: 'Código' },
+            username: { label: 'Usuario', type: 'text' },
+            password: { label: 'Contraseña', type: 'text' },
+            assignedUser: { label: 'Asignado a', type: 'text' },
+            notes: { label: 'Notas', type: 'textarea' }
+        }
+    },
+    // === FIN DE CONFIGURACIÓN NUEVA ===
     others: { title: 'Otras Credenciales', titleSingular: 'Credencial', prefix: 'CRED-OTH-', counter: 'otherCredentialCounter', fields: { id: { label: 'Código' }, system: { label: 'Sistema/Servicio', type: 'text' }, url: { label: 'URL (Opcional)', type: 'text' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, notes: { label: 'Notas', type: 'textarea' } }}
 };
 function handleFirestoreError(error, element) { console.error("Firestore Error:", error); const indexLinkRegex = /(https:\/\/console\.firebase\.google\.com\/project\/.*?\/firestore\/indexes\?create_composite=.*?)"/; const match = error.message.match(indexLinkRegex); let errorMessageHTML; if (match) { const link = match[1]; errorMessageHTML = `<strong>Error de Firebase:</strong> Se requiere un índice que no existe.<br><br><a href="${link}" target="_blank" style="color:blue; text-decoration:underline;">Haz clic aquí para crear el índice necesario en una nueva pestaña.</a><br><br>Después de crearlo, espera unos minutos y recarga esta página.`; } else { errorMessageHTML = `<strong>Error al cargar los datos:</strong> ${error.message}. <br><br>Esto puede ser causado por la configuración de "Prevención de seguimiento" de tu navegador.`; } element.innerHTML = `<div class="card" style="padding: 20px; border-left: 5px solid red;">${errorMessageHTML}</div>`; }
@@ -479,9 +513,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const category = path.replace('#credentials-', ''); 
             params.set('category', category); 
             renderGenericListPage(appContent, Object.fromEntries(params.entries()), credentialsCategoryConfig, 'credentials', '🔑'); 
-            const parentLink = document.querySelector('a[href="#credentials-emails"]').closest('.nav-item-with-submenu'); 
-            if(parentLink) parentLink.parentElement.classList.add('open'); 
-            isHandled = true; 
+            const parentLink = document.querySelector('a[href="#credentials-emails"]').closest('.nav-item-with-submenu');
+            if (parentLink) {
+                parentLink.parentElement.classList.add('open');
+                // Abrir también el sub-submenú si corresponde
+                const subParentLink = document.querySelector(`a[href="${path}"]`);
+                if (subParentLink && subParentLink.closest('.submenu .nav-item-with-submenu')) {
+                    subParentLink.closest('.submenu .nav-item-with-submenu').classList.add('open');
+                }
+            }
+            isHandled = true;
         } 
         
         if(isHandled) { 
