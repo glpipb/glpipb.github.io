@@ -91,7 +91,6 @@ const credentialsCategoryConfig = {
             assignedTo: { label: 'Asignar a Equipo', type: 'select', optionsSource: 'computers-inventory' }
         }
     },
-    // === CONFIGURACIÓN NUEVA AÑADIDA ===
     siigo: {
         title: 'Usuarios Siigo', titleSingular: 'Usuario Siigo', prefix: 'CRED-SIIGO-', counter: 'siigoCounter',
         fields: {
