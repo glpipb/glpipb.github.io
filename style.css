@@ -132,11 +132,11 @@ tr:hover { background-color: #f8f9fa; }
 
 /* ▼▼▼ ESTILOS MODIFICADOS Y AÑADIDOS ▼▼▼ */
 .status { padding: 6px 14px; border-radius: 20px; color: white; font-size: 12px; text-align: center; font-weight: 700; }
-.status-Abierto { background-color: var(--danger-color); }
-.status-Proceso { background-color: var(--warning-color); color: #333; }
-.status-Cerrado { background-color: var(--success-color); }
-.status-Activo { background-color: var(--success-color); }
-.status-Inactivo { background-color: var(--secondary-color); }
+.status-abierto { background-color: var(--danger-color); }
+.status-proceso { background-color: var(--warning-color); color: #333; }
+.status-cerrado { background-color: var(--success-color); }
+.status-activo { background-color: var(--success-color); }
+.status-inactivo { background-color: var(--secondary-color); }
 /* ▲▲▲ FIN DE ESTILOS ▲▲▲ */
 
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.3s ease; }
