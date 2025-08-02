@@ -84,7 +84,9 @@ const servicesCategoryConfig = {
             planName: { label: 'Nombre del Plan', type: 'text' },
             linesIncluded: { label: 'Línea', type: 'number' },
             monthlyCost: { label: 'Costo Mensual', type: 'number' },
-            status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }
+            status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] },
+            assignedUser: { label: 'Usuario asignado', type: 'text' },
+          
         }
     },
     otros: {
@@ -111,7 +113,7 @@ const credentialsCategoryConfig = {
             password: { label: 'Contraseña', type: 'text' },
             recoveryEmail: { label: 'Correo de Recuperación', type: 'email' },
             recoveryPhone: { label: 'Número de Recuperación', type: 'tel' },
-            assignedUser: { label: 'Asignado a', type: 'text' },
+            assignedUser: { label: 'Usuario asignado', type: 'text' },
             area: { label: 'Área', type: 'text' },
             status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] },
             notes: { label: 'Notas', type: 'textarea' }
@@ -137,7 +139,7 @@ const credentialsCategoryConfig = {
             id: { label: 'Código' },
             username: { label: 'Usuario', type: 'text' },
             password: { label: 'Contraseña', type: 'text' },
-            assignedUser: { label: 'Asignado a', type: 'text' },
+            assignedUser: { label: 'Ususario asignado', type: 'text' },
             url: { label: 'URL de Acceso', type: 'text' },
             status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] },
             notes: { label: 'Notas', type: 'textarea' }
@@ -149,7 +151,7 @@ const credentialsCategoryConfig = {
             id: { label: 'Código' },
             username: { label: 'Usuario', type: 'text' },
             password: { label: 'Contraseña', type: 'text' },
-            assignedUser: { label: 'Asignado a', type: 'text' },
+            assignedUser: { label: 'Usuario asignado', type: 'text' },
             url: { label: 'URL de Acceso', type: 'text' },
             status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] },
             notes: { label: 'Notas', type: 'textarea' }
@@ -161,7 +163,7 @@ const credentialsCategoryConfig = {
             id: { label: 'Código' },
             username: { label: 'Usuario', type: 'text' },
             password: { label: 'Contraseña', type: 'text' },
-            assignedUser: { label: 'Asignado a', type: 'text' },
+            assignedUser: { label: 'Usuario asignado', type: 'text' },
             status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] },
             notes: { label: 'Notas', type: 'textarea' }
         }
