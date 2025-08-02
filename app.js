@@ -66,13 +66,15 @@ const inventoryCategoryConfig = {
 // === NUEVA CONFIGURACIÓN AÑADIDA ===
 const servicesCategoryConfig = {
     internet: {
-        title: 'Servicios de Internet', titleSingular: 'Servicio de Internet', prefix: 'SRV-INET-', counter: 'internetServiceCounter',
+        title: 'Internet', titleSingular: 'Servicio de Internet', prefix: 'SRV-INET-', counter: 'internetServiceCounter',
         fields: {
             id: { label: 'Código' },
             provider: { label: 'Proveedor', type: 'text' },
             planName: { label: 'Nombre del Plan', type: 'text' },
+            contract: { label: 'Contrato', type: 'text' },
             speed: { label: 'Velocidad Contratada', type: 'text' },
             monthlyCost: { label: 'Costo Mensual', type: 'number' },
+            location: { label: 'Ubicación', type: 'text' },
             status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }
         }
     },
