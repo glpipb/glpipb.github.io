@@ -83,12 +83,13 @@ const servicesCategoryConfig = {
         fields: {
             id: { label: 'Código' },
             provider: { label: 'Proveedor', type: 'text' },
-            planName: { label: 'Nombre del Plan', type: 'text' },
+            planName: { label: 'Nombre del plan', type: 'text' },
+            contrac: { label: 'Número de cuenta', type: 'text' },
+            bill: { label: 'Número de factura', type: 'text' },
             linesIncluded: { label: 'Línea', type: 'number' },
-            monthlyCost: { label: 'Costo Mensual', type: 'number' },
-            status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] },
+            monthlyCost: { label: 'Costo mensual', type: 'number' },
             assignedUser: { label: 'Usuario asignado', type: 'text' },
-          
+            status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }
         }
     },
     otros: {
@@ -98,7 +99,7 @@ const servicesCategoryConfig = {
             serviceName: { label: 'Nombre del Servicio', type: 'text' },
             provider: { label: 'Proveedor', type: 'text' },
             description: { label: 'Descripción', type: 'textarea' },
-            monthlyCost: { label: 'Costo Mensual', type: 'number' },
+            monthlyCost: { label: 'Costo mensual', type: 'number' },
             status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }
         }
     }
@@ -113,8 +114,8 @@ const credentialsCategoryConfig = {
             service: { label: 'Servicio (Google, O365)', type: 'text' }, 
             email: { label: 'Correo Electrónico', type: 'email' }, 
             password: { label: 'Contraseña', type: 'text' },
-            recoveryEmail: { label: 'Correo de Recuperación', type: 'email' },
-            recoveryPhone: { label: 'Número de Recuperación', type: 'tel' },
+            recoveryEmail: { label: 'Correo de recuperación', type: 'email' },
+            recoveryPhone: { label: 'Número de recuperación', type: 'tel' },
             assignedUser: { label: 'Usuario asignado', type: 'text' },
             area: { label: 'Área', type: 'text' },
             status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] },
@@ -129,8 +130,8 @@ const credentialsCategoryConfig = {
         title: 'Licencias de Software', titleSingular: 'Licencia de Software', prefix: 'CRED-SW-', counter: 'softwareCounter', 
         fields: { 
             id: { label: 'Código' }, 
-            softwareName: { label: 'Nombre del Software', type: 'text' }, 
-            licenseKey: { label: 'Clave de Licencia', type: 'textarea' }, 
+            softwareName: { label: 'Nombre del software', type: 'text' }, 
+            licenseKey: { label: 'Clave de licencia', type: 'textarea' }, 
             version: { label: 'Versión', type: 'text' },
             assignedTo: { label: 'Asignar a Equipo', type: 'select', optionsSource: 'computers-inventory' }
         }
