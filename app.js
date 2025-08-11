@@ -17,17 +17,15 @@ window.jsPDF = window.jspdf.jsPDF;
 
 // --- 3. TEMPLATES HTML ---
 const dashboardHTML = `<h1>📊 Dashboard</h1><div class="dashboard-stats" id="dashboard-cards"></div><div class="card" style="margin-top: 30px;"><h2>Tickets por Día (Últimos 7 días)</h2><div class="chart-container"><canvas id="ticketsChart"></canvas></div></div>`;
-// === MODIFICACIÓN INICIO: Añadido campo de fecha/hora al formulario de nuevo ticket ===
-const newTicketFormHTML = `<h1>➕ Crear Nuevo Ticket</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div class="inventory-form-grid"><div class="form-group"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><label for="ticket-datetime">Fecha y Hora del Ticket</label><input type="datetime-local" id="ticket-datetime" required></div><div class="form-group"><label for="device-search">Dispositivo Asociado (opcional)</label><input type="text" id="device-search" list="device-list" placeholder="Busca por código, marca o modelo..."><datalist id="device-list"></datalist></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
+// === MODIFICACIÓN INICIO: Añadido campo de plataforma al formulario de nuevo ticket ===
+const newTicketFormHTML = `<h1>➕ Crear Nuevo Ticket</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div class="inventory-form-grid"><div class="form-group"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><label for="ticket-datetime">Fecha y Hora del Ticket</label><input type="datetime-local" id="ticket-datetime" required></div><div class="form-group"><label for="device-search">Dispositivo Asociado (opcional)</label><input type="text" id="device-search" list="device-list" placeholder="Busca por código, usuario, marca..."><datalist id="device-list"></datalist></div><div class="form-group"><label for="platform">Plataforma Asociada (opcional)</label><select id="platform"><option value="">Ninguna</option><option value="Velocity">Velocity</option><option value="Siigo">Siigo</option><option value="App Traslado">App Traslado</option></select></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 // === MODIFICACIÓN FIN ===
-// === MODIFICACIÓN INICIO: Añadido contenedor para el buscador en la lista de tickets ===
-const ticketListHTML = `<div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><div class="table-search-container"><input type="text" id="table-search-input" placeholder="🔍 Buscar en la tabla..."></div><h2 id="tickets-list-title">Tickets</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Título</th><th>Solicitante</th><th>Ubicación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
+// === MODIFICACIÓN INICIO: Añadida columna de plataforma a la lista de tickets ===
+const ticketListHTML = `<div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><div class="table-search-container"><input type="text" id="table-search-input" placeholder="🔍 Buscar en la tabla..."></div><h2 id="tickets-list-title">Tickets</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Título</th><th>Solicitante</th><th>Ubicación</th><th>Plataforma</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
 // === MODIFICACIÓN FIN ===
 const historyPageHTML = `<h1>🔍 Historial y Búsqueda Avanzada</h1><div class="card"><form id="history-search-form"><div class="search-filters-grid"><div class="form-group"><label for="search-device">Dispositivo</label><input type="text" id="search-device" list="device-list-search"></div><datalist id="device-list-search"></datalist><div class="form-group"><label for="search-requester">Solicitante</label><select id="search-requester"><option value="">Todos</option></select></div><div class="form-group"><label for="search-location">Ubicación</label><select id="search-location"><option value="">Todas</option></select></div><div class="form-group"><label for="search-status">Estado</label><select id="search-status"><option value="">Todos</option><option value="abierto">Abierto</option><option value="cerrado">Cerrado</option></select></div><div class="form-group"><label for="search-priority">Prioridad</label><select id="search-priority"><option value="">Todas</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><button type="submit" class="primary" style="width:100%">Buscar</button></div></div></form></div><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="history-results-title">Resultados</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Título</th><th>Solicitante</th><th>Fecha Creación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
 const statisticsHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><h1>📈 Centro de Análisis</h1><button class="primary" id="export-stats-pdf">Exportar a PDF</button></div><div id="stats-content"><div class="card"><h2>Filtro de Periodo</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div></div><h2>Análisis de Tickets</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Tickets por Prioridad</h3><div class="chart-container"><canvas id="ticketsByPriorityChart"></canvas></div></div><div class="card"><h3>Tickets por Categoría de Dispositivo</h3><div class="chart-container"><canvas id="ticketsByDeviceCategoryChart"></canvas></div></div><div class="card"><h3>Top 5 Dispositivos Problemáticos</h3><ul id="top-devices-list" class="kpi-list"></ul></div><div class="card"><h3>Top 5 Solicitantes</h3><ul id="top-requesters-list" class="kpi-list"></ul></div></div><div class="card"><h3>Flujo de Tickets (Creados vs. Cerrados)</h3><div class="chart-container"><canvas id="ticket-flow-chart"></canvas></div></div><h2 style="margin-top: 40px;">Resumen de Inventario</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Dispositivos por Categoría</h3><div class="chart-container"><canvas id="inventoryByCategoryChart"></canvas></div></div><div class="card"><h3>Computadores por SO</h3><div class="chart-container"><canvas id="computersByOsChart"></canvas></div></div></div></div>`;
-// === MODIFICACIÓN INICIO: Añadido contenedor para el buscador en la página de lista genérica ===
 const genericListPageHTML = `<h1 id="page-title"></h1><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button><button id="add-item-btn" class="btn-blue open-form-modal-btn">Añadir Nuevo</button></div><div class="card"><div class="table-search-container"><input type="text" id="table-search-input" placeholder="🔍 Buscar en la tabla..."></div><h2 id="item-list-title"></h2><div class="table-wrapper"><table id="data-table"><thead id="item-table-head"></thead><tbody id="item-table-body"></tbody></table></div></div>`;
-// === MODIFICACIÓN FIN ===
 const maintenanceCalendarHTML = `<h1>📅 Planificación</h1><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button><button class="primary open-form-modal-btn" data-type="maintenance">Programar Tarea</button></div><div class="card"><div id="maintenance-calendar"></div><table id="data-table" style="display:none;"></table></div>`;
 const configHTML = `<h1>⚙️ Configuración</h1><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"><div class="card"><h2>Gestionar Solicitantes</h2><form id="add-requester-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="requester-name" placeholder="Nombre del solicitante" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="requesters-list" class="config-list"></ul></div><div class="card"><h2>Gestionar Ubicaciones</h2><form id="add-location-form" style="display:flex; gap:10px; margin-bottom: 20px;"><input type="text" id="location-name" placeholder="Nombre de la ubicación" required style="flex-grow:1;"><button type="submit" class="primary">Añadir</button></form><ul id="locations-list" class="config-list"></ul></div></div>`;
 
@@ -40,32 +38,25 @@ function exportToCSV(tableId, filename) { const table = document.getElementById(
 function exportToPDF(tableId, filename) { const table = document.getElementById(tableId); if (!table) { console.error("Tabla no encontrada para exportar:", tableId); return; } const doc = new jsPDF({ orientation: "landscape" }); const head = [Array.from(table.querySelectorAll('thead th')).map(header => header.innerText).slice(0, -1)]; const body = Array.from(table.querySelectorAll('tbody tr')).map(row => Array.from(row.querySelectorAll('td')).map(cell => cell.innerText).slice(0, -1)); doc.autoTable({ head: head, body: body, startY: 10, styles: { font: "Inter", fontSize: 8 }, headStyles: { fillColor: [41, 128, 186], textColor: 255, fontStyle: 'bold' } }); doc.save(`${filename}.pdf`); }
 async function exportStatsToPDF() { const reportElement = document.getElementById('stats-content'); const canvas = await html2canvas(reportElement, { scale: 2 }); const imgData = canvas.toDataURL('image/png'); const pdf = new jsPDF('p', 'mm', 'a4'); const pdfWidth = pdf.internal.pageSize.getWidth(); const pdfHeight = (canvas.height * pdfWidth) / canvas.width; pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight); pdf.save("reporte-estadisticas.pdf"); }
 
-// === MODIFICACIÓN INICIO: Nueva función para implementar la búsqueda en tablas ===
 function setupTableSearch(inputId, tableId) {
     const searchInput = document.getElementById(inputId);
     if (!searchInput) return;
-
-    // Prevenir que se añadan múltiples listeners si la función es llamada varias veces
     if (searchInput.dataset.listenerAttached) return;
     searchInput.dataset.listenerAttached = 'true';
-
     searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
         const table = document.getElementById(tableId);
         const rows = table.querySelectorAll('tbody tr');
-
         rows.forEach(row => {
-            // Se usa textContent para obtener todo el texto visible de la fila
             const rowText = row.textContent.toLowerCase();
             if (rowText.includes(searchTerm)) {
-                row.style.display = ''; // Muestra la fila si coincide
+                row.style.display = '';
             } else {
-                row.style.display = 'none'; // Oculta la fila si no coincide
+                row.style.display = 'none';
             }
         });
     });
 }
-// === MODIFICACIÓN FIN ===
 
 // --- 5. CONFIGURACIÓN Y FUNCIONES DE RENDERIZADO ---
 const inventoryCategoryConfig = {
@@ -96,7 +87,6 @@ const inventoryCategoryConfig = {
     printers: { title: 'Impresoras', titleSingular: 'Impresora', prefix: 'IMP-', counter: 'impresoraCounter', fields: { id: { label: 'Código' }, brand: { label: 'Marca', type: 'text' }, model: { label: 'Modelo', type: 'text' }, serial: { label: 'Serial', type: 'text' }, ipAddress: { label: 'Dirección IP', type: 'text' }, type: { label: 'Tipo (Láser, Tinta)', type: 'text' }, location: { label: 'Ubicación Física', type: 'text' } }}
 };
 
-// === NUEVA CONFIGURACIÓN AÑADIDA ===
 const servicesCategoryConfig = {
     internet: {
         title: 'Internet', titleSingular: 'Servicio de Internet', prefix: 'SRV-INET-', counter: 'internetServiceCounter',
@@ -137,7 +127,6 @@ const servicesCategoryConfig = {
         }
     }
 };
-// === FIN DE NUEVA CONFIGURACIÓN ===
 
 const credentialsCategoryConfig = {
     emails: { 
@@ -213,25 +202,30 @@ async function renderNewTicketForm(container) {
     container.innerHTML = newTicketFormHTML; 
     const quill = new Quill('#description-editor', { theme: 'snow', placeholder: 'Detalla el problema o solicitud...' }); 
     
-    // === MODIFICACIÓN INICIO: Lógica para el campo de fecha y hora ===
     const dateTimeInput = document.getElementById('ticket-datetime');
     const now = new Date();
-    // Ajustar a la zona horaria local para que el valor por defecto sea correcto
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    // Formatear a 'YYYY-MM-DDTHH:MM' que es el formato que requiere el input datetime-local
     dateTimeInput.value = now.toISOString().slice(0, 16);
-    // === MODIFICACIÓN FIN ===
 
     const requesterSelect = document.getElementById('requester'); 
     const locationSelect = document.getElementById('location'); 
     const deviceDatalist = document.getElementById('device-list'); 
     const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); 
+    
     requesterSelect.innerHTML = '<option value="">Selecciona un solicitante</option>'; 
     reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); 
     locationSelect.innerHTML = '<option value="">Selecciona una ubicación</option>'; 
     locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); 
+    
     const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
-    deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); 
+    
+    // === MODIFICACIÓN INICIO: Mejorar el texto del datalist para incluir al usuario ===
+    deviceDatalist.innerHTML = devices.map(d => {
+        const userText = d.user ? `(Usuario: ${d.user})` : '';
+        const serialText = d.serial ? `(Serie: ${d.serial})` : '';
+        return `<option value="${d.id}">${d.id}: ${d.brand || ''} ${d.model || ''} ${userText} ${serialText}</option>`;
+    }).join('');
+    // === MODIFICACIÓN FIN ===
     
     const form = document.getElementById('new-ticket-form'); 
     form.addEventListener('submit', async (e) => { 
@@ -247,10 +241,11 @@ async function renderNewTicketForm(container) {
             }); 
             
             const deviceId = document.getElementById('device-search').value; 
-            
-            // === MODIFICACIÓN INICIO: Capturar la fecha del formulario y convertirla a Timestamp de Firebase ===
             const ticketDate = new Date(form['ticket-datetime'].value);
             const ticketTimestamp = firebase.firestore.Timestamp.fromDate(ticketDate);
+            
+            // === MODIFICACIÓN INICIO: Capturar el valor de la plataforma seleccionada ===
+            const platform = form.platform.value;
             // === MODIFICACIÓN FIN ===
 
             const newTicketData = { 
@@ -262,9 +257,10 @@ async function renderNewTicketForm(container) {
                 status: 'abierto', 
                 solution: null, 
                 deviceId: deviceId || null, 
-                // === MODIFICACIÓN INICIO: Usar el timestamp del formulario en lugar del serverTimestamp ===
-                createdAt: ticketTimestamp, 
+                // === MODIFICACIÓN INICIO: Añadir platformId al objeto del ticket ===
+                platformId: platform || null,
                 // === MODIFICACIÓN FIN ===
+                createdAt: ticketTimestamp, 
                 closedAt: null 
             }; 
             
@@ -280,9 +276,7 @@ async function renderNewTicketForm(container) {
 async function renderTicketList(container, params = {}) { 
     container.innerHTML = ticketListHTML; 
     
-    // === MODIFICACIÓN INICIO: Activar la función de búsqueda para la tabla de tickets ===
     setupTableSearch('table-search-input', 'data-table');
-    // === MODIFICACIÓN FIN ===
 
     const [reqSnap] = await Promise.all([ db.collection('requesters').get() ]); 
     const requestersMap = {}; 
@@ -300,13 +294,17 @@ async function renderTicketList(container, params = {}) {
     query.orderBy('createdAt', 'desc').onSnapshot(snapshot => { 
         tableBody.innerHTML = ''; 
         if (snapshot.empty) { 
-            tableBody.innerHTML = `<tr><td colspan="6">No hay tickets que coincidan con este filtro.</td></tr>`; 
+            // === MODIFICACIÓN INICIO: Ajustado el colspan por la nueva columna ===
+            tableBody.innerHTML = `<tr><td colspan="7">No hay tickets que coincidan con este filtro.</td></tr>`; 
+            // === MODIFICACIÓN FIN ===
             return; 
         } 
         snapshot.forEach(doc => { 
             const ticket = { id: doc.id, ...doc.data() }; 
             const tr = document.createElement('tr'); 
-            tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.locationId || 'N/A'}</td><td><span class="status status-${ticket.status}">${capitalizar(ticket.status)}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`; 
+            // === MODIFICACIÓN INICIO: Añadida la celda para la plataforma ===
+            tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.locationId || 'N/A'}</td><td>${ticket.platformId || 'N/A'}</td><td><span class="status status-${ticket.status}">${capitalizar(ticket.status)}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`; 
+            // === MODIFICACIÓN FIN ===
             tableBody.appendChild(tr); 
         }); 
     }, error => handleFirestoreError(error, tableBody)); 
@@ -316,9 +314,7 @@ async function renderEstadisticas(container) { container.innerHTML = statisticsH
 function renderGenericListPage(container, params, configObject, collectionName, icon) {
     container.innerHTML = genericListPageHTML;
 
-    // === MODIFICACIÓN INICIO: Activar la función de búsqueda para la tabla genérica ===
     setupTableSearch('table-search-input', 'data-table');
-    // === MODIFICACIÓN FIN ===
 
     const category = params.category;
     const config = configObject[category];
@@ -478,14 +474,12 @@ async function showItemFormModal(type, category = null, docId = null) {
 
     let existingData = {};
     if (isEditing) {
-        // MODIFICADO: Ahora busca en la colección correcta
         const collectionForSearch = (type === 'config') ? category : type;
         const docSnap = await db.collection(collectionForSearch).doc(docId).get();
         if (docSnap.exists) { existingData = docSnap.data(); } 
         else { alert("Error: No se encontró el elemento a editar."); return; }
     }
 
-    // MODIFICADO: Se añade servicesCategoryConfig a la lógica
     const configObject = (type === 'inventory') ? inventoryCategoryConfig : 
                          (type === 'credentials') ? credentialsCategoryConfig :
                          (type === 'services') ? servicesCategoryConfig : {};
@@ -650,7 +644,50 @@ async function showItemFormModal(type, category = null, docId = null) {
         }
     });
 }
-async function showTicketModal(ticketId) { const ticketModal = document.getElementById('ticket-modal'); const modalBody = ticketModal.querySelector('#modal-body'); const ticketDoc = await db.collection('tickets').doc(ticketId).get(); if (!ticketDoc.exists) { alert('Error: No se encontró el ticket.'); return; } const ticket = ticketDoc.data(); const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || ticket.requesterId : 'N/A'; const locationName = ticket.locationId || 'N/A'; let deviceInfoHTML = ''; if (ticket.deviceId) { const deviceDoc = await db.collection('inventory').doc(ticket.deviceId).get(); if(deviceDoc.exists) { const device = deviceDoc.data(); deviceInfoHTML = `<div class="ticket-detail-item"><strong>Dispositivo:</strong> ${ticket.deviceId} - ${device.brand} ${device.model}</div>`; } } let solutionHTML = `<hr><h3>Añadir Solución</h3><form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`; if (ticket.status === 'cerrado') { solutionHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`; } modalBody.innerHTML = `<div class="ticket-modal-layout"><div class="ticket-modal-main"><h2>Ticket ${ticketId}</h2><hr><h3>Descripción</h3><div class="card">${ticket.description}</div>${solutionHTML}</div><div class="ticket-modal-sidebar"><h3>Detalles del Ticket</h3><div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${capitalizar(ticket.status)}</span></div><div class="ticket-detail-item"><strong>Prioridad:</strong> ${capitalizar(ticket.priority)}</div><div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div><div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div>${deviceInfoHTML}<div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}</div></div>`; ticketModal.classList.remove('hidden'); if (ticket.status !== 'cerrado') { const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución aplicada...' }); document.getElementById('solution-form').addEventListener('submit', e => { e.preventDefault(); db.collection('tickets').doc(ticketId).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => ticketModal.classList.add('hidden')); }); } }
+async function showTicketModal(ticketId) { 
+    const ticketModal = document.getElementById('ticket-modal'); 
+    const modalBody = ticketModal.querySelector('#modal-body'); 
+    const ticketDoc = await db.collection('tickets').doc(ticketId).get(); 
+    if (!ticketDoc.exists) { alert('Error: No se encontró el ticket.'); return; } 
+    const ticket = ticketDoc.data(); 
+    const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || ticket.requesterId : 'N/A'; 
+    const locationName = ticket.locationId || 'N/A'; 
+    
+    let deviceInfoHTML = ''; 
+    if (ticket.deviceId) { 
+        const deviceDoc = await db.collection('inventory').doc(ticket.deviceId).get(); 
+        if(deviceDoc.exists) { 
+            const device = deviceDoc.data(); 
+            deviceInfoHTML = `<div class="ticket-detail-item"><strong>Dispositivo:</strong> ${ticket.deviceId} - ${device.brand} ${device.model}</div>`; 
+        } 
+    } 
+    
+    // === MODIFICACIÓN INICIO: Añadir la información de la plataforma al modal ===
+    let platformInfoHTML = '';
+    if (ticket.platformId) {
+        platformInfoHTML = `<div class="ticket-detail-item"><strong>Plataforma:</strong> ${ticket.platformId}</div>`;
+    }
+    // === MODIFICACIÓN FIN ===
+
+    let solutionHTML = `<hr><h3>Añadir Solución</h3><form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`; 
+    if (ticket.status === 'cerrado') { 
+        solutionHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`; 
+    } 
+    
+    // === MODIFICACIÓN INICIO: Añadida la variable platformInfoHTML al cuerpo del modal ===
+    modalBody.innerHTML = `<div class="ticket-modal-layout"><div class="ticket-modal-main"><h2>Ticket ${ticketId}</h2><hr><h3>Descripción</h3><div class="card">${ticket.description}</div>${solutionHTML}</div><div class="ticket-modal-sidebar"><h3>Detalles del Ticket</h3><div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${capitalizar(ticket.status)}</span></div><div class="ticket-detail-item"><strong>Prioridad:</strong> ${capitalizar(ticket.priority)}</div><div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div><div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div>${deviceInfoHTML}${platformInfoHTML}<div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}</div></div>`; 
+    // === MODIFICACIÓN FIN ===
+
+    ticketModal.classList.remove('hidden'); 
+    
+    if (ticket.status !== 'cerrado') { 
+        const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución aplicada...' }); 
+        document.getElementById('solution-form').addEventListener('submit', e => { 
+            e.preventDefault(); 
+            db.collection('tickets').doc(ticketId).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => ticketModal.classList.add('hidden')); 
+        }); 
+    } 
+}
 function showEventActionChoiceModal(eventId, eventTitle, eventProps) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); let completedInfo = ''; if (eventProps.status === 'completada') { completedInfo = `<hr><h4>Información de Finalización</h4><p><strong>Fecha:</strong> ${new Date(eventProps.completedDate + 'T00:00:00').toLocaleDateString('es-ES')}</p><p><strong>A tiempo:</strong> ${eventProps.onTimeStatus}</p><p><strong>Observaciones:</strong> ${eventProps.completionNotes || 'N/A'}</p>`; } const actionButtons = eventProps.status === 'planificada' ? `<div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; margin-top: 20px;"><button class="primary" id="edit-task-btn" style="background-color: #ffc107; color: #212529;">✏️ Editar Tarea</button><button class="primary" id="finalize-task-btn">✅ Finalizar Tarea</button><button class="danger" id="delete-task-btn">🗑️ Eliminar</button></div>` : ''; modalBody.innerHTML = `<h2>${eventTitle}</h2><p><strong>Estado:</strong> ${eventProps.status}</p>${completedInfo}${actionButtons}`; actionModal.classList.remove('hidden'); if (eventProps.status === 'planificada') { document.getElementById('edit-task-btn').onclick = () => { actionModal.classList.add('hidden'); showItemFormModal('maintenance', null, eventId); }; document.getElementById('finalize-task-btn').onclick = () => { actionModal.classList.add('hidden'); showFinalizeTaskModal(eventId, eventTitle); }; document.getElementById('delete-task-btn').onclick = () => { if (confirm(`¿Estás seguro de que quieres ELIMINAR permanentemente la tarea "${eventTitle}"? Esta acción no se puede deshacer.`)) { db.collection('maintenance').doc(eventId).delete().then(() => { actionModal.classList.add('hidden'); }).catch(error => { console.error("Error al eliminar la tarea: ", error); alert("No se pudo eliminar la tarea."); }); } }; } }
 function showFinalizeTaskModal(eventId, eventTitle) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); const today = new Date().toISOString().split('T')[0]; modalBody.innerHTML = `<h2>Finalizar Tarea: "${eventTitle}"</h2><form id="finalize-form"><div class="form-group"><label for="completedDate">Fecha de Realización</label><input type="date" id="completedDate" name="completedDate" value="${today}" required></div><div class="form-group"><label for="onTimeStatus">¿Se realizó a tiempo?</label><select id="onTimeStatus" name="onTimeStatus"><option value="Sí">Sí</option><option value="No">No</option></select></div><div class="form-group"><label>Observaciones (opcional)</label><textarea name="completionNotes" rows="3"></textarea></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="primary">Guardar Finalización</button></div></form>`; actionModal.classList.remove('hidden'); document.getElementById('finalize-form').addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target; form.querySelector('button[type="submit"]').disabled = true; try { const updateData = { status: 'completada', completedDate: form.completedDate.value, onTimeStatus: form.onTimeStatus.value, completionNotes: form.completionNotes.value }; await db.collection('maintenance').doc(eventId).set(updateData, { merge: true }); actionModal.classList.add('hidden'); } catch (error) { console.error("Error al finalizar la tarea: ", error); alert("Hubo un error al finalizar la tarea. Revisa la consola para más detalles."); form.querySelector('button[type="submit"]').disabled = false; } }); }
 function showCancelTaskModal(eventId, eventTitle) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); modalBody.innerHTML = `<h2>Cancelar Tarea: "${eventTitle}"</h2><form id="cancel-form"><div class="form-group"><label for="cancellationReason">Razón de la Cancelación</label><textarea id="cancellationReason" name="cancellationReason" rows="4" required></textarea></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="danger">Confirmar Cancelación</button></div></form>`; actionModal.classList.remove('hidden'); document.getElementById('cancel-form').addEventListener('submit', e => { e.preventDefault(); const reason = e.target.cancellationReason.value; db.collection('maintenance').doc(eventId).update({ status: 'cancelada', cancellationReason: reason }).then(() => actionModal.classList.add('hidden')); }); }
@@ -690,13 +727,11 @@ document.addEventListener('DOMContentLoaded', () => {
             params.set('category', category); 
             renderGenericListPage(appContent, Object.fromEntries(params.entries()), credentialsCategoryConfig, 'credentials', '🔑'); 
             isHandled = true; 
-        // === NUEVA RUTA AÑADIDA ===
         } else if (path.startsWith('#services-')) {
             const category = path.replace('#services-', '');
             params.set('category', category);
             renderGenericListPage(appContent, Object.fromEntries(params.entries()), servicesCategoryConfig, 'services', '📡');
             isHandled = true;
-        // === FIN DE NUEVA RUTA ===
         } else {
             const renderFunction = routes[path]; 
             if (renderFunction) { 
