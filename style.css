@@ -130,6 +130,10 @@ tr:last-child td { border-bottom: none; }
 tr:hover { background-color: #f8f9fa; }
 
 /* ▼▼▼ ESTILOS MODIFICADOS Y AÑADIDOS ▼▼▼ */
+.inventory-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+.table-search-container { margin-bottom: 20px; }
+#table-search-input { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 16px; }
+#table-search-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2); }
 .status { padding: 6px 14px; border-radius: 20px; color: white; font-size: 12px; text-align: center; font-weight: 700; }
 .status-abierto { background-color: var(--danger-color); }
 .status-proceso { background-color: var(--warning-color); color: #333; }
