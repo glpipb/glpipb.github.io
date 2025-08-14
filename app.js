@@ -17,68 +17,15 @@ window.jsPDF = window.jspdf.jsPDF;
 
 // --- 3. TEMPLATES HTML ---
 const dashboardHTML = `<h1>📊 Dashboard</h1><div class="dashboard-stats" id="dashboard-cards"></div><div class="card" style="margin-top: 30px;"><h2>Tickets por Día (Últimos 7 días)</h2><div class="chart-container"><canvas id="ticketsChart"></canvas></div></div>`;
-const newTicketFormHTML = `<h1>➕ Crear Nuevo Ticket</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div class="inventory-form-grid"><div class="form-group"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><label for="ticket-datetime">Fecha y Hora del Ticket</label><input type="datetime-local" id="ticket-datetime" required></div><div class="form-group"><label for="device-search">Dispositivo Asociado (opcional)</label><input type="text" id="device-search" list="device-list" placeholder="Busca por código, usuario, marca..."><datalist id="device-list"></datalist></div><div class="form-group"><label for="platform">Plataforma Asociada (opcional)</label><select id="platform"><option value="">Ninguna</option><option value="Velocity">Velocity</option><option value="Siigo">Siigo</option><option value="App Traslado">App Traslado</option></select></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 
-// === MODIFICACIÓN INICIO: Se añade el panel de filtros y las nuevas columnas a la tabla de tickets ===
-const ticketListHTML = `
-    <div class="add-new-button-container">
-        <button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button>
-        <button class="export-btn pdf" data-format="pdf">Exportar a PDF</button>
-    </div>
-    <div class="card">
-        <h2>Filtros</h2>
-        <form id="ticket-filters-form">
-            <div class="search-filters-grid">
-                <div class="form-group">
-                    <label for="filter-requester">Solicitante</label>
-                    <select id="filter-requester"><option value="">Todos</option></select>
-                </div>
-                <div class="form-group">
-                    <label for="filter-platform">Plataforma</label>
-                    <select id="filter-platform">
-                        <option value="">Todas</option>
-                        <option value="Velocity">Velocity</option>
-                        <option value="Siigo">Siigo</option>
-                        <option value="App Traslado">App Traslado</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="filter-status">Estado</label>
-                    <select id="filter-status">
-                        <option value="">Todos</option>
-                        <option value="abierto">Abierto</option>
-                        <option value="en-curso">En curso</option>
-                        <option value="cerrado">Cerrado</option>
-                    </select>
-                </div>
-            </div>
-        </form>
-    </div>
-    <div class="card">
-        <div class="table-search-container">
-            <input type="text" id="table-search-input" placeholder="🔍 Buscar en la tabla por texto...">
-        </div>
-        <h2 id="tickets-list-title">Tickets</h2>
-        <div class="table-wrapper">
-            <table id="data-table">
-                <thead>
-                    <tr>
-                        <th># Ticket</th>
-                        <th>Título</th>
-                        <th>Solicitante</th>
-                        <th>Ubicación</th>
-                        <th>Fecha Creación</th>
-                        <th>Fecha Cierre</th>
-                        <th>Plataforma</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>`;
-// === MODIFICACIÓN FIN ===
+// Formulario para tickets de TI (el original, sin el campo de plataforma)
+const newTITicketFormHTML = `<h1>➕ Crear Nuevo Ticket de TI</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div class="inventory-form-grid"><div class="form-group"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><label for="ticket-datetime">Fecha y Hora del Ticket</label><input type="datetime-local" id="ticket-datetime" required></div><div class="form-group"><label for="device-search">Dispositivo Asociado (opcional)</label><input type="text" id="device-search" list="device-list" placeholder="Busca por código, usuario, marca..."><datalist id="device-list"></datalist></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
+
+// Nuevo formulario genérico para tickets de Velocity y Siigo
+const newPlatformTicketFormHTML = `<h1 id="page-title"></h1><div class="card"><form id="new-platform-ticket-form"><div class="inventory-form-grid"><div class="form-group"><label for="fecha-reporte">Fecha de Reporte</label><input type="date" id="fecha-reporte" required></div><div class="form-group"><label for="hora-reporte">Hora de Reporte</label><input type="time" id="hora-reporte" required></div><div class="form-group"><label for="medio-solicitud">Medio de Solicitud</label><select id="medio-solicitud" required><option value="">Seleccione...</option><option value="Llamada">Llamada</option><option value="Correo">Correo</option><option value="WhatsApp">WhatsApp</option><option value="Personalmente">Personalmente</option></select></div><div class="form-group"><label for="solicitante">Solicitante</label><select id="solicitante" required></select></div><div class="form-group"><label for="asesor-soporte">Asesor de Soporte</label><select id="asesor-soporte" required></select></div><div class="form-group"><label for="ticket-caso">Ticket del Caso</label><input type="text" id="ticket-caso"></div></div><div class="form-group"><label for="descripcion-novedad">Descripción de la Novedad</label><textarea id="descripcion-novedad" rows="4" required></textarea></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
+
+// Lista de tickets actualizada con nueva columna "Tipo"
+const ticketListHTML = `<div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="tickets-list-title">Todos los Tickets</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Tipo</th><th>Título/Novedad</th><th>Solicitante</th><th>Fecha Creación</th><th>Fecha Cierre</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
 
 const historyPageHTML = `<h1>🔍 Historial y Búsqueda Avanzada</h1><div class="card"><form id="history-search-form"><div class="search-filters-grid"><div class="form-group"><label for="search-device">Dispositivo</label><input type="text" id="search-device" list="device-list-search"></div><datalist id="device-list-search"></datalist><div class="form-group"><label for="search-requester">Solicitante</label><select id="search-requester"><option value="">Todos</option></select></div><div class="form-group"><label for="search-location">Ubicación</label><select id="search-location"><option value="">Todas</option></select></div><div class="form-group"><label for="search-status">Estado</label><select id="search-status"><option value="">Todos</option><option value="abierto">Abierto</option><option value="en-curso">En curso</option><option value="cerrado">Cerrado</option></select></div><div class="form-group"><label for="search-priority">Prioridad</label><select id="search-priority"><option value="">Todas</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><button type="submit" class="primary" style="width:100%">Buscar</button></div></div></form></div><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="history-results-title">Resultados</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Título</th><th>Solicitante</th><th>Fecha Creación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
 const statisticsHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><h1>📈 Centro de Análisis</h1><button class="primary" id="export-stats-pdf">Exportar a PDF</button></div><div id="stats-content"><div class="card"><h2>Filtro de Periodo</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div></div><h2>Análisis de Tickets</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Tickets por Prioridad</h3><div class="chart-container"><canvas id="ticketsByPriorityChart"></canvas></div></div><div class="card"><h3>Tickets por Categoría de Dispositivo</h3><div class="chart-container"><canvas id="ticketsByDeviceCategoryChart"></canvas></div></div><div class="card"><h3>Top 5 Dispositivos Problemáticos</h3><ul id="top-devices-list" class="kpi-list"></ul></div><div class="card"><h3>Top 5 Solicitantes</h3><ul id="top-requesters-list" class="kpi-list"></ul></div></div><div class="card"><h3>Flujo de Tickets (Creados vs. Cerrados)</h3><div class="chart-container"><canvas id="ticket-flow-chart"></canvas></div></div><h2 style="margin-top: 40px;">Resumen de Inventario</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Dispositivos por Categoría</h3><div class="chart-container"><canvas id="inventoryByCategoryChart"></canvas></div></div><div class="card"><h3>Computadores por SO</h3><div class="chart-container"><canvas id="computersByOsChart"></canvas></div></div></div></div>`;
@@ -115,7 +62,7 @@ function setupTableSearch(inputId, tableId) {
     });
 }
 // --- 5. CONFIGURACIÓN Y FUNCIONES DE RENDERIZADO ---
-// ... (Las configuraciones de inventario, servicios y credenciales no cambian)
+// Las configuraciones de inventario, servicios y credenciales no han cambiado
 const inventoryCategoryConfig = {
     computers: { 
         title: 'Computadores', titleSingular: 'Computador', prefix: 'PC-', counter: 'computerCounter', 
@@ -253,8 +200,10 @@ const credentialsCategoryConfig = {
 
 function handleFirestoreError(error, element) { console.error("Firestore Error:", error); const indexLinkRegex = /(https:\/\/console\.firebase\.google\.com\/project\/.*?\/firestore\/indexes\?create_composite=.*?)"/; const match = error.message.match(indexLinkRegex); let errorMessageHTML; if (match) { const link = match[1]; errorMessageHTML = `<strong>Error de Firebase:</strong> Se requiere un índice que no existe.<br><br><a href="${link}" target="_blank" style="color:blue; text-decoration:underline;">Haz clic aquí para crear el índice necesario en una nueva pestaña.</a><br><br>Después de crearlo, espera unos minutos y recarga esta página.`; } else { errorMessageHTML = `<strong>Error al cargar los datos:</strong> ${error.message}. <br><br>Esto puede ser causado por la configuración de "Prevención de seguimiento" de tu navegador.`; } element.innerHTML = `<div class="card" style="padding: 20px; border-left: 5px solid red;">${errorMessageHTML}</div>`; }
 async function renderDashboard(container) { container.innerHTML = dashboardHTML; const cardsContainer = document.getElementById('dashboard-cards'); cardsContainer.innerHTML = 'Cargando estadísticas...'; const ticketsSnapshot = await db.collection('tickets').get(); const tickets = ticketsSnapshot.docs.map(doc => doc.data()); const openCount = tickets.filter(t => t.status === 'abierto').length; const closedCount = tickets.filter(t => t.status === 'cerrado').length; const totalCount = tickets.length; cardsContainer.innerHTML = `<a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a><a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a><a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>`; const last7Days = Array(7).fill(0).reduce((acc, _, i) => { const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc; }, {}); tickets.forEach(ticket => { if (ticket.createdAt) { const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0]; if (last7Days.hasOwnProperty(ticketDate)) { last7Days[ticketDate]++; } } }); const ctx = document.getElementById('ticketsChart').getContext('2d'); new Chart(ctx, { type: 'bar', data: { labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(), datasets: [{ label: '# de Tickets Creados', data: Object.values(last7Days).reverse(), backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); }
-async function renderNewTicketForm(container) { 
-    container.innerHTML = newTicketFormHTML; 
+
+// === MODIFICACIÓN: Función para crear tickets de TI ===
+async function renderNewTITicketForm(container) { 
+    container.innerHTML = newTITicketFormHTML; 
     const quill = new Quill('#description-editor', { theme: 'snow', placeholder: 'Detalla el problema o solicitud...' }); 
     
     const dateTimeInput = document.getElementById('ticket-datetime');
@@ -295,9 +244,9 @@ async function renderNewTicketForm(container) {
             const deviceId = document.getElementById('device-search').value; 
             const ticketDate = new Date(form['ticket-datetime'].value);
             const ticketTimestamp = firebase.firestore.Timestamp.fromDate(ticketDate);
-            const platform = form.platform.value;
 
             const newTicketData = { 
+                ticketType: 'ti',
                 title: form.title.value, 
                 description: quill.root.innerHTML, 
                 requesterId: form.requester.value, 
@@ -306,7 +255,6 @@ async function renderNewTicketForm(container) {
                 status: 'abierto', 
                 solution: null, 
                 deviceId: deviceId || null, 
-                platformId: platform || null,
                 createdAt: ticketTimestamp, 
                 closedAt: null,
                 history: []
@@ -314,7 +262,7 @@ async function renderNewTicketForm(container) {
             
             await db.collection('tickets').doc(newTicketId).set(newTicketData); 
             alert(`¡Ticket ${newTicketId} creado con éxito!`); 
-            window.location.hash = '#tickets?status=abierto'; 
+            window.location.hash = '#tickets'; 
         } catch (error) { 
             console.error("Error al crear el ticket: ", error); 
             alert("No se pudo crear el ticket. Revisa la consola para más detalles."); 
@@ -322,104 +270,114 @@ async function renderNewTicketForm(container) {
     }); 
 }
 
-// === MODIFICACIÓN INICIO: La función renderTicketList ha sido reescrita para incluir los filtros ===
+// === MODIFICACIÓN: Nueva función para renderizar formularios de Velocity y Siigo ===
+async function renderNewPlatformTicketForm(container, platform) {
+    container.innerHTML = newPlatformTicketFormHTML;
+    document.getElementById('page-title').innerText = `➕ Crear Nuevo Ticket de ${platform}`;
+
+    const solicitanteSelect = document.getElementById('solicitante');
+    const asesorSelect = document.getElementById('asesor-soporte');
+
+    const reqSnap = await db.collection('requesters').orderBy('name').get();
+    solicitanteSelect.innerHTML = '<option value="">Seleccione...</option>';
+    reqSnap.forEach(doc => {
+        solicitanteSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+    });
+
+    const asesores = ["Asesor 1", "Asesor 2", "Técnico de Campo", "Soporte Nivel 2", "Otro"];
+    asesorSelect.innerHTML = '<option value="">Seleccione...</option>';
+    asesores.forEach(asesor => {
+        asesorSelect.innerHTML += `<option value="${asesor}">${asesor}</option>`;
+    });
+
+    const now = new Date();
+    document.getElementById('fecha-reporte').value = now.toISOString().split('T')[0];
+    document.getElementById('hora-reporte').value = now.toTimeString().slice(0, 5);
+
+    const form = document.getElementById('new-platform-ticket-form');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const counterRef = db.collection('counters').doc('ticketCounter');
+        try {
+            const newTicketId = await db.runTransaction(async (transaction) => {
+                const counterDoc = await transaction.get(counterRef);
+                if (!counterDoc.exists) throw "El contador de tickets no existe.";
+                const newNumber = counterDoc.data().currentNumber + 1;
+                transaction.update(counterRef, { currentNumber: newNumber });
+                return `TICKET-${newNumber}`;
+            });
+
+            const fecha = form['fecha-reporte'].value;
+            const hora = form['hora-reporte'].value;
+            const createdAtTimestamp = firebase.firestore.Timestamp.fromDate(new Date(`${fecha}T${hora}`));
+
+            const newTicketData = {
+                ticketType: platform.toLowerCase(),
+                fechaDeReporte: fecha,
+                horaDeReporte: hora,
+                medioDeSolicitud: form['medio-solicitud'].value,
+                requesterId: form['solicitante'].value,
+                asesorDeSporte: form['asesor-soporte'].value,
+                descripcionDeLaNovedad: form['descripcion-novedad'].value,
+                ticketDelCaso: form['ticket-caso'].value,
+                status: 'abierto',
+                solution: null,
+                createdAt: createdAtTimestamp,
+                closedAt: null,
+                history: []
+            };
+
+            await db.collection('tickets').doc(newTicketId).set(newTicketData);
+            alert(`¡Ticket ${newTicketId} creado con éxito!`);
+            window.location.hash = '#tickets';
+
+        } catch (error) {
+            console.error("Error al crear ticket de plataforma: ", error);
+            alert("No se pudo crear el ticket. Revisa la consola.");
+        }
+    });
+}
+
+// === MODIFICACIÓN: renderTicketList ahora muestra todos los tipos de tickets ===
 async function renderTicketList(container, params = {}) {
     container.innerHTML = ticketListHTML;
-
     setupTableSearch('table-search-input', 'data-table');
 
-    // 1. Obtener elementos del DOM
-    const requesterFilter = document.getElementById('filter-requester');
-    const platformFilter = document.getElementById('filter-platform');
-    const statusFilter = document.getElementById('filter-status');
-    const tableBody = document.querySelector('#data-table tbody');
-    const tableTitle = document.getElementById('tickets-list-title');
-
-    // 2. Cargar datos para los filtros y para mapeo en la tabla
-    const [reqSnap, locSnap] = await Promise.all([
-        db.collection('requesters').orderBy('name').get(),
-        db.collection('locations').get()
-    ]);
-
+    const [reqSnap] = await Promise.all([db.collection('requesters').get()]);
     const requestersMap = {};
-    reqSnap.forEach(doc => {
-        requestersMap[doc.id] = doc.data().name;
-        requesterFilter.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
-    });
+    reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name);
+    const tableBody = document.querySelector('#data-table tbody');
 
-    const locationsMap = {};
-    locSnap.forEach(doc => {
-        locationsMap[doc.id] = doc.data().name;
-    });
-
-    // 3. Pre-seleccionar el filtro de estado si viene en la URL
-    const filterStatusFromURL = params.status;
-    if (filterStatusFromURL) {
-        statusFilter.value = filterStatusFromURL;
-    }
-
-    // 4. Función central para aplicar filtros y renderizar la tabla
-    const applyFiltersAndRender = () => {
-        const selectedRequester = requesterFilter.value;
-        const selectedPlatform = platformFilter.value;
-        const selectedStatus = statusFilter.value;
-
-        let query = db.collection('tickets');
-
-        // Construir la consulta dinámicamente
-        if (selectedRequester) {
-            query = query.where('requesterId', '==', selectedRequester);
+    db.collection('tickets').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+        tableBody.innerHTML = '';
+        if (snapshot.empty) {
+            tableBody.innerHTML = `<tr><td colspan="8">No hay tickets.</td></tr>`;
+            return;
         }
-        if (selectedPlatform) {
-            query = query.where('platformId', '==', selectedPlatform);
-        }
-        if (selectedStatus) {
-            query = query.where('status', '==', selectedStatus);
-        }
-        
-        // Importante: Si usas varios filtros, Firestore puede requerir un índice compuesto.
-        // Si ves un error en la consola con un enlace, haz clic para crearlo.
-        query.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-            tableBody.innerHTML = '';
-            if (snapshot.empty) {
-                tableBody.innerHTML = `<tr><td colspan="9">No hay tickets que coincidan con los filtros.</td></tr>`;
-                return;
-            }
-            snapshot.forEach(doc => {
-                const ticket = { id: doc.id, ...doc.data() };
-                const tr = document.createElement('tr');
+        snapshot.forEach(doc => {
+            const ticket = { id: doc.id, ...doc.data() };
+            const tr = document.createElement('tr');
+            
+            const createdAt = ticket.createdAt ? ticket.createdAt.toDate().toLocaleDateString('es-ES') : 'N/A';
+            const closedAt = ticket.closedAt ? ticket.closedAt.toDate().toLocaleDateString('es-ES') : 'N/A';
+            const displayTitle = ticket.ticketType === 'ti' ? ticket.title : ticket.descripcionDeLaNovedad;
+            const ticketTypeDisplay = ticket.ticketType ? capitalizar(ticket.ticketType) : 'TI';
 
-                const createdAt = ticket.createdAt ? ticket.createdAt.toDate().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A';
-                const closedAt = ticket.closedAt ? ticket.closedAt.toDate().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A';
-
-                tr.innerHTML = `
-                    <td>${ticket.id}</td>
-                    <td>${ticket.title}</td>
-                    <td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td>
-                    <td>${locationsMap[ticket.locationId] || ticket.locationId || 'N/A'}</td>
-                    <td>${createdAt}</td>
-                    <td>${closedAt}</td>
-                    <td>${ticket.platformId || 'N/A'}</td>
-                    <td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td>
-                    <td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`;
-                tableBody.appendChild(tr);
-            });
-        }, error => {
-            handleFirestoreError(error, tableBody);
+            tr.innerHTML = `
+                <td>${ticket.id}</td>
+                <td><span class="status ${ticketTypeDisplay === 'TI' ? 'status-abierto' : 'status-en-curso'}">${ticketTypeDisplay}</span></td>
+                <td>${displayTitle.substring(0, 50)}${displayTitle.length > 50 ? '...' : ''}</td>
+                <td>${requestersMap[ticket.requesterId] || 'N/A'}</td>
+                <td>${createdAt}</td>
+                <td>${closedAt}</td>
+                <td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td>
+                <td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`;
+            tableBody.appendChild(tr);
         });
-    };
-
-    // 5. Añadir listeners a los filtros
-    requesterFilter.addEventListener('change', applyFiltersAndRender);
-    platformFilter.addEventListener('change', applyFiltersAndRender);
-    statusFilter.addEventListener('change', applyFiltersAndRender);
-
-    // 6. Carga inicial de datos
-    applyFiltersAndRender();
+    }, error => handleFirestoreError(error, tableBody));
 }
-// === MODIFICACIÓN FIN ===
 
-
+// ... (renderHistoryPage, renderEstadisticas, renderGenericListPage, etc. se mantienen igual)
 async function renderHistoryPage(container) { container.innerHTML = historyPageHTML; const form = document.getElementById('history-search-form'); const deviceDatalist = document.getElementById('device-list-search'); const requesterSelect = document.getElementById('search-requester'); const locationSelect = document.getElementById('search-location'); const resultsTableBody = document.getElementById('data-table').querySelector('tbody'); const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); form.addEventListener('submit', async e => { e.preventDefault(); const filters = { deviceId: form['search-device'].value, requesterId: form['search-requester'].value, locationId: form['search-location'].value, status: form['search-status'].value, priority: form['search-priority'].value, }; let query = db.collection('tickets'); Object.entries(filters).forEach(([key, value]) => { if (value) { query = query.where(key, '==', value); } }); try { const snapshot = await query.orderBy('createdAt', 'desc').get(); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); resultsTableBody.innerHTML = ''; if (snapshot.empty) { resultsTableBody.innerHTML = `<tr><td colspan="6">No se encontraron tickets con esos criterios.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.createdAt.toDate().toLocaleDateString('es-ES')}</td><td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver</button></td>`; resultsTableBody.appendChild(tr); }); } catch(error) { handleFirestoreError(error, resultsTableBody); } }); }
 async function renderEstadisticas(container) { container.innerHTML = statisticsHTML; const generateBtn = document.getElementById('generate-report-btn'); document.getElementById('export-stats-pdf').addEventListener('click', exportStatsToPDF); let charts = {}; const chartContexts = { ticketsByPriority: document.getElementById('ticketsByPriorityChart').getContext('2d'), ticketsByDeviceCategory: document.getElementById('ticketsByDeviceCategoryChart').getContext('2d'), ticketFlow: document.getElementById('ticket-flow-chart').getContext('2d'), inventoryByCategory: document.getElementById('inventoryByCategoryChart').getContext('2d'), computersByOs: document.getElementById('computersByOsChart').getContext('2d') }; const topDevicesList = document.getElementById('top-devices-list'); const topRequestersList = document.getElementById('top-requesters-list'); const startDateInput = document.getElementById('start-date'); const endDateInput = document.getElementById('end-date'); const today = new Date(); const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1)); startDateInput.value = oneMonthAgo.toISOString().split('T')[0]; endDateInput.value = today.toISOString().split('T')[0]; const generateReports = async () => { const startDate = new Date(startDateInput.value); startDate.setHours(0, 0, 0, 0); const endDate = new Date(endDateInput.value); endDate.setHours(23, 59, 59, 999); try { const [ticketsSnapshot, inventorySnapshot, requestersSnapshot] = await Promise.all([ db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get(), db.collection('inventory').get(), db.collection('requesters').get() ]); const tickets = ticketsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); const inventory = inventorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); const requestersMap = {}; requestersSnapshot.forEach(doc => requestersMap[doc.id] = doc.data().name); const priorityCounts = tickets.reduce((acc, ticket) => { acc[ticket.priority] = (acc[ticket.priority] || 0) + 1; return acc; }, {}); if (charts.ticketsByPriority) charts.ticketsByPriority.destroy(); charts.ticketsByPriority = new Chart(chartContexts.ticketsByPriority, { type: 'doughnut', data: { labels: Object.keys(priorityCounts).map(p => capitalizar(p)), datasets: [{ data: Object.values(priorityCounts), backgroundColor: ['#007bff', '#ffc107', '#dc3545'] }] }, options: { responsive: true, maintainAspectRatio: false } }); const inventoryMap = {}; inventory.forEach(item => inventoryMap[item.id] = item); const ticketsWithDeviceCategory = tickets.map(ticket => ({...ticket, deviceCategory: ticket.deviceId ? (inventoryMap[ticket.deviceId]?.category || 'Sin categoría') : 'Sin dispositivo'})); const deviceCategoryCounts = ticketsWithDeviceCategory.reduce((acc, ticket) => { acc[ticket.deviceCategory] = (acc[ticket.deviceCategory] || 0) + 1; return acc; }, {}); if (charts.ticketsByDeviceCategory) charts.ticketsByDeviceCategory.destroy(); charts.ticketsByDeviceCategory = new Chart(chartContexts.ticketsByDeviceCategory, { type: 'pie', data: { labels: Object.keys(deviceCategoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ data: Object.values(deviceCategoryCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545', '#343a40'] }] }, options: { responsive: true, maintainAspectRatio: false } }); const deviceTicketCounts = tickets.reduce((acc, ticket) => { if(ticket.deviceId) acc[ticket.deviceId] = (acc[ticket.deviceId] || 0) + 1; return acc; }, {}); const topDevices = Object.entries(deviceTicketCounts).sort((a, b) => b[1] - a[1]).slice(0, 5); topDevicesList.innerHTML = topDevices.map(([id, count]) => { const device = inventoryMap[id]; return `<li><span>${device ? `${device.brand} ${device.model}` : id}</span><span>${count}</span></li>`; }).join('') || '<li>No hay datos</li>'; const requesterTicketCounts = tickets.reduce((acc, ticket) => { if(ticket.requesterId) acc[ticket.requesterId] = (acc[ticket.requesterId] || 0) + 1; return acc; }, {}); const topRequesters = Object.entries(requesterTicketCounts).sort((a, b) => b[1] - a[1]).slice(0, 5); topRequestersList.innerHTML = topRequesters.map(([id, count]) => `<li><span>${requestersMap[id] || id}</span><span>${count}</span></li>`).join('') || '<li>No hay datos</li>'; const closedTicketsSnapshot = await db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get(); const closedTicketsInRange = closedTicketsSnapshot.docs.map(doc => doc.data()); const dataByDay = {}; for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { dataByDay[d.toISOString().split('T')[0]] = { created: 0, closed: 0 }; } tickets.forEach(t => { const day = t.createdAt.toDate().toISOString().split('T')[0]; if (dataByDay[day]) dataByDay[day].created++; }); closedTicketsInRange.forEach(t => { const day = t.closedAt.toDate().toISOString().split('T')[0]; if (dataByDay[day]) dataByDay[day].closed++; }); if (charts.ticketFlow) charts.ticketFlow.destroy(); charts.ticketFlow = new Chart(chartContexts.ticketFlow, { type: 'line', data: { labels: Object.keys(dataByDay), datasets: [ { label: 'Tickets Creados', data: Object.values(dataByDay).map(d => d.created), borderColor: '#007bff', fill: true }, { label: 'Tickets Cerrados', data: Object.values(dataByDay).map(d => d.closed), borderColor: '#28a745', fill: true } ] }, options: { scales: { y: { beginAtZero: true } } } }); const categoryCounts = inventory.reduce((acc, item) => { acc[item.category] = (acc[item.category] || 0) + 1; return acc; }, {}); if (charts.inventoryByCategory) charts.inventoryByCategory.destroy(); charts.inventoryByCategory = new Chart(chartContexts.inventoryByCategory, { type: 'bar', data: { labels: Object.keys(categoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ label: '# de Dispositivos', data: Object.values(categoryCounts), backgroundColor: '#007bff' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false } }); const computers = inventory.filter(item => item.category === 'computers'); const osCounts = computers.reduce((acc, item) => { acc[item.os] = (acc[item.os] || 0) + 1; return acc; }, {}); if (charts.computersByOs) charts.computersByOs.destroy(); charts.computersByOs = new Chart(chartContexts.computersByOs, { type: 'pie', data: { labels: Object.keys(osCounts), datasets: [{ data: Object.values(osCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545'] }] }, options: { responsive: true, maintainAspectRatio: false } }); } catch(error) { handleFirestoreError(error, container); }}; generateBtn.addEventListener('click', generateReports); generateReports(); }
 function renderGenericListPage(container, params, configObject, collectionName, icon) {
@@ -731,6 +689,11 @@ async function showEditTicketModal(ticketId) {
     }
     const ticket = ticketDoc.data();
 
+    if(ticket.ticketType !== 'ti') {
+        alert('La edición solo está disponible para tickets de tipo TI en este momento.');
+        return;
+    }
+
     const [reqSnap, locSnap, invSnap] = await Promise.all([
         db.collection('requesters').get(),
         db.collection('locations').get(),
@@ -779,15 +742,6 @@ async function showEditTicketModal(ticketId) {
                     <input type="text" id="edit-device-search" list="edit-device-list" value="${ticket.deviceId || ''}">
                     <datalist id="edit-device-list">${deviceOptions}</datalist>
                 </div>
-                <div class="form-group">
-                    <label for="edit-platform">Plataforma Asociada</label>
-                    <select id="edit-platform">
-                        <option value="" ${!ticket.platformId ? 'selected' : ''}>Ninguna</option>
-                        <option value="Velocity" ${ticket.platformId === 'Velocity' ? 'selected' : ''}>Velocity</option>
-                        <option value="Siigo" ${ticket.platformId === 'Siigo' ? 'selected' : ''}>Siigo</option>
-                        <option value="App Traslado" ${ticket.platformId === 'App Traslado' ? 'selected' : ''}>App Traslado</option>
-                    </select>
-                </div>
             </div>
             <div style="text-align:right; margin-top:20px;">
                 <button type="submit" class="primary">Guardar Cambios</button>
@@ -810,13 +764,12 @@ async function showEditTicketModal(ticketId) {
             locationId: form.querySelector('#edit-location').value,
             priority: form.querySelector('#edit-priority').value,
             deviceId: form.querySelector('#edit-device-search').value || null,
-            platformId: form.querySelector('#edit-platform').value || null,
         };
 
         try {
             await db.collection('tickets').doc(ticketId).update(updatedData);
             formModal.classList.add('hidden');
-            showTicketModal(ticketId); // Recargar el modal del ticket para ver los cambios
+            showTicketModal(ticketId);
         } catch (error) {
             console.error("Error al actualizar el ticket:", error);
             alert("No se pudo actualizar el ticket.");
@@ -824,11 +777,12 @@ async function showEditTicketModal(ticketId) {
     });
 }
 
+// === MODIFICACIÓN: showTicketModal ahora es inteligente según el tipo de ticket ===
 async function showTicketModal(ticketId) {
     const ticketModal = document.getElementById('ticket-modal');
     const modalBody = ticketModal.querySelector('#modal-body');
     ticketModal.classList.remove('hidden');
-    modalBody.innerHTML = '<p>Cargando detalles del ticket...</p>'; // Feedback visual
+    modalBody.innerHTML = '<p>Cargando detalles del ticket...</p>';
 
     const ticketDoc = await db.collection('tickets').doc(ticketId).get();
     if (!ticketDoc.exists) {
@@ -836,35 +790,37 @@ async function showTicketModal(ticketId) {
         ticketModal.classList.add('hidden');
         return;
     }
-    const ticket = ticketDoc.data();
+    const ticket = { id: ticketDoc.id, ...ticketDoc.data() };
 
     const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || ticket.requesterId : 'N/A';
-    const locationName = ticket.locationId || 'N/A';
     
-    let deviceInfoHTML = '';
-    if (ticket.deviceId) {
-        const deviceDoc = await db.collection('inventory').doc(ticket.deviceId).get();
-        if (deviceDoc.exists) {
-            const device = deviceDoc.data();
-            deviceInfoHTML = `<div class="ticket-detail-item"><strong>Dispositivo:</strong> ${ticket.deviceId} - ${device.brand} ${device.model}</div>`;
-        }
-    }
-    
-    let platformInfoHTML = '';
-    if (ticket.platformId) {
-        platformInfoHTML = `<div class="ticket-detail-item"><strong>Plataforma:</strong> ${ticket.platformId}</div>`;
-    }
+    let mainContentHTML = '';
 
+    if (ticket.ticketType === 'velocity' || ticket.ticketType === 'siigo') {
+        mainContentHTML = `
+            <h4>Detalles del Reporte</h4>
+            <div class="ticket-details-grid">
+                <div><strong>Fecha de Reporte:</strong> ${ticket.fechaDeReporte || 'N/A'}</div>
+                <div><strong>Hora de Reporte:</strong> ${ticket.horaDeReporte || 'N/A'}</div>
+                <div><strong>Medio de Solicitud:</strong> ${ticket.medioDeSolicitud || 'N/A'}</div>
+                <div><strong>Asesor de Soporte:</strong> ${ticket.asesorDeSporte || 'N/A'}</div>
+                <div><strong>Ticket del Caso:</strong> ${ticket.ticketDelCaso || 'N/A'}</div>
+            </div>
+            <hr>
+            <h4>Descripción de la Novedad</h4>
+            <div class="card">${ticket.descripcionDeLaNovedad}</div>`;
+    } else {
+        mainContentHTML = `
+            <h3>Descripción</h3>
+            <div class="card">${ticket.description}</div>`;
+    }
+    
     let historyHTML = '<h3>Historial de Avances</h3>';
     if (ticket.history && ticket.history.length > 0) {
         historyHTML += '<ul class="ticket-history-log">';
-        ticket.history.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
+        ticket.history.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
         ticket.history.forEach(entry => {
-            historyHTML += `
-                <li>
-                    <div class="history-meta">Registrado el: ${entry.timestamp.toDate().toLocaleString('es-ES')}</div>
-                    <div class="history-text">${entry.text}</div>
-                </li>`;
+            historyHTML += `<li><div class="history-meta">Registrado el: ${entry.timestamp.toDate().toLocaleString('es-ES')}</div><div class="history-text">${entry.text}</div></li>`;
         });
         historyHTML += '</ul>';
     } else {
@@ -874,26 +830,16 @@ async function showTicketModal(ticketId) {
     let actionsHTML = '';
     if (ticket.status === 'abierto' || ticket.status === 'en-curso') {
         actionsHTML = `
-            <hr>
-            <h3>Añadir Avance (y poner ticket "En curso")</h3>
-            <form id="progress-form">
-                <div class="form-group">
-                    <textarea id="progress-text" rows="3" placeholder="Describe el avance realizado..." required></textarea>
-                </div>
-                <button type="submit" class="btn-warning">Guardar Avance</button>
-            </form>
-            <hr>
-            <h3>Añadir Solución Final y Cerrar Ticket</h3>
-            <form id="solution-form">
-                <div class="form-group"><div id="solution-editor"></div></div>
-                <button type="submit" class="primary">Guardar Solución y Cerrar</button>
-            </form>`;
+            <hr><h3>Añadir Avance</h3>
+            <form id="progress-form"><div class="form-group"><textarea id="progress-text" rows="3" placeholder="Describe el avance realizado..." required></textarea></div><button type="submit" class="btn-warning">Guardar Avance y Poner "En Curso"</button></form>
+            <hr><h3>Añadir Solución Final y Cerrar Ticket</h3>
+            <form id="solution-form"><div class="form-group"><div id="solution-editor"></div></div><button type="submit" class="primary">Guardar Solución y Cerrar</button></form>`;
     } else if (ticket.status === 'cerrado') {
         actionsHTML = `<hr><h3>Solución Aplicada</h3><div class="card">${ticket.solution || 'No se especificó solución.'}</div>`;
     }
 
     let modalActions = `<div class="ticket-modal-actions">`;
-    if (ticket.status === 'abierto' || ticket.status === 'en-curso') {
+    if ((ticket.status === 'abierto' || ticket.status === 'en-curso') && ticket.ticketType === 'ti') {
         modalActions += `<button id="edit-ticket-btn" class="btn-secondary">✏️ Editar Ticket</button>`;
     }
     if (ticket.status === 'cerrado') {
@@ -904,56 +850,51 @@ async function showTicketModal(ticketId) {
     modalBody.innerHTML = `
         <div class="ticket-modal-layout">
             <div class="ticket-modal-main">
-                <h2>Ticket ${ticketId}</h2>
+                <h2>Ticket ${ticket.id} (${capitalizar(ticket.ticketType || 'TI')})</h2>
                 ${modalActions}
                 <hr>
-                <h3>Descripción</h3>
-                <div class="card">${ticket.description}</div>
+                ${mainContentHTML}
                 ${historyHTML}
                 ${actionsHTML}
             </div>
             <div class="ticket-modal-sidebar">
                 <h3>Detalles del Ticket</h3>
                 <div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></div>
-                <div class="ticket-detail-item"><strong>Prioridad:</strong> ${capitalizar(ticket.priority)}</div>
+                ${ticket.priority ? `<div class="ticket-detail-item"><strong>Prioridad:</strong> ${capitalizar(ticket.priority)}</div>` : ''}
                 <div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div>
-                <div class="ticket-detail-item"><strong>Ubicación:</strong> ${locationName}</div>
-                ${deviceInfoHTML}
-                ${platformInfoHTML}
+                ${ticket.locationId ? `<div class="ticket-detail-item"><strong>Ubicación:</strong> ${ticket.locationId}</div>` : ''}
                 <div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>
                 ${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}
             </div>
         </div>`;
     
-    if (ticket.status === 'abierto' || ticket.status === 'en-curso') {
+    if ((ticket.status === 'abierto' || ticket.status === 'en-curso') && ticket.ticketType === 'ti') {
         document.getElementById('edit-ticket-btn').addEventListener('click', () => {
             ticketModal.classList.add('hidden');
-            showEditTicketModal(ticketId);
+            showEditTicketModal(ticket.id);
         });
+    }
 
+    if (ticket.status === 'abierto' || ticket.status === 'en-curso') {
         document.getElementById('progress-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const text = document.getElementById('progress-text').value;
             if (!text.trim()) return;
-            const newHistoryEntry = {
-                text: text,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            await db.collection('tickets').doc(ticketId).update({
+            const newHistoryEntry = { text: text, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+            await db.collection('tickets').doc(ticket.id).update({
                 status: 'en-curso',
                 history: firebase.firestore.FieldValue.arrayUnion(newHistoryEntry)
             });
-            showTicketModal(ticketId);
+            showTicketModal(ticket.id);
         });
-
         const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución final aplicada...' });
         document.getElementById('solution-form').addEventListener('submit', e => {
             e.preventDefault();
-            db.collection('tickets').doc(ticketId).update({
+            db.collection('tickets').doc(ticket.id).update({
                 solution: solutionEditor.root.innerHTML,
                 status: 'cerrado',
                 closedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => showTicketModal(ticketId));
+            }).then(() => showTicketModal(ticket.id));
         });
     }
 
@@ -964,12 +905,13 @@ async function showTicketModal(ticketId) {
                     text: `<strong>Ticket reabierto</strong> por el usuario.`,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
-                await db.collection('tickets').doc(ticketId).update({
+                await db.collection('tickets').doc(ticket.id).update({
                     status: 'abierto',
                     closedAt: null,
+                    solution: null,
                     history: firebase.firestore.FieldValue.arrayUnion(reopeningHistoryEntry)
                 });
-                showTicketModal(ticketId);
+                showTicketModal(ticket.id);
             }
         });
     }
@@ -984,9 +926,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const actionModal = document.getElementById('action-modal');
     const historyModal = document.getElementById('history-modal');
 
+    // === MODIFICACIÓN: Se actualiza el objeto de rutas ===
     const routes = { 
         '#dashboard': renderDashboard, 
-        '#crear-ticket': renderNewTicketForm, 
+        '#crear-ticket-ti': renderNewTITicketForm,
+        '#crear-ticket-velocity': (container) => renderNewPlatformTicketForm(container, 'Velocity'),
+        '#crear-ticket-siigo': (container) => renderNewPlatformTicketForm(container, 'Siigo'),
         '#tickets': renderTicketList, 
         '#historial': renderHistoryPage, 
         '#estadisticas': renderEstadisticas, 
@@ -999,6 +944,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const [path, queryString] = fullHash.split('?'); 
         const params = new URLSearchParams(queryString); 
 
+        // === MODIFICACIÓN: La lógica del router ahora maneja las nuevas rutas de creación de tickets ===
         let isHandled = false;
         if (path.startsWith('#inventory-')) { 
             const category = path.replace('#inventory-', ''); 
