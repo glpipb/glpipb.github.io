@@ -38,7 +38,18 @@
             </div>
             <ul class="nav-list">
                 <li><a href="#dashboard" class="nav-link active">📊 Dashboard</a></li>
-                <li><a href="#crear-ticket" class="nav-link">➕ Crear Ticket</a></li>
+                
+                <!-- === CAMBIO REALIZADO AQUÍ === -->
+                <li class="nav-item-with-submenu">
+                    <a href="#" class="nav-link">➕ Crear Ticket</a>
+                    <ul class="submenu">
+                        <li><a href="#crear-ticket-ti">Ticket de TI</a></li>
+                        <li><a href="#crear-ticket-velocity">Ticket de Velocity</a></li>
+                        <li><a href="#crear-ticket-siigo">Ticket de Siigo</a></li>
+                    </ul>
+                </li>
+                <!-- === FIN DEL CAMBIO === -->
+
                 <li><a href="#tickets" class="nav-link">🎟️ Tickets (Ver todos)</a></li>
                 <li><a href="#historial" class="nav-link">🔍 Historial y Búsqueda</a></li>
                 <li><a href="#estadisticas" class="nav-link">📈 Estadísticas</a></li>
@@ -54,7 +65,6 @@
                         <li><a href="#inventory-printers">Impresoras</a></li>
                     </ul>
                 </li>
-                <!-- === SECCIÓN NUEVA AÑADIDA === -->
                 <li class="nav-item-with-submenu">
                     <a href="#" class="nav-link">📡 Servicios</a>
                     <ul class="submenu">
@@ -63,7 +73,6 @@
                         <li><a href="#services-otros">Otros</a></li>
                     </ul>
                 </li>
-                <!-- === FIN DE SECCIÓN NUEVA === -->
                 <li><a href="#maintenance" class="nav-link">📅 Planificación</a></li>
                 <li class="nav-item-with-submenu">
                     <a href="#" class="nav-link">🔑 Credenciales</a>
