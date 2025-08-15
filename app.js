@@ -479,7 +479,7 @@ async function renderHistoryPage(container) {
                     <td>${ticket.title || 'Ticket de Plataforma'}</td>
                     <td>${ticket.requester || 'N/A'}</td>
                     <td>${ticket.createdAt.toDate().toLocaleString('es-ES')}</td>
-                    <td>${closedAtText}</td> {/* <-- COLUMNA AÑADIDA */}
+                    <td>${closedAtText}</td>
                     <td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td>
                     <td><a href="#" class="view-ticket-btn" data-id="${ticket.id}">Ver Detalles</a></td>
                 `;
