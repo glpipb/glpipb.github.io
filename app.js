@@ -995,24 +995,37 @@ async function showTicketModal(ticketId) {
             }).then(() => showTicketModal(ticket.id));
         });
     }
+  // --- PEGA ESTE BLOQUE CORREGIDO EN SU LUGAR ---
+if (ticket.status === 'cerrado') {
+    document.getElementById('reopen-ticket-btn').addEventListener('click', async () => {
+        if (confirm('¿Estás seguro de que quieres reabrir este ticket?')) {
+            // Creamos el objeto para el historial
+            const reopeningHistoryEntry = {
+                text: `<strong>Ticket reabierto</strong> por el usuario.`,
+                // CORRECCIÓN: Generamos la fecha desde el cliente.
+                // Esto crea un objeto de fecha válido que arrayUnion sí puede procesar.
+                timestamp: firebase.firestore.Timestamp.fromDate(new Date()) 
+            };
 
-    if (ticket.status === 'cerrado') {
-        document.getElementById('reopen-ticket-btn').addEventListener('click', async () => {
-            if (confirm('¿Estás seguro de que quieres reabrir este ticket?')) {
-                const reopeningHistoryEntry = {
-                    text: `<strong>Ticket reabierto</strong> por el usuario.`,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                };
+            try {
+                // Actualizamos el ticket en la base de datos
                 await db.collection('tickets').doc(ticket.id).update({
                     status: 'abierto',
                     closedAt: null,
                     solution: null,
                     history: firebase.firestore.FieldValue.arrayUnion(reopeningHistoryEntry)
                 });
+                
+                // Una vez actualizado, volvemos a cargar el modal para reflejar los cambios
                 showTicketModal(ticket.id);
+
+            } catch (error) {
+                console.error("Error al reabrir el ticket:", error);
+                alert("No se pudo reabrir el ticket. Revisa la consola para más detalles.");
             }
-        });
-    }
+        }
+    });
+}
 }
 
 // --- 7. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
