@@ -390,7 +390,94 @@ async function renderTicketList(container, params = {}) {
         }); 
     }, error => handleFirestoreError(error, tableBody)); 
 }
-async function renderHistoryPage(container) { container.innerHTML = historyPageHTML; const form = document.getElementById('history-search-form'); const deviceDatalist = document.getElementById('device-list-search'); const requesterSelect = document.getElementById('search-requester'); const locationSelect = document.getElementById('search-location'); const resultsTableBody = document.getElementById('data-table').querySelector('tbody'); const [reqSnap, locSnap, invSnap] = await Promise.all([ db.collection('requesters').get(), db.collection('locations').get(), db.collection('inventory').get() ]); reqSnap.forEach(doc => requesterSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); locSnap.forEach(doc => locationSelect.innerHTML += `<option value="${doc.id}">${doc.id}: ${doc.data().name}</option>`); const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })); deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand} ${d.model} (Serie: ${d.serial || 'N/A'})</option>`).join(''); form.addEventListener('submit', async e => { e.preventDefault(); const filters = { deviceId: form['search-device'].value, requesterId: form['search-requester'].value, locationId: form['search-location'].value, status: form['search-status'].value, priority: form['search-priority'].value, }; let query = db.collection('tickets'); Object.entries(filters).forEach(([key, value]) => { if (value) { query = query.where(key, '==', value); } }); try { const snapshot = await query.orderBy('createdAt', 'desc').get(); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); resultsTableBody.innerHTML = ''; if (snapshot.empty) { resultsTableBody.innerHTML = `<tr><td colspan="6">No se encontraron tickets con esos criterios.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.title}</td><td>${requestersMap[ticket.requesterId] || ticket.requesterId || 'N/A'}</td><td>${ticket.createdAt.toDate().toLocaleDateString('es-ES')}</td><td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver</button></td>`; resultsTableBody.appendChild(tr); }); } catch(error) { handleFirestoreError(error, resultsTableBody); } }); }
+async function renderHistoryPage(container) {
+    container.innerHTML = historyPageHTML;
+
+    // --- Elementos del DOM ---
+    const form = document.getElementById('history-search-form');
+    const deviceDatalist = document.getElementById('device-list-search');
+    const requesterSelect = document.getElementById('search-requester');
+    const locationSelect = document.getElementById('search-location');
+    const resultsTableBody = document.getElementById('data-table').querySelector('tbody');
+
+    // --- Cargar datos para los filtros ---
+    try {
+        const [reqSnap, locSnap, invSnap] = await Promise.all([
+            db.collection('requesters').orderBy('name').get(),
+            db.collection('locations').orderBy('name').get(),
+            db.collection('inventory').get()
+        ]);
+
+        reqSnap.forEach(doc => {
+            requesterSelect.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`;
+        });
+
+        locSnap.forEach(doc => {
+            locationSelect.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`;
+        });
+
+        const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand || ''} ${d.model || ''} (Usuario: ${d.user || 'N/A'})</option>`).join('');
+
+    } catch (error) {
+        handleFirestoreError(error, container);
+        return; // Detener si falla la carga de filtros
+    }
+    
+    // --- Lógica de Búsqueda ---
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        resultsTableBody.innerHTML = `<tr><td colspan="6">Buscando...</td></tr>`;
+
+        // Construir la consulta a Firebase dinámicamente
+        let query = db.collection('tickets');
+        
+        const filters = {
+            deviceId: form['search-device'].value,
+            requester: form['search-requester'].value, // Corregido para buscar por nombre
+            location: form['search-location'].value, // Corregido para buscar por nombre
+            status: form['search-status'].value,
+            priority: form['search-priority'].value,
+        };
+
+        // **CORRECCIÓN CLAVE:** Solo añadir filtros si tienen un valor
+        for (const [key, value] of Object.entries(filters)) {
+            if (value) { // Si el valor no es un string vacío
+                query = query.where(key, '==', value);
+            }
+        }
+
+        try {
+            const snapshot = await query.orderBy('createdAt', 'desc').get();
+            resultsTableBody.innerHTML = ''; // Limpiar la tabla
+
+            if (snapshot.empty) {
+                resultsTableBody.innerHTML = `<tr><td colspan="6">No se encontraron tickets con esos criterios.</td></tr>`;
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const ticket = { id: doc.id, ...doc.data() };
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${ticket.id}</td>
+                    <td>${ticket.title || 'Ticket de Plataforma'}</td>
+                    <td>${ticket.requester || 'N/A'}</td>
+                    <td>${ticket.createdAt.toDate().toLocaleString('es-ES')}</td>
+                    <td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td>
+                    <td><a href="#" class="view-ticket-btn" data-id="${ticket.id}">Ver Detalles</a></td>
+                `;
+                resultsTableBody.appendChild(tr);
+            });
+        } catch (error) {
+            // Esta función te avisará si necesitas crear un índice en Firebase
+            handleFirestoreError(error, resultsTableBody);
+        }
+    });
+
+    // Disparar una búsqueda vacía al cargar la página para mostrar todos los tickets recientes
+    form.dispatchEvent(new Event('submit'));
+}
 async function renderEstadisticas(container) { container.innerHTML = statisticsHTML; const generateBtn = document.getElementById('generate-report-btn'); document.getElementById('export-stats-pdf').addEventListener('click', exportStatsToPDF); let charts = {}; const chartContexts = { ticketsByPriority: document.getElementById('ticketsByPriorityChart').getContext('2d'), ticketsByDeviceCategory: document.getElementById('ticketsByDeviceCategoryChart').getContext('2d'), ticketFlow: document.getElementById('ticket-flow-chart').getContext('2d'), inventoryByCategory: document.getElementById('inventoryByCategoryChart').getContext('2d'), computersByOs: document.getElementById('computersByOsChart').getContext('2d') }; const topDevicesList = document.getElementById('top-devices-list'); const topRequestersList = document.getElementById('top-requesters-list'); const startDateInput = document.getElementById('start-date'); const endDateInput = document.getElementById('end-date'); const today = new Date(); const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1)); startDateInput.value = oneMonthAgo.toISOString().split('T')[0]; endDateInput.value = today.toISOString().split('T')[0]; const generateReports = async () => { const startDate = new Date(startDateInput.value); startDate.setHours(0, 0, 0, 0); const endDate = new Date(endDateInput.value); endDate.setHours(23, 59, 59, 999); try { const [ticketsSnapshot, inventorySnapshot, requestersSnapshot] = await Promise.all([ db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get(), db.collection('inventory').get(), db.collection('requesters').get() ]); const tickets = ticketsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); const inventory = inventorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); const requestersMap = {}; requestersSnapshot.forEach(doc => requestersMap[doc.id] = doc.data().name); const priorityCounts = tickets.reduce((acc, ticket) => { acc[ticket.priority] = (acc[ticket.priority] || 0) + 1; return acc; }, {}); if (charts.ticketsByPriority) charts.ticketsByPriority.destroy(); charts.ticketsByPriority = new Chart(chartContexts.ticketsByPriority, { type: 'doughnut', data: { labels: Object.keys(priorityCounts).map(p => capitalizar(p)), datasets: [{ data: Object.values(priorityCounts), backgroundColor: ['#007bff', '#ffc107', '#dc3545'] }] }, options: { responsive: true, maintainAspectRatio: false } }); const inventoryMap = {}; inventory.forEach(item => inventoryMap[item.id] = item); const ticketsWithDeviceCategory = tickets.map(ticket => ({...ticket, deviceCategory: ticket.deviceId ? (inventoryMap[ticket.deviceId]?.category || 'Sin categoría') : 'Sin dispositivo'})); const deviceCategoryCounts = ticketsWithDeviceCategory.reduce((acc, ticket) => { acc[ticket.deviceCategory] = (acc[ticket.deviceCategory] || 0) + 1; return acc; }, {}); if (charts.ticketsByDeviceCategory) charts.ticketsByDeviceCategory.destroy(); charts.ticketsByDeviceCategory = new Chart(chartContexts.ticketsByDeviceCategory, { type: 'pie', data: { labels: Object.keys(deviceCategoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ data: Object.values(deviceCategoryCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545', '#343a40'] }] }, options: { responsive: true, maintainAspectRatio: false } }); const deviceTicketCounts = tickets.reduce((acc, ticket) => { if(ticket.deviceId) acc[ticket.deviceId] = (acc[ticket.deviceId] || 0) + 1; return acc; }, {}); const topDevices = Object.entries(deviceTicketCounts).sort((a, b) => b[1] - a[1]).slice(0, 5); topDevicesList.innerHTML = topDevices.map(([id, count]) => { const device = inventoryMap[id]; return `<li><span>${device ? `${device.brand} ${device.model}` : id}</span><span>${count}</span></li>`; }).join('') || '<li>No hay datos</li>'; const requesterTicketCounts = tickets.reduce((acc, ticket) => { if(ticket.requesterId) acc[ticket.requesterId] = (acc[ticket.requesterId] || 0) + 1; return acc; }, {}); const topRequesters = Object.entries(requesterTicketCounts).sort((a, b) => b[1] - a[1]).slice(0, 5); topRequestersList.innerHTML = topRequesters.map(([id, count]) => `<li><span>${requestersMap[id] || id}</span><span>${count}</span></li>`).join('') || '<li>No hay datos</li>'; const closedTicketsSnapshot = await db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get(); const closedTicketsInRange = closedTicketsSnapshot.docs.map(doc => doc.data()); const dataByDay = {}; for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { dataByDay[d.toISOString().split('T')[0]] = { created: 0, closed: 0 }; } tickets.forEach(t => { const day = t.createdAt.toDate().toISOString().split('T')[0]; if (dataByDay[day]) dataByDay[day].created++; }); closedTicketsInRange.forEach(t => { const day = t.closedAt.toDate().toISOString().split('T')[0]; if (dataByDay[day]) dataByDay[day].closed++; }); if (charts.ticketFlow) charts.ticketFlow.destroy(); charts.ticketFlow = new Chart(chartContexts.ticketFlow, { type: 'line', data: { labels: Object.keys(dataByDay), datasets: [ { label: 'Tickets Creados', data: Object.values(dataByDay).map(d => d.created), borderColor: '#007bff', fill: true }, { label: 'Tickets Cerrados', data: Object.values(dataByDay).map(d => d.closed), borderColor: '#28a745', fill: true } ] }, options: { scales: { y: { beginAtZero: true } } } }); const categoryCounts = inventory.reduce((acc, item) => { acc[item.category] = (acc[item.category] || 0) + 1; return acc; }, {}); if (charts.inventoryByCategory) charts.inventoryByCategory.destroy(); charts.inventoryByCategory = new Chart(chartContexts.inventoryByCategory, { type: 'bar', data: { labels: Object.keys(categoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ label: '# de Dispositivos', data: Object.values(categoryCounts), backgroundColor: '#007bff' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false } }); const computers = inventory.filter(item => item.category === 'computers'); const osCounts = computers.reduce((acc, item) => { acc[item.os] = (acc[item.os] || 0) + 1; return acc; }, {}); if (charts.computersByOs) charts.computersByOs.destroy(); charts.computersByOs = new Chart(chartContexts.computersByOs, { type: 'pie', data: { labels: Object.keys(osCounts), datasets: [{ data: Object.values(osCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545'] }] }, options: { responsive: true, maintainAspectRatio: false } }); } catch(error) { handleFirestoreError(error, container); }}; generateBtn.addEventListener('click', generateReports); generateReports(); }
 function renderGenericListPage(container, params, configObject, collectionName, icon) {
     container.innerHTML = genericListPageHTML;
