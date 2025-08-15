@@ -392,6 +392,8 @@ async function renderTicketList(container, params = {}) {
         }); 
     }, error => handleFirestoreError(error, tableBody)); 
 }
+// --- REEMPLAZA LA FUNCIÓN COMPLETA PARA ASEGURARTE ---
+
 async function renderHistoryPage(container) {
     container.innerHTML = historyPageHTML;
 
@@ -427,7 +429,7 @@ async function renderHistoryPage(container) {
     // --- Lógica de Búsqueda ---
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        resultsTableBody.innerHTML = `<tr><td colspan="7">Buscando...</td></tr>`; // Colspan actualizado a 7
+        resultsTableBody.innerHTML = `<tr><td colspan="7">Buscando...</td></tr>`;
 
         let query = db.collection('tickets');
         const filters = {
@@ -446,12 +448,8 @@ async function renderHistoryPage(container) {
 
         try {
             const snapshot = await query.get();
-            
-            // Convertir a un array para poder ordenarlo en el cliente
             const tickets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // **NUEVA LÓGICA DE ORDENAMIENTO**
-            // Ordenar por el número del ticket de menor a mayor
             tickets.sort((a, b) => {
                 const numA = parseInt(a.id.split('-')[1] || 0, 10);
                 const numB = parseInt(b.id.split('-')[1] || 0, 10);
@@ -461,15 +459,12 @@ async function renderHistoryPage(container) {
             resultsTableBody.innerHTML = '';
 
             if (tickets.length === 0) {
-                resultsTableBody.innerHTML = `<tr><td colspan="7">No se encontraron tickets con esos criterios.</td></tr>`; // Colspan actualizado
+                resultsTableBody.innerHTML = `<tr><td colspan="7">No se encontraron tickets con esos criterios.</td></tr>`;
                 return;
             }
 
-            // Iterar sobre el array ya ordenado
             tickets.forEach(ticket => {
                 const tr = document.createElement('tr');
-                
-                // **NUEVA LÓGICA PARA FECHA DE CIERRE**
                 const closedAtText = ticket.closedAt && ticket.closedAt.toDate 
                     ? ticket.closedAt.toDate().toLocaleString('es-ES') 
                     : 'N/A';
