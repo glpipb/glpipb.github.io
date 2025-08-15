@@ -20,8 +20,6 @@ const dashboardHTML = `<h1>📊 Dashboard</h1><div class="dashboard-stats" id="d
 const newTITicketFormHTML = `<h1>➕ Crear Nuevo Ticket de TI</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div class="inventory-form-grid"><div class="form-group"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><label for="ticket-datetime">Fecha y Hora del Ticket</label><input type="datetime-local" id="ticket-datetime" required></div><div class="form-group"><label for="device-search">Dispositivo Asociado (opcional)</label><input type="text" id="device-search" list="device-list" placeholder="Busca por código, usuario, marca..."><datalist id="device-list"></datalist></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 const newPlatformTicketFormHTML = `<h1 id="page-title"></h1><div class="card"><form id="new-platform-ticket-form"><div class="inventory-form-grid"><div class="form-group"><label for="fecha-reporte">Fecha de Reporte</label><input type="date" id="fecha-reporte" required></div><div class="form-group"><label for="hora-reporte">Hora de Reporte</label><input type="time" id="hora-reporte" required></div><div class="form-group"><label for="medio-solicitud">Medio de Solicitud</label><select id="medio-solicitud" required></select></div><div class="form-group"><label for="solicitante">Solicitante</label><select id="solicitante" required></select></div><div class="form-group"><label for="asesor-soporte">Asesor de Soporte</label><input type="text" id="asesor-soporte" required></div><div class="form-group"><label for="ticket-caso">Ticket del Caso</label><input type="text" id="ticket-caso"></div></div><div class="form-group"><label for="descripcion-novedad">Descripción de la Novedad</label><textarea id="descripcion-novedad" rows="4" required></textarea></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 
-// === TEMPLATE ELIMINADO: Ya no se necesita ticketListHTML ===
-
 const historyPageHTML = `<h1>🔍 Historial y Búsqueda Avanzada</h1><div class="card"><form id="history-search-form"><div class="search-filters-grid"><div class="form-group"><label for="search-device">Dispositivo</label><input type="text" id="search-device" list="device-list-search"></div><datalist id="device-list-search"></datalist><div class="form-group"><label for="search-requester">Solicitante</label><select id="search-requester"><option value="">Todos</option></select></div><div class="form-group"><label for="search-location">Ubicación</label><select id="search-location"><option value="">Todas</option></select></div><div class="form-group"><label for="search-status">Estado</label><select id="search-status"><option value="">Todos</option><option value="abierto">Abierto</option><option value="en-curso">En curso</option><option value="cerrado">Cerrado</option></select></div><div class="form-group"><label for="search-priority">Prioridad</label><select id="search-priority"><option value="">Todas</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><button type="submit" class="primary" style="width:100%">Buscar</button></div></div></form></div><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="history-results-title">Resultados</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Título</th><th>Solicitante</th><th>Fecha Creación</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
 const statisticsHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><h1>📈 Centro de Análisis</h1><button class="primary" id="export-stats-pdf">Exportar a PDF</button></div><div id="stats-content"><div class="card"><h2>Filtro de Periodo</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div></div><h2>Análisis de Tickets</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Tickets por Prioridad</h3><div class="chart-container"><canvas id="ticketsByPriorityChart"></canvas></div></div><div class="card"><h3>Tickets por Categoría de Dispositivo</h3><div class="chart-container"><canvas id="ticketsByDeviceCategoryChart"></canvas></div></div><div class="card"><h3>Top 5 Dispositivos Problemáticos</h3><ul id="top-devices-list" class="kpi-list"></ul></div><div class="card"><h3>Top 5 Solicitantes</h3><ul id="top-requesters-list" class="kpi-list"></ul></div></div><div class="card"><h3>Flujo de Tickets (Creados vs. Cerrados)</h3><div class="chart-container"><canvas id="ticket-flow-chart"></canvas></div></div><h2 style="margin-top: 40px;">Resumen de Inventario</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Dispositivos por Categoría</h3><div class="chart-container"><canvas id="inventoryByCategoryChart"></canvas></div></div><div class="card"><h3>Computadores por SO</h3><div class="chart-container"><canvas id="computersByOsChart"></canvas></div></div></div></div>`;
 const genericListPageHTML = `<h1 id="page-title"></h1><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button><button id="add-item-btn" class="btn-blue open-form-modal-btn">Añadir Nuevo</button></div><div class="card"><div class="table-search-container"><input type="text" id="table-search-input" placeholder="🔍 Buscar en la tabla..."></div><h2 id="item-list-title"></h2><div class="table-wrapper"><table id="data-table"><thead id="item-table-head"></thead><tbody id="item-table-body"></tbody></table></div></div>`;
@@ -191,13 +189,99 @@ const credentialsCategoryConfig = {
 };
 
 // --- FUNCIONES DE RENDERIZADO ---
-// ... (El resto de las funciones de renderizado, como renderDashboard, renderNewTITicketForm, etc., están aquí)
-// (He omitido pegarlas de nuevo por brevedad, pero en tu archivo deben estar todas)
 
+// --- FUNCIÓN AÑADIDA ---
+// Esta es la función que faltaba en tu código original.
+async function renderHistoryPage(container) {
+    container.innerHTML = historyPageHTML;
 
-// === MODIFICACIÓN: Ya no existe renderTicketList, así que la eliminamos ===
+    // Poblar los filtros desplegables
+    const requesterSelect = document.getElementById('search-requester');
+    const locationSelect = document.getElementById('search-location');
+    const deviceDatalist = document.getElementById('device-list-search');
 
-// ... (El resto de las funciones de renderizado, como renderHistoryPage, etc. permanecen igual)
+    db.collection('solicitantes').orderBy('name').get().then(snapshot => {
+        snapshot.forEach(doc => {
+            requesterSelect.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`;
+        });
+    });
+
+    db.collection('ubicaciones').orderBy('name').get().then(snapshot => {
+        snapshot.forEach(doc => {
+            locationSelect.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`;
+        });
+    });
+    
+    db.collection('inventory').get().then(snapshot => {
+        snapshot.forEach(doc => {
+            const device = doc.data();
+            const displayText = `${device.id} - ${device.user || ''} (${device.brand || ''} ${device.model || ''})`;
+            deviceDatalist.innerHTML += `<option value="${doc.id}">${displayText}</option>`;
+        });
+    });
+
+    // Función para buscar y mostrar los tickets
+    const fetchAndDisplayTickets = async (filters) => {
+        const tableBody = document.querySelector("#data-table tbody");
+        tableBody.innerHTML = '<tr><td colspan="6">Cargando tickets...</td></tr>';
+        
+        let query = db.collection('tickets').orderBy('createdAt', 'desc');
+
+        // Aplicar filtros a la consulta
+        if (filters.deviceId) query = query.where('deviceId', '==', filters.deviceId);
+        if (filters.requester) query = query.where('requester', '==', filters.requester);
+        if (filters.location) query = query.where('location', '==', filters.location);
+        if (filters.status) query = query.where('status', '==', filters.status);
+        if (filters.priority) query = query.where('priority', '==', filters.priority);
+
+        try {
+            const snapshot = await query.get();
+            if (snapshot.empty) {
+                tableBody.innerHTML = '<tr><td colspan="6">No se encontraron tickets con los filtros seleccionados.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = ''; // Limpiar la tabla
+            let ticketCounter = snapshot.size;
+            snapshot.forEach(doc => {
+                const ticket = doc.data();
+                const ticketDate = ticket.createdAt.toDate ? ticket.createdAt.toDate().toLocaleString() : 'Fecha no disponible';
+                const row = `
+                    <tr>
+                        <td>${ticketCounter--}</td>
+                        <td>${ticket.title || 'Sin título'}</td>
+                        <td>${ticket.requester || 'N/A'}</td>
+                        <td>${ticketDate}</td>
+                        <td><span class="status status-${ticket.status}">${capitalizar(ticket.status)}</span></td>
+                        <td><a href="#" class="view-ticket-btn" data-id="${doc.id}">Ver Detalles</a></td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        } catch (error) {
+            console.error("Error al buscar tickets:", error);
+            tableBody.innerHTML = '<tr><td colspan="6">Error al cargar los tickets.</td></tr>';
+        }
+    };
+    
+    // Configurar el listener del formulario de búsqueda
+    const searchForm = document.getElementById('history-search-form');
+    searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const filters = {
+            deviceId: document.getElementById('search-device').value,
+            requester: document.getElementById('search-requester').value,
+            location: document.getElementById('search-location').value,
+            status: document.getElementById('search-status').value,
+            priority: document.getElementById('search-priority').value
+        };
+        fetchAndDisplayTickets(filters);
+    });
+
+    // Carga inicial de todos los tickets
+    fetchAndDisplayTickets({});
+}
+// --- FIN DE LA FUNCIÓN AÑADIDA ---
 
 
 // --- 7. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
@@ -209,13 +293,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const actionModal = document.getElementById('action-modal');
     const historyModal = document.getElementById('history-modal');
 
-    // === MODIFICACIÓN: Se quita la ruta '#tickets' y la llamada a 'renderTicketList' ===
     const routes = { 
         '#dashboard': renderDashboard, 
         '#crear-ticket-ti': renderNewTITicketForm,
         '#crear-ticket-velocity': (container) => renderNewPlatformTicketForm(container, 'Velocity'),
         '#crear-ticket-siigo': (container) => renderNewPlatformTicketForm(container, 'Siigo'),
-        '#historial': renderHistoryPage, 
+        '#historial': renderHistoryPage, // Ahora esta función existe
         '#estadisticas': renderEstadisticas, 
         '#maintenance': renderMaintenanceCalendar, 
         '#configuracion': renderConfiguracion 
