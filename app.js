@@ -634,6 +634,21 @@ async function showItemFormModal(type, category = null, docId = null) {
         if (docSnap.exists) { existingData = docSnap.data(); } 
         else { alert("Error: No se encontró el elemento a editar."); return; }
     }
+  let softwareLicenseDetails = null; 
+
+    // Si estamos editando un computador y tiene una licencia asignada (en el campo 'os')
+    if (isEditing && type === 'inventory' && category === 'computers' && existingData.os) {
+        try {
+            // Buscamos el documento de la licencia usando el ID que está en el campo 'os'
+            const licenseDocSnap = await db.collection('credentials').doc(existingData.os).get();
+            if (licenseDocSnap.exists) {
+                // Si la encontramos, guardamos sus datos
+                softwareLicenseDetails = licenseDocSnap.data();
+            }
+        } catch (error) {
+            console.error("Error al buscar detalles de la licencia de SO:", error);
+        }
+    }
     const configObject = (type === 'inventory') ? inventoryCategoryConfig : 
                          (type === 'credentials') ? credentialsCategoryConfig :
                          (type === 'services') ? servicesCategoryConfig : {};
@@ -661,7 +676,15 @@ async function showItemFormModal(type, category = null, docId = null) {
             const value = existingData[key] || '';
             let inputHTML = '';
             if (field.readonly) {
-                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label><input type="text" id="form-${key}" name="${key}" value="${value || 'N/A'}" readonly style="background:#eee;"></div>`;
+                let displayValue = value || 'N/A'; // Valor por defecto
+                
+                // Si este es el campo 'os' y hemos cargado los detalles de la licencia...
+                if (key === 'os' && softwareLicenseDetails) {
+                    // ...mostramos el nombre del software y su versión.
+                    displayValue = `${softwareLicenseDetails.softwareName} (${softwareLicenseDetails.version || 'sin versión'})`;
+                }
+
+                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label><input type="text" id="form-${key}" name="${key}" value="${displayValue}" readonly style="background:#eee;"></div>`;
                 continue;
             }
             if (field.type === 'select') {
@@ -670,16 +693,38 @@ async function showItemFormModal(type, category = null, docId = null) {
                     const locSnap = await db.collection('locations').get();
                     optionsHTML += locSnap.docs.map(doc => `<option value="${doc.id}" ${doc.id === value ? 'selected' : ''}>${doc.id}: ${doc.data().name}</option>`).join('');
                 } else if (field.optionsSource === 'computers-inventory') {
-                    const compSnap = await db.collection('inventory').where('category', '==', 'computers').where('os', 'in', ["", null]).get();
-                    optionsHTML += compSnap.docs.map(doc => `<option value="${doc.id}">${doc.id}: ${doc.data().brand} ${doc.data().model}</option>`).join('');
-                    if (isEditing && value) {
-                        const currentCompSnap = await db.collection('inventory').doc(value).get();
-                        if (currentCompSnap.exists) {
-                            const comp = currentCompSnap.data();
-                            optionsHTML += `<option value="${currentCompSnap.id}" selected>${currentCompSnap.id}: ${comp.brand} ${comp.model} (actual)</option>`;
-                        }
-                    }
-                } else {
+    // Obtenemos los computadores que no tienen SO asignado
+    const availableCompQuery = db.collection('inventory')
+                                 .where('category', '==', 'computers')
+                                 .where('os', 'in', ["", null]);
+                                 
+    const [availableCompSnap] = await Promise.all([availableCompQuery.get()]);
+
+    let computersMap = new Map();
+
+    // Añadimos los computadores disponibles al mapa
+    availableCompSnap.docs.forEach(doc => {
+        computersMap.set(doc.id, `${doc.id}: ${doc.data().brand} ${doc.data().model}`);
+    });
+
+    // Si estamos editando una licencia que ya está asignada a un computador (el 'value' es el ID del PC)
+    if (isEditing && value) {
+        // Buscamos ese computador específico para asegurarnos de que esté en la lista,
+        // incluso si ya tiene una licencia (esta misma).
+        const currentCompSnap = await db.collection('inventory').doc(value).get();
+        if (currentCompSnap.exists) {
+            computersMap.set(currentCompSnap.id, `${currentCompSnap.id}: ${currentCompSnap.data().brand} ${currentCompSnap.data().model} (Asignado actualmente)`);
+        }
+    }
+    
+    // Generamos las opciones del <select> a partir del mapa
+    for (const [id, name] of computersMap.entries()) {
+        const isSelected = (id === value) ? 'selected' : '';
+        optionsHTML += `<option value="${id}" ${isSelected}>${name}</option>`;
+    }
+
+    inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}"><option value="">(No asignar)</option>${optionsHTML}</select>`;
+} else {
                     optionsHTML += field.options.map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
                 }
                 inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}">${optionsHTML}</select>`;
