@@ -660,21 +660,16 @@ async function showItemFormModal(type, category = null, docId = null) {
             const value = existingData[key] || '';
             let inputHTML = '';
 
-            // --- INICIO DE LA CORRECCIÓN PRINCIPAL ---
             if (field.readonly) {
                 let displayValue = 'N/A';
                 if (key === 'os' && softwareLicenseDetails) {
                     displayValue = `${softwareLicenseDetails.softwareName} (${softwareLicenseDetails.version || 'sin versión'})`;
-                } else if (value) {
-                    // Si hay un valor pero no encontramos detalles (ej. ID roto), mostramos el ID para depuración.
-                    displayValue = value;
+                } else if (key === 'os' && value) {
+                    displayValue = `Asignada (${value})`;
                 }
-                // El input es de solo lectura y NO TIENE un atributo 'name'. Esto evita que su valor
-                // se envíe con el formulario y sobrescriba el ID correcto en la base de datos.
                 fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label><input type="text" id="form-${key}" value="${displayValue}" readonly style="background:#eee;"></div>`;
                 continue;
             }
-            // --- FIN DE LA CORRECCIÓN PRINCIPAL ---
 
             if (field.type === 'select') {
                 let optionsHTML = '';
@@ -682,24 +677,23 @@ async function showItemFormModal(type, category = null, docId = null) {
                     const locSnap = await db.collection('locations').get();
                     optionsHTML = locSnap.docs.map(doc => `<option value="${doc.id}" ${doc.id === value ? 'selected' : ''}>${doc.id}: ${doc.data().name}</option>`).join('');
                     inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}"><option value="">(No asignar)</option>${optionsHTML}</select>`;
+                
                 } else if (field.optionsSource === 'computers-inventory') {
-                    const availableCompQuery = db.collection('inventory').where('category', '==', 'computers').where('os', 'in', ["", null]);
-                    const [availableCompSnap] = await Promise.all([availableCompQuery.get()]);
-                    let computersMap = new Map();
-                    availableCompSnap.docs.forEach(doc => {
-                        computersMap.set(doc.id, `${doc.id}: ${doc.data().brand} ${doc.data().model}`);
-                    });
-                    if (isEditing && value) {
-                        const currentCompSnap = await db.collection('inventory').doc(value).get();
-                        if (currentCompSnap.exists) {
-                            computersMap.set(currentCompSnap.id, `${currentCompSnap.id}: ${currentCompSnap.data().brand} ${currentCompSnap.data().model} (Asignado actualmente)`);
+                    // --- INICIO DE LA LÓGICA MEJORADA DEL MENÚ DESPLEGABLE ---
+                    const allComputersSnap = await db.collection('inventory').where('category', '==', 'computers').get();
+                    const currentlyAssignedPC = value; 
+
+                    allComputersSnap.docs.forEach(doc => {
+                        const computer = { id: doc.id, ...doc.data() };
+                        if (!computer.os || computer.id === currentlyAssignedPC) {
+                            const isSelected = (computer.id === currentlyAssignedPC) ? 'selected' : '';
+                            const displayText = `${computer.id}: ${computer.brand} ${computer.model}`;
+                            optionsHTML += `<option value="${computer.id}" ${isSelected}>${displayText}</option>`;
                         }
-                    }
-                    for (const [id, name] of computersMap.entries()) {
-                        const isSelected = (id === value) ? 'selected' : '';
-                        optionsHTML += `<option value="${id}" ${isSelected}>${name}</option>`;
-                    }
+                    });
                     inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}"><option value="">(No asignar)</option>${optionsHTML}</select>`;
+                    // --- FIN DE LA LÓGICA MEJORADA ---
+
                 } else {
                     optionsHTML = field.options.map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
                     inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}">${optionsHTML}</select>`;
@@ -757,12 +751,8 @@ async function showItemFormModal(type, category = null, docId = null) {
                 if (collectionName === 'credentials' && category === 'software') {
                     const newComputerId = data.assignedTo || null;
                     const oldComputerId = form.querySelector('[name="assignedTo"]').dataset.oldValue || null;
-                    const licenseUpdateData = {
-                        softwareName: data.softwareName,
-                        licenseKey: data.licenseKey,
-                        version: data.version,
-                        assignedTo: newComputerId
-                    };
+                    const licenseUpdateData = { ...data, assignedTo: newComputerId };
+
                     if (newComputerId !== oldComputerId) {
                         await db.runTransaction(async (transaction) => {
                             const licenseRef = db.collection('credentials').doc(docId);
@@ -782,9 +772,12 @@ async function showItemFormModal(type, category = null, docId = null) {
                 } else {
                     await db.collection(collectionName).doc(docId).update(data);
                 }
-            } else {
+            } else { // Creando un nuevo elemento
                 if (type === 'inventory' || type === 'credentials' || type === 'services') {
                     data.category = category;
+                     if (type === 'inventory' && category === 'computers') {
+                        data.os = null; // Asegura que el campo 'os' exista en los nuevos computadores
+                    }
                     const { prefix, counter } = config;
                     if (!prefix || !counter) { alert('Error de configuración.'); return; }
                     const counterRef = db.collection('counters').doc(counter);
