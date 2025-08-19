@@ -19,9 +19,11 @@ window.jsPDF = window.jspdf.jsPDF;
 const dashboardHTML = `<h1>📊 Dashboard</h1><div class="dashboard-stats" id="dashboard-cards"></div><div class="card" style="margin-top: 30px;"><h2>Tickets por Día (Últimos 7 días)</h2><div class="chart-container"><canvas id="ticketsChart"></canvas></div></div>`;
 const newTITicketFormHTML = `<h1>➕ Crear Nuevo Ticket de TI</h1><div class="card"><form id="new-ticket-form"><div class="form-group"><label for="title">Título</label><input type="text" id="title" required></div><div class="form-group"><label>Descripción</label><div id="description-editor"></div></div><div class="inventory-form-grid"><div class="form-group"><label for="requester">Solicitante</label><select id="requester" required></select></div><div class="form-group"><label for="location">Ubicación</label><select id="location" required></select></div><div class="form-group"><label for="priority">Prioridad</label><select id="priority"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><label for="ticket-datetime">Fecha y Hora del Ticket</label><input type="datetime-local" id="ticket-datetime" required></div><div class="form-group"><label for="device-search">Dispositivo Asociado (opcional)</label><input type="text" id="device-search" list="device-list" placeholder="Busca por código, usuario, marca..."><datalist id="device-list"></datalist></div></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 
+// === MODIFICACIÓN: Asesor de Soporte ahora es un campo de texto en el template ===
 const newPlatformTicketFormHTML = `<h1 id="page-title"></h1><div class="card"><form id="new-platform-ticket-form"><div class="inventory-form-grid"><div class="form-group"><label for="fecha-reporte">Fecha de Reporte</label><input type="date" id="fecha-reporte" required></div><div class="form-group"><label for="hora-reporte">Hora de Reporte</label><input type="time" id="hora-reporte" required></div><div class="form-group"><label for="medio-solicitud">Medio de Solicitud</label><select id="medio-solicitud" required></select></div><div class="form-group"><label for="solicitante">Solicitante</label><select id="solicitante" required></select></div><div class="form-group"><label for="asesor-soporte">Asesor de Soporte</label><input type="text" id="asesor-soporte" required></div><div class="form-group"><label for="ticket-caso">Ticket del Caso</label><input type="text" id="ticket-caso"></div></div><div class="form-group"><label for="descripcion-novedad">Descripción de la Novedad</label><textarea id="descripcion-novedad" rows="4" required></textarea></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 
 const ticketListHTML = `<div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="tickets-list-title">Todos los Tickets</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Tipo</th><th>Título/Novedad</th><th>Solicitante</th><th>Fecha Creación</th><th>Fecha Cierre</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
+// --- REEMPLAZA ESTA CONSTANTE ---
 
 const historyPageHTML = `<h1>🔍 Historial y Búsqueda Avanzada</h1><div class="card"><form id="history-search-form"><div class="search-filters-grid"><div class="form-group"><label for="search-device">Dispositivo</label><input type="text" id="search-device" list="device-list-search"></div><datalist id="device-list-search"></datalist><div class="form-group"><label for="search-requester">Solicitante</label><select id="search-requester"><option value="">Todos</option></select></div><div class="form-group"><label for="search-location">Ubicación</label><select id="search-location"><option value="">Todas</option></select></div><div class="form-group"><label for="search-status">Estado</label><select id="search-status"><option value="">Todos</option><option value="abierto">Abierto</option><option value="en-curso">En curso</option><option value="cerrado">Cerrado</option></select></div><div class="form-group"><label for="search-priority">Prioridad</label><select id="search-priority"><option value="">Todas</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><button type="submit" class="primary" style="width:100%">Buscar</button></div></div></form></div><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="history-results-title">Resultados</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Título</th><th>Solicitante</th><th>Fecha Creación</th><th>Fecha Cierre</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
 const statisticsHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><h1>📈 Centro de Análisis</h1><button class="primary" id="export-stats-pdf">Exportar a PDF</button></div><div id="stats-content"><div class="card"><h2>Filtro de Periodo</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div></div><h2>Análisis de Tickets</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Tickets por Prioridad</h3><div class="chart-container"><canvas id="ticketsByPriorityChart"></canvas></div></div><div class="card"><h3>Tickets por Categoría de Dispositivo</h3><div class="chart-container"><canvas id="ticketsByDeviceCategoryChart"></canvas></div></div><div class="card"><h3>Top 5 Dispositivos Problemáticos</h3><ul id="top-devices-list" class="kpi-list"></ul></div><div class="card"><h3>Top 5 Solicitantes</h3><ul id="top-requesters-list" class="kpi-list"></ul></div></div><div class="card"><h3>Flujo de Tickets (Creados vs. Cerrados)</h3><div class="chart-container"><canvas id="ticket-flow-chart"></canvas></div></div><h2 style="margin-top: 40px;">Resumen de Inventario</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Dispositivos por Categoría</h3><div class="chart-container"><canvas id="inventoryByCategoryChart"></canvas></div></div><div class="card"><h3>Computadores por SO</h3><div class="chart-container"><canvas id="computersByOsChart"></canvas></div></div></div></div>`;
@@ -34,6 +36,7 @@ function capitalizar(str) {
   if (!str) return str; 
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
+// ... (Otras funciones de ayuda y configuraciones no cambian)
 function exportToCSV(tableId, filename) { const table = document.getElementById(tableId); if (!table) { console.error("Tabla no encontrada para exportar:", tableId); return; } let data = []; const headers = Array.from(table.querySelectorAll('thead th')).map(header => header.innerText).slice(0, -1); const rows = table.querySelectorAll('tbody tr'); rows.forEach(row => { const rowData = Array.from(row.querySelectorAll('td')).map(cell => cell.innerText).slice(0, -1); data.push(rowData); }); const csv = Papa.unparse({ fields: headers, data }, { delimiter: ";" }); const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); if (link.download !== undefined) { const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `${filename}.csv`); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); } }
 function exportToPDF(tableId, filename) { const table = document.getElementById(tableId); if (!table) { console.error("Tabla no encontrada para exportar:", tableId); return; } const doc = new jsPDF({ orientation: "landscape" }); const head = [Array.from(table.querySelectorAll('thead th')).map(header => header.innerText).slice(0, -1)]; const body = Array.from(table.querySelectorAll('tbody tr')).map(row => Array.from(row.querySelectorAll('td')).map(cell => cell.innerText).slice(0, -1)); doc.autoTable({ head: head, body: body, startY: 10, styles: { font: "Inter", fontSize: 8 }, headStyles: { fillColor: [41, 128, 186], textColor: 255, fontStyle: 'bold' } }); doc.save(`${filename}.pdf`); }
 async function exportStatsToPDF() { const reportElement = document.getElementById('stats-content'); const canvas = await html2canvas(reportElement, { scale: 2 }); const imgData = canvas.toDataURL('image/png'); const pdf = new jsPDF('p', 'mm', 'a4'); const pdfWidth = pdf.internal.pageSize.getWidth(); const pdfHeight = (canvas.height * pdfWidth) / canvas.width; pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight); pdf.save("reporte-estadisticas.pdf"); }
@@ -263,6 +266,7 @@ async function renderNewTITicketForm(container) {
     }); 
 }
 
+// === MODIFICACIÓN: La función ahora es dinámica para Velocity y Siigo y aplica las nuevas reglas ===
 async function renderNewPlatformTicketForm(container, platform) {
     container.innerHTML = newPlatformTicketFormHTML;
     document.getElementById('page-title').innerText = `➕ Crear Nuevo Ticket de ${platform}`;
@@ -270,12 +274,13 @@ async function renderNewPlatformTicketForm(container, platform) {
     const solicitanteSelect = document.getElementById('solicitante');
     const medioSolicitudSelect = document.getElementById('medio-solicitud');
 
+    // Cargar y bloquear el solicitante específico
     try {
         const reqQuery = await db.collection('requesters').where('name', '==', 'Jahan Michelle Chara').limit(1).get();
         if (!reqQuery.empty) {
             const jahanDoc = reqQuery.docs[0];
             solicitanteSelect.innerHTML = `<option value="${jahanDoc.id}">${jahanDoc.data().name}</option>`;
-            solicitanteSelect.disabled = true;
+            solicitanteSelect.disabled = true; // Bloquear el campo
         } else {
             solicitanteSelect.innerHTML = `<option value="">Usuario 'Jahan Michelle Chara' no encontrado</option>`;
             solicitanteSelect.disabled = true;
@@ -286,14 +291,20 @@ async function renderNewPlatformTicketForm(container, platform) {
         solicitanteSelect.disabled = true;
     }
 
+    // Configurar opciones de "Medio de Solicitud" según la plataforma
     let medioOptions = '';
     if (platform === 'Velocity') {
-        medioOptions = `<option value="WhatsApp">WhatsApp</option><option value="Centro de ayuda JIRA">Centro de ayuda JIRA</option>`;
+        medioOptions = `
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="Centro de ayuda JIRA">Centro de ayuda JIRA</option>`;
     } else if (platform === 'Siigo') {
-        medioOptions = `<option value="WhatsApp">WhatsApp</option><option value="Línea de atención Telefónica">Línea de atención Telefónica</option>`;
+        medioOptions = `
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="Línea de atención Telefónica">Línea de atención Telefónica</option>`;
     }
     medioSolicitudSelect.innerHTML = medioOptions;
 
+    // Poner fecha y hora por defecto
     const now = new Date();
     document.getElementById('fecha-reporte').value = now.toISOString().split('T')[0];
     document.getElementById('hora-reporte').value = now.toTimeString().slice(0, 5);
@@ -321,7 +332,7 @@ async function renderNewPlatformTicketForm(container, platform) {
                 horaDeReporte: hora,
                 medioDeSolicitud: form['medio-solicitud'].value,
                 requesterId: form['solicitante'].value,
-                asesorDeSoporte: form['asesor-soporte'].value,
+                asesorDeSoporte: form['asesor-soporte'].value, // Corregido de 'asesorDeSporte' a 'asesorDeSoporte'
                 descripcionDeLaNovedad: form['descripcion-novedad'].value,
                 ticketDelCaso: form['ticket-caso'].value,
                 status: 'abierto',
@@ -381,16 +392,19 @@ async function renderTicketList(container, params = {}) {
         }); 
     }, error => handleFirestoreError(error, tableBody)); 
 }
+// --- REEMPLAZA LA FUNCIÓN COMPLETA PARA ASEGURARTE ---
 
 async function renderHistoryPage(container) {
     container.innerHTML = historyPageHTML;
 
+    // --- Elementos del DOM ---
     const form = document.getElementById('history-search-form');
     const deviceDatalist = document.getElementById('device-list-search');
     const requesterSelect = document.getElementById('search-requester');
     const locationSelect = document.getElementById('search-location');
     const resultsTableBody = document.getElementById('data-table').querySelector('tbody');
 
+    // --- Cargar datos para los filtros ---
     try {
         const [reqSnap, locSnap, invSnap] = await Promise.all([
             db.collection('requesters').orderBy('name').get(),
@@ -412,6 +426,7 @@ async function renderHistoryPage(container) {
         return;
     }
     
+    // --- Lógica de Búsqueda ---
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         resultsTableBody.innerHTML = `<tr><td colspan="7">Buscando...</td></tr>`;
@@ -435,9 +450,14 @@ async function renderHistoryPage(container) {
             const snapshot = await query.get();
             const tickets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            tickets.sort((a, b) => (parseInt(a.id.split('-')[1] || 0, 10)) - (parseInt(b.id.split('-')[1] || 0, 10)));
+            tickets.sort((a, b) => {
+                const numA = parseInt(a.id.split('-')[1] || 0, 10);
+                const numB = parseInt(b.id.split('-')[1] || 0, 10);
+                return numA - numB;
+            });
 
             resultsTableBody.innerHTML = '';
+
             if (tickets.length === 0) {
                 resultsTableBody.innerHTML = `<tr><td colspan="7">No se encontraron tickets con esos criterios.</td></tr>`;
                 return;
@@ -445,7 +465,10 @@ async function renderHistoryPage(container) {
 
             tickets.forEach(ticket => {
                 const tr = document.createElement('tr');
-                const closedAtText = ticket.closedAt && ticket.closedAt.toDate ? ticket.closedAt.toDate().toLocaleString('es-ES') : 'N/A';
+                const closedAtText = ticket.closedAt && ticket.closedAt.toDate 
+                    ? ticket.closedAt.toDate().toLocaleString('es-ES') 
+                    : 'N/A';
+
                 tr.innerHTML = `
                     <td>${ticket.id}</td>
                     <td>${ticket.title || 'Ticket de Plataforma'}</td>
@@ -462,6 +485,7 @@ async function renderHistoryPage(container) {
         }
     });
 
+    // Carga inicial de todos los tickets
     form.dispatchEvent(new Event('submit'));
 }
 async function renderEstadisticas(container) { container.innerHTML = statisticsHTML; const generateBtn = document.getElementById('generate-report-btn'); document.getElementById('export-stats-pdf').addEventListener('click', exportStatsToPDF); let charts = {}; const chartContexts = { ticketsByPriority: document.getElementById('ticketsByPriorityChart').getContext('2d'), ticketsByDeviceCategory: document.getElementById('ticketsByDeviceCategoryChart').getContext('2d'), ticketFlow: document.getElementById('ticket-flow-chart').getContext('2d'), inventoryByCategory: document.getElementById('inventoryByCategoryChart').getContext('2d'), computersByOs: document.getElementById('computersByOsChart').getContext('2d') }; const topDevicesList = document.getElementById('top-devices-list'); const topRequestersList = document.getElementById('top-requesters-list'); const startDateInput = document.getElementById('start-date'); const endDateInput = document.getElementById('end-date'); const today = new Date(); const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1)); startDateInput.value = oneMonthAgo.toISOString().split('T')[0]; endDateInput.value = today.toISOString().split('T')[0]; const generateReports = async () => { const startDate = new Date(startDateInput.value); startDate.setHours(0, 0, 0, 0); const endDate = new Date(endDateInput.value); endDate.setHours(23, 59, 59, 999); try { const [ticketsSnapshot, inventorySnapshot, requestersSnapshot] = await Promise.all([ db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get(), db.collection('inventory').get(), db.collection('requesters').get() ]); const tickets = ticketsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); const inventory = inventorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); const requestersMap = {}; requestersSnapshot.forEach(doc => requestersMap[doc.id] = doc.data().name); const priorityCounts = tickets.reduce((acc, ticket) => { acc[ticket.priority] = (acc[ticket.priority] || 0) + 1; return acc; }, {}); if (charts.ticketsByPriority) charts.ticketsByPriority.destroy(); charts.ticketsByPriority = new Chart(chartContexts.ticketsByPriority, { type: 'doughnut', data: { labels: Object.keys(priorityCounts).map(p => capitalizar(p)), datasets: [{ data: Object.values(priorityCounts), backgroundColor: ['#007bff', '#ffc107', '#dc3545'] }] }, options: { responsive: true, maintainAspectRatio: false } }); const inventoryMap = {}; inventory.forEach(item => inventoryMap[item.id] = item); const ticketsWithDeviceCategory = tickets.map(ticket => ({...ticket, deviceCategory: ticket.deviceId ? (inventoryMap[ticket.deviceId]?.category || 'Sin categoría') : 'Sin dispositivo'})); const deviceCategoryCounts = ticketsWithDeviceCategory.reduce((acc, ticket) => { acc[ticket.deviceCategory] = (acc[ticket.deviceCategory] || 0) + 1; return acc; }, {}); if (charts.ticketsByDeviceCategory) charts.ticketsByDeviceCategory.destroy(); charts.ticketsByDeviceCategory = new Chart(chartContexts.ticketsByDeviceCategory, { type: 'pie', data: { labels: Object.keys(deviceCategoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ data: Object.values(deviceCategoryCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545', '#343a40'] }] }, options: { responsive: true, maintainAspectRatio: false } }); const deviceTicketCounts = tickets.reduce((acc, ticket) => { if(ticket.deviceId) acc[ticket.deviceId] = (acc[ticket.deviceId] || 0) + 1; return acc; }, {}); const topDevices = Object.entries(deviceTicketCounts).sort((a, b) => b[1] - a[1]).slice(0, 5); topDevicesList.innerHTML = topDevices.map(([id, count]) => { const device = inventoryMap[id]; return `<li><span>${device ? `${device.brand} ${device.model}` : id}</span><span>${count}</span></li>`; }).join('') || '<li>No hay datos</li>'; const requesterTicketCounts = tickets.reduce((acc, ticket) => { if(ticket.requesterId) acc[ticket.requesterId] = (acc[ticket.requesterId] || 0) + 1; return acc; }, {}); const topRequesters = Object.entries(requesterTicketCounts).sort((a, b) => b[1] - a[1]).slice(0, 5); topRequestersList.innerHTML = topRequesters.map(([id, count]) => `<li><span>${requestersMap[id] || id}</span><span>${count}</span></li>`).join('') || '<li>No hay datos</li>'; const closedTicketsSnapshot = await db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get(); const closedTicketsInRange = closedTicketsSnapshot.docs.map(doc => doc.data()); const dataByDay = {}; for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { dataByDay[d.toISOString().split('T')[0]] = { created: 0, closed: 0 }; } tickets.forEach(t => { const day = t.createdAt.toDate().toISOString().split('T')[0]; if (dataByDay[day]) dataByDay[day].created++; }); closedTicketsInRange.forEach(t => { const day = t.closedAt.toDate().toISOString().split('T')[0]; if (dataByDay[day]) dataByDay[day].closed++; }); if (charts.ticketFlow) charts.ticketFlow.destroy(); charts.ticketFlow = new Chart(chartContexts.ticketFlow, { type: 'line', data: { labels: Object.keys(dataByDay), datasets: [ { label: 'Tickets Creados', data: Object.values(dataByDay).map(d => d.created), borderColor: '#007bff', fill: true }, { label: 'Tickets Cerrados', data: Object.values(dataByDay).map(d => d.closed), borderColor: '#28a745', fill: true } ] }, options: { scales: { y: { beginAtZero: true } } } }); const categoryCounts = inventory.reduce((acc, item) => { acc[item.category] = (acc[item.category] || 0) + 1; return acc; }, {}); if (charts.inventoryByCategory) charts.inventoryByCategory.destroy(); charts.inventoryByCategory = new Chart(chartContexts.inventoryByCategory, { type: 'bar', data: { labels: Object.keys(categoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ label: '# de Dispositivos', data: Object.values(categoryCounts), backgroundColor: '#007bff' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false } }); const computers = inventory.filter(item => item.category === 'computers'); const osCounts = computers.reduce((acc, item) => { acc[item.os] = (acc[item.os] || 0) + 1; return acc; }, {}); if (charts.computersByOs) charts.computersByOs.destroy(); charts.computersByOs = new Chart(chartContexts.computersByOs, { type: 'pie', data: { labels: Object.keys(osCounts), datasets: [{ data: Object.values(osCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545'] }] }, options: { responsive: true, maintainAspectRatio: false } }); } catch(error) { handleFirestoreError(error, container); }}; generateBtn.addEventListener('click', generateReports); generateReports(); }
@@ -598,53 +622,45 @@ function renderConfiguracion(container) {
     setupConfigSection('requester', 'requesters', 'REQ-', 'requesterCounter');
     setupConfigSection('location', 'locations', 'LOC-', 'locationCounter');
 }
-
-// =================================================================================
-// === FUNCIÓN CORREGIDA Y MEJORADA ===============================================
-// =================================================================================
 async function showItemFormModal(type, category = null, docId = null) {
     const isEditing = docId !== null;
     const formModal = document.getElementById('form-modal');
     const modalBody = formModal.querySelector('#form-modal-body');
     let formHTML = '', title = '', collectionName = '', formId = 'modal-form', config;
     let existingData = {};
-
     if (isEditing) {
         const collectionForSearch = (type === 'config') ? category : type;
         const docSnap = await db.collection(collectionForSearch).doc(docId).get();
-        if (docSnap.exists) {
-            existingData = docSnap.data();
-        } else {
-            alert("Error: No se encontró el elemento a editar.");
-            return;
-        }
+        if (docSnap.exists) { existingData = docSnap.data(); } 
+        else { alert("Error: No se encontró el elemento a editar."); return; }
     }
+  let softwareLicenseDetails = null; 
 
-    let softwareLicenseDetails = null;
+    // Si estamos editando un computador y tiene una licencia asignada (en el campo 'os')
     if (isEditing && type === 'inventory' && category === 'computers' && existingData.os) {
         try {
+            // Buscamos el documento de la licencia usando el ID que está en el campo 'os'
             const licenseDocSnap = await db.collection('credentials').doc(existingData.os).get();
             if (licenseDocSnap.exists) {
+                // Si la encontramos, guardamos sus datos
                 softwareLicenseDetails = licenseDocSnap.data();
             }
         } catch (error) {
             console.error("Error al buscar detalles de la licencia de SO:", error);
         }
     }
-
-    const configObject = (type === 'inventory') ? inventoryCategoryConfig :
+    const configObject = (type === 'inventory') ? inventoryCategoryConfig : 
                          (type === 'credentials') ? credentialsCategoryConfig :
                          (type === 'services') ? servicesCategoryConfig : {};
     config = configObject[category];
-
     if (!config) {
         if (type === 'maintenance') {
-            title = isEditing ? 'Editar Tarea' : 'Programar Tarea';
-            collectionName = 'maintenance';
-            const task = existingData.task || '';
-            const date = existingData.date || '';
-            const taskType = existingData.type || 'Tarea';
-            formHTML = `<div class="form-group"><label for="form-task">Título de la Tarea</label><input type="text" id="form-task" name="task" value="${task}" required></div><div class="form-group"><label for="form-date">Fecha</label><input type="date" id="form-date" name="date" value="${date}" required></div><div class="form-group"><label for="form-type">Tipo de Tarea</label><select id="form-type" name="type"><option value="Mantenimiento Preventivo" ${taskType === 'Mantenimiento Preventivo' ? 'selected' : ''}>Mantenimiento Preventivo</option><option value="Mantenimiento Correctivo" ${taskType === 'Mantenimiento Correctivo' ? 'selected' : ''}>Mantenimiento Correctivo</option><option value="Mantenimiento Lógico" ${taskType === 'Mantenimiento Lógico' ? 'selected' : ''}>Mantenimiento Lógico</option><option value="Backup" ${taskType === 'Backup' ? 'selected' : ''}>Backup</option><option value="Tarea" ${taskType === 'Tarea' ? 'selected' : ''}>Tarea</option><option value="Recordatorio" ${taskType === 'Recordatorio' ? 'selected' : ''}>Recordatorio</option></select></div>`;
+             title = isEditing ? 'Editar Tarea' : 'Programar Tarea';
+             collectionName = 'maintenance';
+             const task = existingData.task || '';
+             const date = existingData.date || '';
+             const taskType = existingData.type || 'Tarea';
+             formHTML = `<div class="form-group"><label for="form-task">Título de la Tarea</label><input type="text" id="form-task" name="task" value="${task}" required></div><div class="form-group"><label for="form-date">Fecha</label><input type="date" id="form-date" name="date" value="${date}" required></div><div class="form-group"><label for="form-type">Tipo de Tarea</label><select id="form-type" name="type"><option value="Mantenimiento Preventivo" ${taskType === 'Mantenimiento Preventivo' ? 'selected' : ''}>Mantenimiento Preventivo</option><option value="Mantenimiento Correctivo" ${taskType === 'Mantenimiento Correctivo' ? 'selected' : ''}>Mantenimiento Correctivo</option><option value="Mantenimiento Lógico" ${taskType === 'Mantenimiento Lógico' ? 'selected' : ''}>Mantenimiento Lógico</option><option value="Backup" ${taskType === 'Backup' ? 'selected' : ''}>Backup</option><option value="Tarea" ${taskType === 'Tarea' ? 'selected' : ''}>Tarea</option><option value="Recordatorio" ${taskType === 'Recordatorio' ? 'selected' : ''}>Recordatorio</option></select></div>`;
         } else if (type === 'config') {
             collectionName = category;
             title = isEditing ? `Editar ${collectionName === 'requesters' ? 'Solicitante' : 'Ubicación'}` : `Añadir ${collectionName === 'requesters' ? 'Solicitante' : 'Ubicación'}`;
@@ -659,45 +675,59 @@ async function showItemFormModal(type, category = null, docId = null) {
             if (key === 'id') continue;
             const value = existingData[key] || '';
             let inputHTML = '';
-
             if (field.readonly) {
-                let displayValue = 'N/A';
+                let displayValue = value || 'N/A'; // Valor por defecto
+                
+                // Si este es el campo 'os' y hemos cargado los detalles de la licencia...
                 if (key === 'os' && softwareLicenseDetails) {
+                    // ...mostramos el nombre del software y su versión.
                     displayValue = `${softwareLicenseDetails.softwareName} (${softwareLicenseDetails.version || 'sin versión'})`;
-                } else if (key === 'os' && value) {
-                    displayValue = `Asignada (${value})`;
                 }
-                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label><input type="text" id="form-${key}" value="${displayValue}" readonly style="background:#eee;"></div>`;
+
+                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label><input type="text" id="form-${key}" name="${key}" value="${displayValue}" readonly style="background:#eee;"></div>`;
                 continue;
             }
-
             if (field.type === 'select') {
-                let optionsHTML = '';
+                let optionsHTML = '<option value="">(No asignar)</option>';
                 if (field.optionsSource === 'locations') {
                     const locSnap = await db.collection('locations').get();
-                    optionsHTML = locSnap.docs.map(doc => `<option value="${doc.id}" ${doc.id === value ? 'selected' : ''}>${doc.id}: ${doc.data().name}</option>`).join('');
-                    inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}"><option value="">(No asignar)</option>${optionsHTML}</select>`;
-                
+                    optionsHTML += locSnap.docs.map(doc => `<option value="${doc.id}" ${doc.id === value ? 'selected' : ''}>${doc.id}: ${doc.data().name}</option>`).join('');
                 } else if (field.optionsSource === 'computers-inventory') {
-                    // --- INICIO DE LA LÓGICA MEJORADA DEL MENÚ DESPLEGABLE ---
-                    const allComputersSnap = await db.collection('inventory').where('category', '==', 'computers').get();
-                    const currentlyAssignedPC = value; 
+    // Obtenemos los computadores que no tienen SO asignado
+    const availableCompQuery = db.collection('inventory')
+                                 .where('category', '==', 'computers')
+                                 .where('os', 'in', ["", null]);
+                                 
+    const [availableCompSnap] = await Promise.all([availableCompQuery.get()]);
 
-                    allComputersSnap.docs.forEach(doc => {
-                        const computer = { id: doc.id, ...doc.data() };
-                        if (!computer.os || computer.id === currentlyAssignedPC) {
-                            const isSelected = (computer.id === currentlyAssignedPC) ? 'selected' : '';
-                            const displayText = `${computer.id}: ${computer.brand} ${computer.model}`;
-                            optionsHTML += `<option value="${computer.id}" ${isSelected}>${displayText}</option>`;
-                        }
-                    });
-                    inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}"><option value="">(No asignar)</option>${optionsHTML}</select>`;
-                    // --- FIN DE LA LÓGICA MEJORADA ---
+    let computersMap = new Map();
 
-                } else {
-                    optionsHTML = field.options.map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
-                    inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}">${optionsHTML}</select>`;
+    // Añadimos los computadores disponibles al mapa
+    availableCompSnap.docs.forEach(doc => {
+        computersMap.set(doc.id, `${doc.id}: ${doc.data().brand} ${doc.data().model}`);
+    });
+
+    // Si estamos editando una licencia que ya está asignada a un computador (el 'value' es el ID del PC)
+    if (isEditing && value) {
+        // Buscamos ese computador específico para asegurarnos de que esté en la lista,
+        // incluso si ya tiene una licencia (esta misma).
+        const currentCompSnap = await db.collection('inventory').doc(value).get();
+        if (currentCompSnap.exists) {
+            computersMap.set(currentCompSnap.id, `${currentCompSnap.id}: ${currentCompSnap.data().brand} ${currentCompSnap.data().model} (Asignado actualmente)`);
+        }
+    }
+    
+    // Generamos las opciones del <select> a partir del mapa
+    for (const [id, name] of computersMap.entries()) {
+        const isSelected = (id === value) ? 'selected' : '';
+        optionsHTML += `<option value="${id}" ${isSelected}>${name}</option>`;
+    }
+
+    inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}"><option value="">(No asignar)</option>${optionsHTML}</select>`;
+} else {
+                    optionsHTML += field.options.map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
                 }
+                inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}">${optionsHTML}</select>`;
             } else if (field.type === 'textarea') {
                 inputHTML = `<textarea id="form-${key}" name="${key}" rows="3">${value}</textarea>`;
             } else {
@@ -710,10 +740,8 @@ async function showItemFormModal(type, category = null, docId = null) {
             formHTML += `<hr style="margin-top: 25px; margin-bottom: 15px;"><h3>Historial de Tickets Asociados</h3><div id="device-ticket-history" style="max-height: 200px; overflow-y: auto;">Cargando historial...</div>`;
         }
     }
-
     modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">${isEditing ? 'Guardar Cambios' : 'Guardar'}</button></div></form>`;
     formModal.classList.remove('hidden');
-
     if (isEditing && type === 'inventory') {
         setTimeout(() => {
             const historyContainer = document.getElementById('device-ticket-history');
@@ -739,7 +767,6 @@ async function showItemFormModal(type, category = null, docId = null) {
             }
         }, 100);
     }
-
     document.getElementById(formId).addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
@@ -748,15 +775,13 @@ async function showItemFormModal(type, category = null, docId = null) {
         formData.forEach((value, key) => { data[key] = value; });
         try {
             if (isEditing) {
-                if (collectionName === 'credentials' && category === 'software') {
+                if (category === 'software') {
                     const newComputerId = data.assignedTo || null;
-                    const oldComputerId = form.querySelector('[name="assignedTo"]').dataset.oldValue || null;
-                    const licenseUpdateData = { ...data, assignedTo: newComputerId };
-
+                    const oldComputerId = form.assignedTo.dataset.oldValue || null;
                     if (newComputerId !== oldComputerId) {
                         await db.runTransaction(async (transaction) => {
                             const licenseRef = db.collection('credentials').doc(docId);
-                            transaction.update(licenseRef, licenseUpdateData);
+                            transaction.update(licenseRef, { assignedTo: newComputerId });
                             if (oldComputerId) {
                                 const oldCompRef = db.collection('inventory').doc(oldComputerId);
                                 transaction.update(oldCompRef, { os: null });
@@ -766,18 +791,13 @@ async function showItemFormModal(type, category = null, docId = null) {
                                 transaction.update(newCompRef, { os: docId });
                             }
                         });
-                    } else {
-                        await db.collection('credentials').doc(docId).update(licenseUpdateData);
                     }
                 } else {
                     await db.collection(collectionName).doc(docId).update(data);
                 }
-            } else { // Creando un nuevo elemento
+            } else {
                 if (type === 'inventory' || type === 'credentials' || type === 'services') {
                     data.category = category;
-                     if (type === 'inventory' && category === 'computers') {
-                        data.os = null; // Asegura que el campo 'os' exista en los nuevos computadores
-                    }
                     const { prefix, counter } = config;
                     if (!prefix || !counter) { alert('Error de configuración.'); return; }
                     const counterRef = db.collection('counters').doc(counter);
@@ -808,10 +828,6 @@ async function showItemFormModal(type, category = null, docId = null) {
         }
     });
 }
-// =================================================================================
-// === FIN DE LA FUNCIÓN CORREGIDA ================================================
-// =================================================================================
-
 function showEventActionChoiceModal(eventId, eventTitle, eventProps) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); let completedInfo = ''; if (eventProps.status === 'completada') { completedInfo = `<hr><h4>Información de Finalización</h4><p><strong>Fecha:</strong> ${new Date(eventProps.completedDate + 'T00:00:00').toLocaleDateString('es-ES')}</p><p><strong>A tiempo:</strong> ${eventProps.onTimeStatus}</p><p><strong>Observaciones:</strong> ${eventProps.completionNotes || 'N/A'}</p>`; } const actionButtons = eventProps.status === 'planificada' ? `<div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; margin-top: 20px;"><button class="primary" id="edit-task-btn" style="background-color: #ffc107; color: #212529;">✏️ Editar Tarea</button><button class="primary" id="finalize-task-btn">✅ Finalizar Tarea</button><button class="danger" id="delete-task-btn">🗑️ Eliminar</button></div>` : ''; modalBody.innerHTML = `<h2>${eventTitle}</h2><p><strong>Estado:</strong> ${eventProps.status}</p>${completedInfo}${actionButtons}`; actionModal.classList.remove('hidden'); if (eventProps.status === 'planificada') { document.getElementById('edit-task-btn').onclick = () => { actionModal.classList.add('hidden'); showItemFormModal('maintenance', null, eventId); }; document.getElementById('finalize-task-btn').onclick = () => { actionModal.classList.add('hidden'); showFinalizeTaskModal(eventId, eventTitle); }; document.getElementById('delete-task-btn').onclick = () => { if (confirm(`¿Estás seguro de que quieres ELIMINAR permanentemente la tarea "${eventTitle}"? Esta acción no se puede deshacer.`)) { db.collection('maintenance').doc(eventId).delete().then(() => { actionModal.classList.add('hidden'); }).catch(error => { console.error("Error al eliminar la tarea: ", error); alert("No se pudo eliminar la tarea."); }); } }; } }
 function showFinalizeTaskModal(eventId, eventTitle) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); const today = new Date().toISOString().split('T')[0]; modalBody.innerHTML = `<h2>Finalizar Tarea: "${eventTitle}"</h2><form id="finalize-form"><div class="form-group"><label for="completedDate">Fecha de Realización</label><input type="date" id="completedDate" name="completedDate" value="${today}" required></div><div class="form-group"><label for="onTimeStatus">¿Se realizó a tiempo?</label><select id="onTimeStatus" name="onTimeStatus"><option value="Sí">Sí</option><option value="No">No</option></select></div><div class="form-group"><label>Observaciones (opcional)</label><textarea name="completionNotes" rows="3"></textarea></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="primary">Guardar Finalización</button></div></form>`; actionModal.classList.remove('hidden'); document.getElementById('finalize-form').addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target; form.querySelector('button[type="submit"]').disabled = true; try { const updateData = { status: 'completada', completedDate: form.completedDate.value, onTimeStatus: form.onTimeStatus.value, completionNotes: form.completionNotes.value }; await db.collection('maintenance').doc(eventId).set(updateData, { merge: true }); actionModal.classList.add('hidden'); } catch (error) { console.error("Error al finalizar la tarea: ", error); alert("Hubo un error al finalizar la tarea. Revisa la consola para más detalles."); form.querySelector('button[type="submit"]').disabled = false; } }); }
 function showCancelTaskModal(eventId, eventTitle) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); modalBody.innerHTML = `<h2>Cancelar Tarea: "${eventTitle}"</h2><form id="cancel-form"><div class="form-group"><label for="cancellationReason">Razón de la Cancelación</label><textarea id="cancellationReason" name="cancellationReason" rows="4" required></textarea></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="danger">Confirmar Cancelación</button></div></form>`; actionModal.classList.remove('hidden'); document.getElementById('cancel-form').addEventListener('submit', e => { e.preventDefault(); const reason = e.target.cancellationReason.value; db.collection('maintenance').doc(eventId).update({ status: 'cancelada', cancellationReason: reason }).then(() => actionModal.classList.add('hidden')); }); }
@@ -1017,7 +1033,7 @@ async function showTicketModal(ticketId) {
             e.preventDefault();
             const text = document.getElementById('progress-text').value;
             if (!text.trim()) return;
-            const newHistoryEntry = { text: text, timestamp: firebase.firestore.Timestamp.now() };
+            const newHistoryEntry = { text: text, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
             await db.collection('tickets').doc(ticket.id).update({
                 status: 'en-curso',
                 history: firebase.firestore.FieldValue.arrayUnion(newHistoryEntry)
@@ -1034,29 +1050,37 @@ async function showTicketModal(ticketId) {
             }).then(() => showTicketModal(ticket.id));
         });
     }
+  // --- PEGA ESTE BLOQUE CORREGIDO EN SU LUGAR ---
+if (ticket.status === 'cerrado') {
+    document.getElementById('reopen-ticket-btn').addEventListener('click', async () => {
+        if (confirm('¿Estás seguro de que quieres reabrir este ticket?')) {
+            // Creamos el objeto para el historial
+            const reopeningHistoryEntry = {
+                text: `<strong>Ticket reabierto</strong> por el usuario.`,
+                // CORRECCIÓN: Generamos la fecha desde el cliente.
+                // Esto crea un objeto de fecha válido que arrayUnion sí puede procesar.
+                timestamp: firebase.firestore.Timestamp.fromDate(new Date()) 
+            };
 
-    if (ticket.status === 'cerrado') {
-        document.getElementById('reopen-ticket-btn').addEventListener('click', async () => {
-            if (confirm('¿Estás seguro de que quieres reabrir este ticket?')) {
-                const reopeningHistoryEntry = {
-                    text: `<strong>Ticket reabierto</strong> por el usuario.`,
-                    timestamp: firebase.firestore.Timestamp.fromDate(new Date()) 
-                };
-                try {
-                    await db.collection('tickets').doc(ticket.id).update({
-                        status: 'abierto',
-                        closedAt: null,
-                        solution: null,
-                        history: firebase.firestore.FieldValue.arrayUnion(reopeningHistoryEntry)
-                    });
-                    showTicketModal(ticket.id);
-                } catch (error) {
-                    console.error("Error al reabrir el ticket:", error);
-                    alert("No se pudo reabrir el ticket. Revisa la consola para más detalles.");
-                }
+            try {
+                // Actualizamos el ticket en la base de datos
+                await db.collection('tickets').doc(ticket.id).update({
+                    status: 'abierto',
+                    closedAt: null,
+                    solution: null,
+                    history: firebase.firestore.FieldValue.arrayUnion(reopeningHistoryEntry)
+                });
+                
+                // Una vez actualizado, volvemos a cargar el modal para reflejar los cambios
+                showTicketModal(ticket.id);
+
+            } catch (error) {
+                console.error("Error al reabrir el ticket:", error);
+                alert("No se pudo reabrir el ticket. Revisa la consola para más detalles.");
             }
-        });
-    }
+        }
+    });
+}
 }
 
 // --- 7. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
@@ -1085,18 +1109,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const [path, queryString] = fullHash.split('?'); 
         const params = new URLSearchParams(queryString); 
 
+        let isHandled = false;
         if (path.startsWith('#inventory-')) { 
             const category = path.replace('#inventory-', ''); 
             params.set('category', category); 
             renderGenericListPage(appContent, Object.fromEntries(params.entries()), inventoryCategoryConfig, 'inventory', '💻'); 
+            isHandled = true; 
         } else if (path.startsWith('#credentials-')) { 
             const category = path.replace('#credentials-', ''); 
             params.set('category', category); 
             renderGenericListPage(appContent, Object.fromEntries(params.entries()), credentialsCategoryConfig, 'credentials', '🔑'); 
+            isHandled = true; 
         } else if (path.startsWith('#services-')) {
             const category = path.replace('#services-', '');
             params.set('category', category);
             renderGenericListPage(appContent, Object.fromEntries(params.entries()), servicesCategoryConfig, 'services', '📡');
+            isHandled = true;
         } else {
             const renderFunction = routes[path]; 
             if (renderFunction) { 
