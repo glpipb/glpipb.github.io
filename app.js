@@ -524,8 +524,11 @@ function renderGenericListPage(container, params, configObject, collectionName, 
             let cellsHTML = '';
             for (const key of Object.keys(config.fields)) {
                 let cellContent = key === 'id' ? item.id : (item[key] || 'N/A');
-                if (key === 'assignedTo' && cellContent !== 'N/A' && cellContent !== null && cellContent !== "") {
-                    cellContent = `<a href="#inventory-computers" style="color: blue; text-decoration: underline;">${cellContent}</a>`;
+                 // --- MODIFICACIÓN: Crear un link para el campo de licencia asignada en la lista de computadores ---
+                if (key === 'os' && cellContent !== 'N/A' && collectionName === 'inventory') {
+                    // Muestra el ID como un link que llevará a la lista de licencias de software.
+                    // Una mejora futura podría ser mostrar el nombre del software aquí directamente.
+                    cellContent = `<a href="#credentials-software" style="color: blue; text-decoration: underline;">${cellContent}</a>`;
                 }
                 if (key === 'status') {
                   const statusClass = (cellContent || '').toLowerCase().replace(/ /g, '-');
@@ -634,25 +637,27 @@ async function showItemFormModal(type, category = null, docId = null) {
         if (docSnap.exists) { existingData = docSnap.data(); } 
         else { alert("Error: No se encontró el elemento a editar."); return; }
     }
-  let softwareLicenseDetails = null; 
+  
+    // --- NUEVO: Variable para guardar detalles de la licencia de SO ---
+    let softwareLicenseDetails = null; 
 
-    // Si estamos editando un computador y tiene una licencia asignada (en el campo 'os')
+    // --- NUEVO: Si estamos editando un computador y tiene una licencia asignada, la buscamos ---
     if (isEditing && type === 'inventory' && category === 'computers' && existingData.os) {
         try {
-            // Buscamos el documento de la licencia usando el ID que está en el campo 'os'
             const licenseDocSnap = await db.collection('credentials').doc(existingData.os).get();
             if (licenseDocSnap.exists) {
-                // Si la encontramos, guardamos sus datos
                 softwareLicenseDetails = licenseDocSnap.data();
             }
         } catch (error) {
             console.error("Error al buscar detalles de la licencia de SO:", error);
         }
     }
+
     const configObject = (type === 'inventory') ? inventoryCategoryConfig : 
                          (type === 'credentials') ? credentialsCategoryConfig :
                          (type === 'services') ? servicesCategoryConfig : {};
     config = configObject[category];
+
     if (!config) {
         if (type === 'maintenance') {
              title = isEditing ? 'Editar Tarea' : 'Programar Tarea';
@@ -676,11 +681,10 @@ async function showItemFormModal(type, category = null, docId = null) {
             const value = existingData[key] || '';
             let inputHTML = '';
             if (field.readonly) {
-                let displayValue = value || 'N/A'; // Valor por defecto
+                let displayValue = value || 'N/A';
                 
-                // Si este es el campo 'os' y hemos cargado los detalles de la licencia...
+                // --- NUEVO: Mostrar nombre de licencia en lugar de ID en el formulario del computador ---
                 if (key === 'os' && softwareLicenseDetails) {
-                    // ...mostramos el nombre del software y su versión.
                     displayValue = `${softwareLicenseDetails.softwareName} (${softwareLicenseDetails.version || 'sin versión'})`;
                 }
 
@@ -688,46 +692,42 @@ async function showItemFormModal(type, category = null, docId = null) {
                 continue;
             }
             if (field.type === 'select') {
-                let optionsHTML = '<option value="">(No asignar)</option>';
+                let optionsHTML = '';
                 if (field.optionsSource === 'locations') {
                     const locSnap = await db.collection('locations').get();
                     optionsHTML += locSnap.docs.map(doc => `<option value="${doc.id}" ${doc.id === value ? 'selected' : ''}>${doc.id}: ${doc.data().name}</option>`).join('');
-                } else if (field.optionsSource === 'computers-inventory') {
-    // Obtenemos los computadores que no tienen SO asignado
-    const availableCompQuery = db.collection('inventory')
-                                 .where('category', '==', 'computers')
-                                 .where('os', 'in', ["", null]);
-                                 
-    const [availableCompSnap] = await Promise.all([availableCompQuery.get()]);
+                } 
+                // --- NUEVO: Lógica para cargar los computadores en el formulario de licencias ---
+                else if (field.optionsSource === 'computers-inventory') {
+                    const computersMap = new Map();
+                    // 1. Obtener computadores sin licencia de SO asignada
+                    const availableCompQuery = db.collection('inventory').where('category', '==', 'computers').where('os', 'in', ["", null]);
+                    const availableCompSnap = await availableCompQuery.get();
+                    availableCompSnap.forEach(doc => {
+                        computersMap.set(doc.id, `${doc.id}: ${doc.data().brand} ${doc.data().model}`);
+                    });
 
-    let computersMap = new Map();
-
-    // Añadimos los computadores disponibles al mapa
-    availableCompSnap.docs.forEach(doc => {
-        computersMap.set(doc.id, `${doc.id}: ${doc.data().brand} ${doc.data().model}`);
-    });
-
-    // Si estamos editando una licencia que ya está asignada a un computador (el 'value' es el ID del PC)
-    if (isEditing && value) {
-        // Buscamos ese computador específico para asegurarnos de que esté en la lista,
-        // incluso si ya tiene una licencia (esta misma).
-        const currentCompSnap = await db.collection('inventory').doc(value).get();
-        if (currentCompSnap.exists) {
-            computersMap.set(currentCompSnap.id, `${currentCompSnap.id}: ${currentCompSnap.data().brand} ${currentCompSnap.data().model} (Asignado actualmente)`);
-        }
-    }
-    
-    // Generamos las opciones del <select> a partir del mapa
-    for (const [id, name] of computersMap.entries()) {
-        const isSelected = (id === value) ? 'selected' : '';
-        optionsHTML += `<option value="${id}" ${isSelected}>${name}</option>`;
-    }
-
-    inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}"><option value="">(No asignar)</option>${optionsHTML}</select>`;
-} else {
+                    // 2. Si editamos, y la licencia ya está asignada, nos aseguramos que ese PC esté en la lista
+                    if (isEditing && value) {
+                        if (!computersMap.has(value)) {
+                            const currentCompSnap = await db.collection('inventory').doc(value).get();
+                            if (currentCompSnap.exists) {
+                                computersMap.set(currentCompSnap.id, `${currentCompSnap.id}: ${currentCompSnap.data().brand} ${currentCompSnap.data().model} (Asignado actualmente)`);
+                            }
+                        }
+                    }
+                    
+                    // 3. Generar las opciones del <select>
+                    for (const [id, name] of computersMap.entries()) {
+                        const isSelected = (id === value) ? 'selected' : '';
+                        optionsHTML += `<option value="${id}" ${isSelected}>${name}</option>`;
+                    }
+                    inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}"><option value="">(No asignar)</option>${optionsHTML}</select>`;
+                } else {
                     optionsHTML += field.options.map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
+                    inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}">${optionsHTML}</select>`;
                 }
-                inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}">${optionsHTML}</select>`;
+
             } else if (field.type === 'textarea') {
                 inputHTML = `<textarea id="form-${key}" name="${key}" rows="3">${value}</textarea>`;
             } else {
@@ -742,6 +742,7 @@ async function showItemFormModal(type, category = null, docId = null) {
     }
     modalBody.innerHTML = `<h2>${title}</h2><form id="${formId}">${formHTML}<div style="text-align:right; margin-top:20px;"><button type="submit" class="primary">${isEditing ? 'Guardar Cambios' : 'Guardar'}</button></div></form>`;
     formModal.classList.remove('hidden');
+
     if (isEditing && type === 'inventory') {
         setTimeout(() => {
             const historyContainer = document.getElementById('device-ticket-history');
@@ -775,27 +776,36 @@ async function showItemFormModal(type, category = null, docId = null) {
         formData.forEach((value, key) => { data[key] = value; });
         try {
             if (isEditing) {
-                if (category === 'software') {
+                // --- NUEVO: Lógica de transacción para editar asignación de licencias ---
+                if (type === 'credentials' && category === 'software') {
                     const newComputerId = data.assignedTo || null;
-                    const oldComputerId = form.assignedTo.dataset.oldValue || null;
+                    const oldComputerId = form.assignedTo ? form.assignedTo.dataset.oldValue : null;
+                    
                     if (newComputerId !== oldComputerId) {
                         await db.runTransaction(async (transaction) => {
+                            // 1. Actualizar la licencia
                             const licenseRef = db.collection('credentials').doc(docId);
-                            transaction.update(licenseRef, { assignedTo: newComputerId });
+                            transaction.update(licenseRef, data);
+
+                            // 2. Liberar el computador antiguo, si existía
                             if (oldComputerId) {
                                 const oldCompRef = db.collection('inventory').doc(oldComputerId);
                                 transaction.update(oldCompRef, { os: null });
                             }
+                            // 3. Asignar al nuevo computador, si se seleccionó uno
                             if (newComputerId) {
                                 const newCompRef = db.collection('inventory').doc(newComputerId);
                                 transaction.update(newCompRef, { os: docId });
                             }
                         });
+                    } else {
+                        // Si no cambió la asignación, solo actualizar los datos de la licencia
+                        await db.collection(collectionName).doc(docId).update(data);
                     }
                 } else {
                     await db.collection(collectionName).doc(docId).update(data);
                 }
-            } else {
+            } else { // Creando un nuevo item
                 if (type === 'inventory' || type === 'credentials' || type === 'services') {
                     data.category = category;
                     const { prefix, counter } = config;
@@ -812,7 +822,9 @@ async function showItemFormModal(type, category = null, docId = null) {
                     });
                     data.numericId = newNumber;
                     await db.collection(collectionName).doc(newId).set(data);
-                    if (category === 'software' && data.assignedTo) {
+                    
+                    // --- NUEVO: Si se crea una licencia y se asigna a un PC, actualizar el PC ---
+                    if (type === 'credentials' && category === 'software' && data.assignedTo) {
                         const compRef = db.collection('inventory').doc(data.assignedTo);
                         await compRef.update({ os: newId });
                     }
