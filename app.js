@@ -599,6 +599,9 @@ function renderConfiguracion(container) {
     setupConfigSection('location', 'locations', 'LOC-', 'locationCounter');
 }
 
+// =================================================================================
+// === FUNCIÓN CORREGIDA Y MEJORADA ===============================================
+// =================================================================================
 async function showItemFormModal(type, category = null, docId = null) {
     const isEditing = docId !== null;
     const formModal = document.getElementById('form-modal');
@@ -657,19 +660,27 @@ async function showItemFormModal(type, category = null, docId = null) {
             const value = existingData[key] || '';
             let inputHTML = '';
 
+            // --- INICIO DE LA CORRECCIÓN PRINCIPAL ---
             if (field.readonly) {
-                let displayValue = value || 'N/A';
+                let displayValue = 'N/A';
                 if (key === 'os' && softwareLicenseDetails) {
                     displayValue = `${softwareLicenseDetails.softwareName} (${softwareLicenseDetails.version || 'sin versión'})`;
+                } else if (value) {
+                    // Si hay un valor pero no encontramos detalles (ej. ID roto), mostramos el ID para depuración.
+                    displayValue = value;
                 }
-                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label><input type="text" id="form-${key}" name="${key}" value="${displayValue}" readonly style="background:#eee;"></div>`;
+                // El input es de solo lectura y NO TIENE un atributo 'name'. Esto evita que su valor
+                // se envíe con el formulario y sobrescriba el ID correcto en la base de datos.
+                fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label><input type="text" id="form-${key}" value="${displayValue}" readonly style="background:#eee;"></div>`;
                 continue;
             }
+            // --- FIN DE LA CORRECCIÓN PRINCIPAL ---
 
             if (field.type === 'select') {
+                let optionsHTML = '';
                 if (field.optionsSource === 'locations') {
                     const locSnap = await db.collection('locations').get();
-                    let optionsHTML = locSnap.docs.map(doc => `<option value="${doc.id}" ${doc.id === value ? 'selected' : ''}>${doc.id}: ${doc.data().name}</option>`).join('');
+                    optionsHTML = locSnap.docs.map(doc => `<option value="${doc.id}" ${doc.id === value ? 'selected' : ''}>${doc.id}: ${doc.data().name}</option>`).join('');
                     inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}"><option value="">(No asignar)</option>${optionsHTML}</select>`;
                 } else if (field.optionsSource === 'computers-inventory') {
                     const availableCompQuery = db.collection('inventory').where('category', '==', 'computers').where('os', 'in', ["", null]);
@@ -684,14 +695,13 @@ async function showItemFormModal(type, category = null, docId = null) {
                             computersMap.set(currentCompSnap.id, `${currentCompSnap.id}: ${currentCompSnap.data().brand} ${currentCompSnap.data().model} (Asignado actualmente)`);
                         }
                     }
-                    let optionsHTML = '';
                     for (const [id, name] of computersMap.entries()) {
                         const isSelected = (id === value) ? 'selected' : '';
                         optionsHTML += `<option value="${id}" ${isSelected}>${name}</option>`;
                     }
                     inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}"><option value="">(No asignar)</option>${optionsHTML}</select>`;
                 } else {
-                    let optionsHTML = field.options.map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
+                    optionsHTML = field.options.map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
                     inputHTML = `<select id="form-${key}" name="${key}" data-old-value="${value || ''}">${optionsHTML}</select>`;
                 }
             } else if (field.type === 'textarea') {
@@ -747,12 +757,16 @@ async function showItemFormModal(type, category = null, docId = null) {
                 if (collectionName === 'credentials' && category === 'software') {
                     const newComputerId = data.assignedTo || null;
                     const oldComputerId = form.querySelector('[name="assignedTo"]').dataset.oldValue || null;
-                    
+                    const licenseUpdateData = {
+                        softwareName: data.softwareName,
+                        licenseKey: data.licenseKey,
+                        version: data.version,
+                        assignedTo: newComputerId
+                    };
                     if (newComputerId !== oldComputerId) {
                         await db.runTransaction(async (transaction) => {
                             const licenseRef = db.collection('credentials').doc(docId);
-                            transaction.update(licenseRef, { assignedTo: newComputerId });
-
+                            transaction.update(licenseRef, licenseUpdateData);
                             if (oldComputerId) {
                                 const oldCompRef = db.collection('inventory').doc(oldComputerId);
                                 transaction.update(oldCompRef, { os: null });
@@ -762,10 +776,9 @@ async function showItemFormModal(type, category = null, docId = null) {
                                 transaction.update(newCompRef, { os: docId });
                             }
                         });
+                    } else {
+                        await db.collection('credentials').doc(docId).update(licenseUpdateData);
                     }
-                    // Update other license fields if necessary
-                    await db.collection(collectionName).doc(docId).update(data);
-
                 } else {
                     await db.collection(collectionName).doc(docId).update(data);
                 }
@@ -786,7 +799,6 @@ async function showItemFormModal(type, category = null, docId = null) {
                     });
                     data.numericId = newNumber;
                     await db.collection(collectionName).doc(newId).set(data);
-                    
                     if (category === 'software' && data.assignedTo) {
                         const compRef = db.collection('inventory').doc(data.assignedTo);
                         await compRef.update({ os: newId });
@@ -803,6 +815,10 @@ async function showItemFormModal(type, category = null, docId = null) {
         }
     });
 }
+// =================================================================================
+// === FIN DE LA FUNCIÓN CORREGIDA ================================================
+// =================================================================================
+
 function showEventActionChoiceModal(eventId, eventTitle, eventProps) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); let completedInfo = ''; if (eventProps.status === 'completada') { completedInfo = `<hr><h4>Información de Finalización</h4><p><strong>Fecha:</strong> ${new Date(eventProps.completedDate + 'T00:00:00').toLocaleDateString('es-ES')}</p><p><strong>A tiempo:</strong> ${eventProps.onTimeStatus}</p><p><strong>Observaciones:</strong> ${eventProps.completionNotes || 'N/A'}</p>`; } const actionButtons = eventProps.status === 'planificada' ? `<div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; margin-top: 20px;"><button class="primary" id="edit-task-btn" style="background-color: #ffc107; color: #212529;">✏️ Editar Tarea</button><button class="primary" id="finalize-task-btn">✅ Finalizar Tarea</button><button class="danger" id="delete-task-btn">🗑️ Eliminar</button></div>` : ''; modalBody.innerHTML = `<h2>${eventTitle}</h2><p><strong>Estado:</strong> ${eventProps.status}</p>${completedInfo}${actionButtons}`; actionModal.classList.remove('hidden'); if (eventProps.status === 'planificada') { document.getElementById('edit-task-btn').onclick = () => { actionModal.classList.add('hidden'); showItemFormModal('maintenance', null, eventId); }; document.getElementById('finalize-task-btn').onclick = () => { actionModal.classList.add('hidden'); showFinalizeTaskModal(eventId, eventTitle); }; document.getElementById('delete-task-btn').onclick = () => { if (confirm(`¿Estás seguro de que quieres ELIMINAR permanentemente la tarea "${eventTitle}"? Esta acción no se puede deshacer.`)) { db.collection('maintenance').doc(eventId).delete().then(() => { actionModal.classList.add('hidden'); }).catch(error => { console.error("Error al eliminar la tarea: ", error); alert("No se pudo eliminar la tarea."); }); } }; } }
 function showFinalizeTaskModal(eventId, eventTitle) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); const today = new Date().toISOString().split('T')[0]; modalBody.innerHTML = `<h2>Finalizar Tarea: "${eventTitle}"</h2><form id="finalize-form"><div class="form-group"><label for="completedDate">Fecha de Realización</label><input type="date" id="completedDate" name="completedDate" value="${today}" required></div><div class="form-group"><label for="onTimeStatus">¿Se realizó a tiempo?</label><select id="onTimeStatus" name="onTimeStatus"><option value="Sí">Sí</option><option value="No">No</option></select></div><div class="form-group"><label>Observaciones (opcional)</label><textarea name="completionNotes" rows="3"></textarea></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="primary">Guardar Finalización</button></div></form>`; actionModal.classList.remove('hidden'); document.getElementById('finalize-form').addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target; form.querySelector('button[type="submit"]').disabled = true; try { const updateData = { status: 'completada', completedDate: form.completedDate.value, onTimeStatus: form.onTimeStatus.value, completionNotes: form.completionNotes.value }; await db.collection('maintenance').doc(eventId).set(updateData, { merge: true }); actionModal.classList.add('hidden'); } catch (error) { console.error("Error al finalizar la tarea: ", error); alert("Hubo un error al finalizar la tarea. Revisa la consola para más detalles."); form.querySelector('button[type="submit"]').disabled = false; } }); }
 function showCancelTaskModal(eventId, eventTitle) { const actionModal = document.getElementById('action-modal'); const modalBody = actionModal.querySelector('#action-modal-body'); modalBody.innerHTML = `<h2>Cancelar Tarea: "${eventTitle}"</h2><form id="cancel-form"><div class="form-group"><label for="cancellationReason">Razón de la Cancelación</label><textarea id="cancellationReason" name="cancellationReason" rows="4" required></textarea></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="danger">Confirmar Cancelación</button></div></form>`; actionModal.classList.remove('hidden'); document.getElementById('cancel-form').addEventListener('submit', e => { e.preventDefault(); const reason = e.target.cancellationReason.value; db.collection('maintenance').doc(eventId).update({ status: 'cancelada', cancellationReason: reason }).then(() => actionModal.classList.add('hidden')); }); }
