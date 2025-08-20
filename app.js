@@ -113,7 +113,7 @@ async function showItemFormModal(type, category = null, docId = null) {
   
     let softwareLicenseDetails = null; 
 
-    if (isEditing && type === 'inventory' && category === 'computers' && existingData.os) {
+    if (isEditing && type === 'inventory' && category === 'computers' && existingData.os && existingData.os !== 'N/A') {
         try {
             const licenseDocSnap = await db.collection('credentials').doc(existingData.os).get();
             if (licenseDocSnap.exists) {
