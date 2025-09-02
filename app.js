@@ -89,7 +89,64 @@ async function renderNewTITicketForm(container) { container.innerHTML = newTITic
 
 async function renderNewPlatformTicketForm(container, platform) { container.innerHTML = newPlatformTicketFormHTML; document.getElementById('page-title').innerText = `➕ Crear Nuevo Ticket de ${platform}`; const solicitanteSelect = document.getElementById('solicitante'); const medioSolicitudSelect = document.getElementById('medio-solicitud'); try { const reqQuery = await db.collection('requesters').where('name', '==', 'Jahan Michelle Chara').limit(1).get(); if (!reqQuery.empty) { const jahanDoc = reqQuery.docs[0]; solicitanteSelect.innerHTML = `<option value="${jahanDoc.id}">${jahanDoc.data().name}</option>`; solicitanteSelect.disabled = true; } else { solicitanteSelect.innerHTML = `<option value="">Usuario 'Jahan Michelle Chara' no encontrado</option>`; solicitanteSelect.disabled = true; } } catch (error) { console.error("Error al buscar solicitante:", error); solicitanteSelect.innerHTML = `<option value="">Error al cargar solicitante</option>`; solicitanteSelect.disabled = true; } let medioOptions = ''; if (platform === 'Velocity') { medioOptions = `<option value="WhatsApp">WhatsApp</option><option value="Centro de ayuda JIRA">Centro de ayuda JIRA</option>`; } else if (platform === 'Siigo') { medioOptions = `<option value="WhatsApp">WhatsApp</option><option value="Línea de atención Telefónica">Línea de atención Telefónica</option>`; } medioSolicitudSelect.innerHTML = medioOptions; const now = new Date(); document.getElementById('fecha-reporte').value = now.toISOString().split('T')[0]; document.getElementById('hora-reporte').value = now.toTimeString().slice(0, 5); const form = document.getElementById('new-platform-ticket-form'); form.addEventListener('submit', async (e) => { e.preventDefault(); const counterRef = db.collection('counters').doc('ticketCounter'); try { const newTicketId = await db.runTransaction(async (transaction) => { const counterDoc = await transaction.get(counterRef); if (!counterDoc.exists) throw "El contador de tickets no existe."; const newNumber = counterDoc.data().currentNumber + 1; transaction.update(counterRef, { currentNumber: newNumber }); return `TICKET-${newNumber}`; }); const fecha = form['fecha-reporte'].value; const hora = form['hora-reporte'].value; const createdAtTimestamp = firebase.firestore.Timestamp.fromDate(new Date(`${fecha}T${hora}`)); const newTicketData = { ticketType: platform.toLowerCase(), fechaDeReporte: fecha, horaDeReporte: hora, medioDeSolicitud: form['medio-solicitud'].value, requesterId: form['solicitante'].value, asesorDeSoporte: form['asesor-soporte'].value, descripcionDeLaNovedad: form['descripcion-novedad'].value, ticketDelCaso: form['ticket-caso'].value, status: 'abierto', solution: null, createdAt: createdAtTimestamp, closedAt: null, history: [] }; await db.collection('tickets').doc(newTicketId).set(newTicketData); alert(`¡Ticket ${newTicketId} creado con éxito!`); window.location.hash = '#tickets'; } catch (error) { console.error("Error al crear ticket de plataforma: ", error); alert("No se pudo crear el ticket. Revisa la consola."); } }); }
 
-async function renderTicketList(container, params = {}) { container.innerHTML = ticketListHTML; setupTableSearch('table-search-input', 'data-table'); const [reqSnap] = await Promise.all([ db.collection('requesters').get() ]); const requestersMap = {}; reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name); const tableBody = document.querySelector('#data-table tbody'); db.collection('tickets').orderBy('createdAt', 'desc').onSnapshot(snapshot => { tableBody.innerHTML = ''; if (snapshot.empty) { tableBody.innerHTML = `<tr><td colspan="8">No hay tickets.</td></tr>`; return; } snapshot.forEach(doc => { const ticket = { id: doc.id, ...doc.data() }; const tr = document.createElement('tr'); const createdAt = ticket.createdAt ? ticket.createdAt.toDate().toLocaleDateString('es-ES') : 'N/A'; const closedAt = ticket.closedAt ? ticket.closedAt.toDate().toLocaleDateString('es-ES') : 'N/A'; const displayTitle = ticket.ticketType === 'ti' ? ticket.title : ticket.descripcionDeLaNovedad; const ticketTypeDisplay = ticket.ticketType ? capitalizar(ticket.ticketType) : 'TI'; tr.innerHTML = `<td>${ticket.id}</td><td><span class="status ${ticketTypeDisplay === 'TI' ? 'status-abierto' : 'status-en-curso'}">${ticketTypeDisplay}</span></td><td>${displayTitle.substring(0, 50)}${displayTitle.length > 50 ? '...' : ''}</td><td>${requestersMap[ticket.requesterId] || 'N/A'}</td><td>${createdAt}</td><td>${closedAt}</td><td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`; tableBody.appendChild(tr); }); }, error => handleFirestoreError(error, tableBody)); }
+async function renderTicketList(container, params = {}) {
+    container.innerHTML = ticketListHTML;
+    setupTableSearch('table-search-input', 'data-table');
+
+    const [reqSnap] = await Promise.all([
+        db.collection('requesters').get()
+    ]);
+    const requestersMap = {};
+    reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name);
+
+    const tableBody = document.querySelector('#data-table tbody');
+    const ticketsListTitle = document.getElementById('tickets-list-title');
+
+    // Dynamically set the title based on the filter
+    let title = 'Todos los Tickets';
+    if (params.status === 'abierto') {
+        title = 'Tickets Abiertos';
+    } else if (params.status === 'cerrado') {
+        title = 'Tickets Cerrados';
+    }
+    ticketsListTitle.innerText = title;
+
+    let query = db.collection('tickets').orderBy('createdAt', 'desc');
+
+    // Apply status filter if present in params
+    if (params.status) {
+        query = query.where('status', '==', params.status);
+    }
+
+    query.onSnapshot(snapshot => {
+        tableBody.innerHTML = '';
+        if (snapshot.empty) {
+            tableBody.innerHTML = `<tr><td colspan="8">No hay tickets ${params.status ? title.toLowerCase() : ''}.</td></tr>`;
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const ticket = { id: doc.id, ...doc.data() };
+            const tr = document.createElement('tr');
+            const createdAt = ticket.createdAt ? ticket.createdAt.toDate().toLocaleDateString('es-ES') : 'N/A';
+            const closedAt = ticket.closedAt ? ticket.closedAt.toDate().toLocaleDateString('es-ES') : 'N/A';
+            const displayTitle = ticket.ticketType === 'ti' ? ticket.title : ticket.descripcionDeLaNovedad;
+            const ticketTypeDisplay = ticket.ticketType ? capitalizar(ticket.ticketType) : 'TI';
+
+            tr.innerHTML = `
+                <td>${ticket.id}</td>
+                <td><span class="status ${ticketTypeDisplay === 'TI' ? 'status-abierto' : 'status-en-curso'}">${ticketTypeDisplay}</span></td>
+                <td>${displayTitle ? (displayTitle.substring(0, 50) + (displayTitle.length > 50 ? '...' : '')) : 'Sin título'}</td>
+                <td>${requestersMap[ticket.requesterId] || 'N/A'}</td>
+                <td>${createdAt}</td>
+                <td>${closedAt}</td>
+                <td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td>
+                <td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }, error => handleFirestoreError(error, tableBody));
+}
 async function renderHistoryPage(container) {
     container.innerHTML = historyPageHTML;
     const form = document.getElementById('history-search-form');
