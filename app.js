@@ -23,7 +23,82 @@ const newPlatformTicketFormHTML = `<h1 id="page-title"></h1><div class="card"><f
 
 const ticketListHTML = `<div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="tickets-list-title">Todos los Tickets</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Tipo</th><th>Título/Novedad</th><th>Solicitante</th><th>Fecha Creación</th><th>Fecha Cierre</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
 
-const historyPageHTML = `<h1>🔍 Historial y Búsqueda Avanzada</h1><div class="card"><form id="history-search-form"><div class="search-filters-grid"><div class="form-group"><label for="search-device">Dispositivo</label><input type="text" id="search-device" list="device-list-search"></div><datalist id="device-list-search"></datalist><div class="form-group"><label for="search-requester">Solicitante</label><select id="search-requester"><option value="">Todos</option></select></div><div class="form-group"><label for="search-location">Ubicación</label><select id="search-location"><option value="">Todas</option></select></div><div class="form-group"><label for="search-status">Estado</label><select id="search-status"><option value="">Todos</option><option value="abierto">Abierto</option><option value="en-curso">En curso</option><option value="cerrado">Cerrado</option></select></div><div class="form-group"><label for="search-priority">Prioridad</label><select id="search-priority"><option value="">Todas</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><button type="submit" class="primary" style="width:100%">Buscar</button></div></div></form></div><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="history-results-title">Resultados</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Título</th><th>Solicitante</th><th>Fecha Creación</th><th>Fecha Cierre</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
+const historyPageHTML = `
+    <h1>🔍 Historial y Búsqueda Avanzada</h1>
+    <div class="card">
+        <form id="history-search-form">
+            <div class="search-filters-grid">
+                <div class="form-group">
+                    <label for="search-device">Dispositivo</label>
+                    <input type="text" id="search-device" list="device-list-search">
+                </div>
+                <datalist id="device-list-search"></datalist>
+                <div class="form-group">
+                    <label for="search-requester">Solicitante</label>
+                    <select id="search-requester"><option value="">Todos</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="search-location">Ubicación</label>
+                    <select id="search-location"><option value="">Todas</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="search-status">Estado</label>
+                    <select id="search-status">
+                        <option value="">Todos</option>
+                        <option value="abierto">Abierto</option>
+                        <option value="en-curso">En curso</option>
+                        <option value="cerrado">Cerrado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="search-priority">Prioridad</label>
+                    <select id="search-priority">
+                        <option value="">Todas</option>
+                        <option value="baja">Baja</option>
+                        <option value="media">Media</option>
+                        <option value="alta">Alta</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="search-ticket-type">Tipo de Ticket</label>
+                    <select id="search-ticket-type">
+                        <option value="">Todos</option>
+                        <option value="ti">TI</option>
+                        <option value="velocity">Velocity</option>
+                        <option value="siigo">Siigo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="primary" style="width:100%">Buscar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="add-new-button-container">
+        <button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button>
+        <button class="export-btn pdf" data-format="pdf">Exportar a PDF</button>
+    </div>
+    <div class="card">
+        <h2 id="history-results-title">Resultados</h2>
+        <div class="table-wrapper">
+            <table id="data-table">
+                <thead>
+                    <tr>
+                        <th># Ticket</th>
+                        <th>Título</th>
+                        <th>Tipo</th>
+                        <th>Solicitante</th>
+                        <th>Fecha Creación</th>
+                        <th>Fecha Cierre</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+`;
 const statisticsHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><h1>📈 Centro de Análisis</h1><button class="primary" id="export-stats-pdf">Exportar a PDF</button></div><div id="stats-content"><div class="card"><h2>Filtro de Periodo</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div></div><h2>Análisis de Tickets</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Tickets por Prioridad</h3><div class="chart-container"><canvas id="ticketsByPriorityChart"></canvas></div></div><div class="card"><h3>Tickets por Categoría de Dispositivo</h3><div class="chart-container"><canvas id="ticketsByDeviceCategoryChart"></canvas></div></div><div class="card"><h3>Top 5 Dispositivos Problemáticos</h3><ul id="top-devices-list" class="kpi-list"></ul></div><div class="card"><h3>Top 5 Solicitantes</h3><ul id="top-requesters-list" class="kpi-list"></ul></div></div><div class="card"><h3>Flujo de Tickets (Creados vs. Cerrados)</h3><div class="chart-container"><canvas id="ticket-flow-chart"></canvas></div></div><h2 style="margin-top: 40px;">Resumen de Inventario</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Dispositivos por Categoría</h3><div class="chart-container"><canvas id="inventoryByCategoryChart"></canvas></div></div><div class="card"><h3>Computadores por SO</h3><div class="chart-container"><canvas id="computersByOsChart"></canvas></div></div></div></div>`;
 const genericListPageHTML = `<h1 id="page-title"></h1><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button><button id="add-item-btn" class="btn-blue open-form-modal-btn">Añadir Nuevo</button></div><div class="card"><div class="table-search-container"><input type="text" id="table-search-input" placeholder="🔍 Buscar en la tabla..."></div><h2 id="item-list-title"></h2><div class="table-wrapper"><table id="data-table"><thead id="item-table-head"></thead><tbody id="item-table-body"></tbody></table></div></div>`;
 const maintenanceCalendarHTML = `<h1>📅 Planificación</h1><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button><button class="primary open-form-modal-btn" data-type="maintenance">Programar Tarea</button></div><div class="card"><div id="maintenance-calendar"></div><table id="data-table" style="display:none;"></table></div>`;
@@ -188,15 +263,16 @@ async function renderHistoryPage(container) {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        resultsTableBody.innerHTML = `<tr><td colspan="7">Buscando...</td></tr>`;
+        resultsTableBody.innerHTML = `<tr><td colspan="8">Buscando...</td></tr>`; // Modificado colspan a 8
 
         let query = db.collection('tickets');
         const filters = {
             deviceId: form['search-device'].value,
-            requesterId: form['search-requester'].value, // Change to requesterId for consistent filtering
-            locationId: form['search-location'].value,   // Change to locationId for consistent filtering
+            requesterId: form['search-requester'].value,
+            locationId: form['search-location'].value,
             status: form['search-status'].value,
             priority: form['search-priority'].value,
+            ticketType: form['search-ticket-type'].value, // Nuevo filtro para el tipo de ticket
         };
 
         for (const [key, value] of Object.entries(filters)) {
@@ -216,18 +292,21 @@ async function renderHistoryPage(container) {
 
             resultsTableBody.innerHTML = '';
             if (tickets.length === 0) {
-                resultsTableBody.innerHTML = `<tr><td colspan="7">No se encontraron tickets con esos criterios.</td></tr>`;
+                resultsTableBody.innerHTML = `<tr><td colspan="8">No se encontraron tickets con esos criterios.</td></tr>`; // Modificado colspan a 8
                 return;
             }
 
             tickets.forEach(ticket => {
                 const tr = document.createElement('tr');
                 const closedAtText = ticket.closedAt && ticket.closedAt.toDate ? ticket.closedAt.toDate().toLocaleString('es-ES') : 'N/A';
-                const requesterDisplayName = requestersMap[ticket.requesterId] || 'N/A'; // Use the map here
+                const requesterDisplayName = requestersMap[ticket.requesterId] || 'N/A';
+                const displayTitle = ticket.ticketType === 'ti' ? ticket.title : ticket.descripcionDeLaNovedad;
+                const ticketTypeDisplay = ticket.ticketType ? capitalizar(ticket.ticketType) : 'TI';
                 
                 tr.innerHTML = `
                     <td>${ticket.id}</td>
-                    <td>${ticket.title || ticket.descripcionDeLaNovedad || 'Ticket de Plataforma'}</td>
+                    <td>${displayTitle ? (displayTitle.substring(0, 50) + (displayTitle.length > 50 ? '...' : '')) : 'Sin título'}</td>
+                    <td><span class="status ${ticketTypeDisplay === 'TI' ? 'status-abierto' : 'status-en-curso'}">${ticketTypeDisplay}</span></td>
                     <td>${requesterDisplayName}</td>
                     <td>${ticket.createdAt.toDate().toLocaleString('es-ES')}</td>
                     <td>${closedAtText}</td>
