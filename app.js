@@ -186,7 +186,7 @@ async function renderTicketList(container, params = {}) {
     }
     ticketsListTitle.innerText = title;
 
-    let query = db.collection('tickets').orderBy('createdAt', 'desc');
+    let query = db.collection('tickets').orderBy('createdAt', 'asc');
 
     // Apply status filter if present in params
     if (params.status) {
