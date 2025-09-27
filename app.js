@@ -87,6 +87,7 @@ const historyPageHTML = `
                         <th># Ticket</th>
                         <th>Título</th>
                         <th>Tipo</th>
+                        <th>Ticket del Caso</th>
                         <th>Solicitante</th>
                         <th>Fecha Creación</th>
                         <th>Fecha Cierre</th>
@@ -298,7 +299,7 @@ async function renderHistoryPage(container) {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        resultsTableBody.innerHTML = `<tr><td colspan="8">Buscando...</td></tr>`; // Modificado colspan a 8
+        resultsTableBody.innerHTML = `<tr><td colspan="9">Buscando...</td></tr>`; // Modificado colspan a 8
 
         let query = db.collection('tickets');
         const filters = {
@@ -327,7 +328,7 @@ async function renderHistoryPage(container) {
 
             resultsTableBody.innerHTML = '';
             if (tickets.length === 0) {
-                resultsTableBody.innerHTML = `<tr><td colspan="8">No se encontraron tickets con esos criterios.</td></tr>`; // Modificado colspan a 8
+               resultsTableBody.innerHTML = `<tr><td colspan="9">No se encontraron tickets con esos criterios.</td></tr>`; // Modificado colspan a 8
                 return;
             }
 
@@ -339,15 +340,16 @@ async function renderHistoryPage(container) {
                 const ticketTypeDisplay = ticket.ticketType ? capitalizar(ticket.ticketType) : 'TI';
                 
                 tr.innerHTML = `
-                    <td>${ticket.id}</td>
-                    <td>${displayTitle ? (displayTitle.substring(0, 50) + (displayTitle.length > 50 ? '...' : '')) : 'Sin título'}</td>
-                    <td><span class="status ${ticketTypeDisplay === 'TI' ? 'status-abierto' : 'status-en-curso'}">${ticketTypeDisplay}</span></td>
-                    <td>${requesterDisplayName}</td>
-                    <td>${ticket.createdAt.toDate().toLocaleString('es-ES')}</td>
-                    <td>${closedAtText}</td>
-                    <td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td>
-                    <td><a href="#" class="view-ticket-btn" data-id="${ticket.id}">Ver Detalles</a></td>
-                `;
+    <td>${ticket.id}</td>
+    <td>${displayTitle ? (displayTitle.substring(0, 50) + (displayTitle.length > 50 ? '...' : '')) : 'Sin título'}</td>
+    <td><span class="status ${ticketTypeDisplay === 'TI' ? 'status-abierto' : 'status-en-curso'}">${ticketTypeDisplay}</span></td>
+    <td>${ticket.ticketDelCaso || 'N/A'}</td>
+    <td>${requesterDisplayName}</td>
+    <td>${ticket.createdAt.toDate().toLocaleString('es-ES')}</td>
+    <td>${closedAtText}</td>
+    <td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td>
+    <td><a href="#" class="view-ticket-btn" data-id="${ticket.id}">Ver Detalles</a></td>
+`;
                 resultsTableBody.appendChild(tr);
             });
         } catch (error) {
