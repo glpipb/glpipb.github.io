@@ -54,7 +54,7 @@ const newTITicketFormHTML = `
                 </div>
             </div>
             <div class="form-group">
-                <label>Dispositivos Asociados (opcional)</label>
+                <label>Dispositivos Asociados</label>
                 <div id="associated-devices-container">
                     <div class="device-input-group">
                         <input type="text" class="device-search" list="device-list" placeholder="Busca por código, usuario, marca...">
