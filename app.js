@@ -21,20 +21,7 @@ const newTITicketFormHTML = `<h1>➕ Crear Nuevo Ticket de TI</h1><div class="ca
 const newPlatformTicketFormHTML = `<h1 id="page-title"></h1><div class="card"><form id="new-platform-ticket-form"><div class="inventory-form-grid"><div class="form-group"><label for="fecha-reporte">Fecha de Reporte</label><input type="date" id="fecha-reporte" required></div><div class="form-group"><label for="hora-reporte">Hora de Reporte</label><input type="time" id="hora-reporte" required></div><div class="form-group"><label for="medio-solicitud">Medio de Solicitud</label><select id="medio-solicitud" required></select></div><div class="form-group"><label for="solicitante">Solicitante</label><select id="solicitante" required></select></div><div class="form-group"><label for="asesor-soporte">Asesor de Soporte</label><input type="text" id="asesor-soporte" required></div><div class="form-group"><label for="ticket-caso">Ticket del Caso</label><input type="text" id="ticket-caso"></div></div><div class="form-group"><label for="descripcion-novedad">Descripción de la Novedad</label><textarea id="descripcion-novedad" rows="4" required></textarea></div><button type="submit" class="primary">Crear Ticket</button></form></div>`;
 const ticketListHTML = `<div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="tickets-list-title">Todos los Tickets</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Tipo</th><th>Título/Novedad</th><th>Solicitante</th><th>Fecha Creación</th><th>Fecha Cierre</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
 const historyPageHTML = `<h1>🔍 Historial y Búsqueda Avanzada</h1><div class="card"><form id="history-search-form"><div class="search-filters-grid"><div class="form-group"><label for="search-device">Dispositivo (por código)</label><input type="text" id="search-device" list="device-list-search" placeholder="Buscar por código..."></div><datalist id="device-list-search"></datalist><div class="form-group"><label for="search-requester">Solicitante</label><select id="search-requester"><option value="">Todos</option></select></div><div class="form-group"><label for="search-location">Ubicación</label><select id="search-location"><option value="">Todas</option></select></div><div class="form-group"><label for="search-status">Estado</label><select id="search-status"><option value="">Todos</option><option value="abierto">Abierto</option><option value="en-curso">En curso</option><option value="cerrado">Cerrado</option></select></div><div class="form-group"><label for="search-priority">Prioridad</label><select id="search-priority"><option value="">Todas</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></div><div class="form-group"><label for="search-ticket-type">Tipo de Ticket</label><select id="search-ticket-type"><option value="">Todos</option><option value="ti">TI</option><option value="velocity">Velocity</option><option value="siigo">Siigo</option></select></div><div class="form-group"><button type="submit" class="primary" style="width:100%">Buscar</button></div></div></form></div><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button></div><div class="card"><h2 id="history-results-title">Resultados</h2><div class="table-wrapper"><table id="data-table"><thead><tr><th># Ticket</th><th>Título</th><th>Tipo</th><th>Ticket del Caso</th><th>Solicitante</th><th>Fecha Creación</th><th>Fecha Cierre</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div>`;
-
-// --- MODIFICADO --- Se añade el botón "Crear Manual"
-const knowledgeBaseHTML = `
-    <h1>💡 Base de Conocimiento</h1>
-    <div class="add-new-button-container">
-        <input type="text" id="kb-search-input" placeholder="🔍 Buscar en artículos y manuales..." style="flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
-        <button id="add-manual-btn" class="primary">Crear Manual</button>
-        <button id="add-kb-article-btn" class="btn-blue">Crear Artículo</button>
-    </div>
-    <div id="kb-grid-container" class="kb-grid">
-        </div>
-`;
-
-
+const knowledgeBaseHTML = `<h1>💡 Base de Conocimiento</h1><div class="add-new-button-container"><input type="text" id="kb-search-input" placeholder="🔍 Buscar en artículos y manuales..." style="flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);"><button id="add-manual-btn" class="primary">Crear Manual</button><button id="add-kb-article-btn" class="btn-blue">Crear Artículo</button></div><div id="kb-grid-container" class="kb-grid"></div>`;
 const statisticsHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><h1>📈 Centro de Análisis</h1><button class="primary" id="export-stats-pdf">Exportar a PDF</button></div><div id="stats-content"><div class="card"><h2>Filtro de Periodo</h2><div class="stats-filters"><div class="form-group"><label for="start-date">Fecha de Inicio</label><input type="date" id="start-date"></div><div class="form-group"><label for="end-date">Fecha de Fin</label><input type="date" id="end-date"></div><button id="generate-report-btn" class="primary">Generar Reporte</button></div></div><h2>Análisis de Tickets</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Tickets por Prioridad</h3><div class="chart-container"><canvas id="ticketsByPriorityChart"></canvas></div></div><div class="card"><h3>Tickets por Categoría de Dispositivo</h3><div class="chart-container"><canvas id="ticketsByDeviceCategoryChart"></canvas></div></div><div class="card"><h3>Top 5 Dispositivos Problemáticos</h3><ul id="top-devices-list" class="kpi-list"></ul></div><div class="card"><h3>Top 5 Solicitantes</h3><ul id="top-requesters-list" class="kpi-list"></ul></div></div><div class="card"><h3>Flujo de Tickets (Creados vs. Cerrados)</h3><div class="chart-container"><canvas id="ticket-flow-chart"></canvas></div></div><h2 style="margin-top: 40px;">Resumen de Inventario</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;"><div class="card"><h3>Dispositivos por Categoría</h3><div class="chart-container"><canvas id="inventoryByCategoryChart"></canvas></div></div><div class="card"><h3>Computadores por SO</h3><div class="chart-container"><canvas id="computersByOsChart"></canvas></div></div></div></div>`;
 const genericListPageHTML = `<h1 id="page-title"></h1><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button><button id="add-item-btn" class="btn-blue open-form-modal-btn">Añadir Nuevo</button></div><div class="card"><div class="table-search-container"><input type="text" id="table-search-input" placeholder="🔍 Buscar en la tabla..."></div><h2 id="item-list-title"></h2><div class="table-wrapper"><table id="data-table"><thead id="item-table-head"></thead><tbody id="item-table-body"></tbody></table></div></div>`;
 const maintenanceCalendarHTML = `<h1>📅 Planificación</h1><div class="add-new-button-container"><button class="export-btn csv" data-format="csv">Exportar a Excel (CSV)</button><button class="export-btn pdf" data-format="pdf">Exportar a PDF</button><button class="primary open-form-modal-btn" data-type="maintenance">Programar Tarea</button></div><div class="card"><div id="maintenance-calendar"></div><table id="data-table" style="display:none;"></table></div>`;
@@ -52,7 +39,6 @@ const servicesCategoryConfig = { internet: { title: 'Internet', titleSingular: '
 const credentialsCategoryConfig = { emails: { title: 'Correos Electrónicos', titleSingular: 'Credencial de Correo', prefix: 'CRED-EMAIL-', counter: 'emailCounter', fields: { id: { label: 'Código' }, service: { label: 'Servicio (Google, O365)', type: 'text' }, email: { label: 'Correo Electrónico', type: 'email' }, password: { label: 'Contraseña', type: 'text' }, recoveryEmail: { label: 'Correo de recuperación', type: 'email' }, recoveryPhone: { label: 'Número de recuperación', type: 'tel' }, assignedUser: { label: 'Usuario asignado', type: 'text' }, area: { label: 'Área', type: 'text' }, status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }, notes: { label: 'Notas', type: 'textarea' } } }, computers: { title: 'Usuarios de Equipos', titleSingular: 'Usuario de Equipo', prefix: 'CRED-PCUSER-', counter: 'computerUserCounter', fields: { id: { label: 'Código' }, computerId: { label: 'ID/Nombre del Equipo', type: 'text' }, username: { label: 'Nombre de Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, isAdmin: { label: '¿Es Admin?', type: 'select', options: ['No', 'Sí'] } } }, phones: { title: 'Usuarios de Teléfonos', titleSingular: 'Usuario de Teléfono', prefix: 'CRED-PHUSER-', counter: 'phoneUserCounter', fields: { id: { label: 'Código' }, phoneId: { label: 'ID/Modelo del Teléfono', type: 'text' }, user: { label: 'Usuario Asignado', type: 'text' }, pin: { label: 'PIN/Contraseña', type: 'text' } } }, internet: { title: 'Usuarios de Internet', titleSingular: 'Acceso a Internet', prefix: 'CRED-INET-', counter: 'internetCounter', fields: { id: { label: 'Código' }, provider: { label: 'Proveedor (ISP)', type: 'text' }, accountId: { label: 'ID de Cuenta/Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' } } }, servers: { title: 'Servidores y BD', titleSingular: 'Acceso a Servidor/BD', prefix: 'CRED-SRV-', counter: 'serverCounter', fields: { id: { label: 'Código' }, host: { label: 'Host/IP', type: 'text' }, port: { label: 'Puerto', type: 'number' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, dbName: { label: 'Nombre BD (Opcional)', type: 'text' } } }, software: { title: 'Licencias de Software', titleSingular: 'Licencia de Software', prefix: 'CRED-SW-', counter: 'softwareCounter', fields: { id: { label: 'Código' }, softwareName: { label: 'Nombre del software', type: 'text' }, licenseKey: { label: 'Clave de licencia', type: 'textarea' }, version: { label: 'Versión', type: 'text' }, assignedTo: { label: 'Asignar a Equipo', type: 'select', optionsSource: 'computers-inventory' } } }, siigo: { title: 'Usuarios Siigo', titleSingular: 'Usuario Siigo', prefix: 'CRED-SIIGO-', counter: 'siigoCounter', fields: { id: { label: 'Código' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, assignedUser: { label: 'Ususario asignado', type: 'text' }, url: { label: 'URL de Acceso', type: 'text' }, status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }, notes: { label: 'Notas', type: 'textarea' } } }, velocity: { title: 'Usuarios Velocity', titleSingular: 'Usuario Velocity', prefix: 'CRED-VEL-', counter: 'velocityCounter', fields: { id: { label: 'Código' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, assignedUser: { label: 'Usuario asignado', type: 'text' }, url: { label: 'URL de Acceso', type: 'text' }, status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }, notes: { label: 'Notas', type: 'textarea' } } }, traslados: { title: 'Usuarios App Traslados', titleSingular: 'Usuario App Traslados', prefix: 'CRED-APPTR-', counter: 'trasladosCounter', fields: { id: { label: 'Código' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, assignedUser: { label: 'Usuario asignado', type: 'text' }, status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }, notes: { label: 'Notas', type: 'textarea' } } }, others: { title: 'Otras Credenciales', titleSingular: 'Credencial', prefix: 'CRED-OTH-', counter: 'otherCredentialCounter', fields: { id: { label: 'Código' }, system: { label: 'Sistema/Servicio', type: 'text' }, url: { label: 'URL (Opcional)', type: 'text' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, notes: { label: 'Notas', type: 'textarea' } } } };
 
 // --- FUNCIONES DE RENDERIZADO ---
-// ... (Tus funciones de renderizado originales, desde handleFirestoreError hasta showTicketModal, se mantienen aquí sin cambios)
 function handleFirestoreError(error, element) { console.error("Firestore Error:", error); const indexLinkRegex = /(https:\/\/console\.firebase\.google\.com\/project\/.*?\/firestore\/indexes\?create_composite=.*?)"/; const match = error.message.match(indexLinkRegex); let errorMessageHTML; if (match) { const link = match[1]; errorMessageHTML = `<strong>Error de Firebase:</strong> Se requiere un índice que no existe.<br><br><a href="${link}" target="_blank" style="color:blue; text-decoration:underline;">Haz clic aquí para crear el índice necesario en una nueva pestaña.</a><br><br>Después de crearlo, espera unos minutos y recarga esta página.`; } else { errorMessageHTML = `<strong>Error al cargar los datos:</strong> ${error.message}. <br><br>Esto puede ser causado por la configuración de "Prevención de seguimiento" de tu navegador.`; } element.innerHTML = `<div class="card" style="padding: 20px; border-left: 5px solid red;">${errorMessageHTML}</div>`; }
 async function renderDashboard(container) { container.innerHTML = dashboardHTML; const cardsContainer = document.getElementById('dashboard-cards'); cardsContainer.innerHTML = 'Cargando estadísticas...'; const ticketsSnapshot = await db.collection('tickets').get(); const tickets = ticketsSnapshot.docs.map(doc => doc.data()); const openCount = tickets.filter(t => t.status === 'abierto').length; const closedCount = tickets.filter(t => t.status === 'cerrado').length; const totalCount = tickets.length; cardsContainer.innerHTML = `<a href="#tickets?status=abierto" class="stat-card open"><div class="stat-number">${openCount}</div><div class="stat-label">Tickets Abiertos</div></a><a href="#tickets?status=cerrado" class="stat-card closed"><div class="stat-number">${closedCount}</div><div class="stat-label">Tickets Cerrados</div></a><a href="#tickets" class="stat-card all"><div class="stat-number">${totalCount}</div><div class="stat-label">Todos los Tickets</div></a>`; const last7Days = Array(7).fill(0).reduce((acc, _, i) => { const d = new Date(); d.setDate(d.getDate() - i); acc[d.toISOString().split('T')[0]] = 0; return acc; }, {}); tickets.forEach(ticket => { if (ticket.createdAt) { const ticketDate = ticket.createdAt.toDate().toISOString().split('T')[0]; if (last7Days.hasOwnProperty(ticketDate)) { last7Days[ticketDate]++; } } }); const ctx = document.getElementById('ticketsChart').getContext('2d'); new Chart(ctx, { type: 'bar', data: { labels: Object.keys(last7Days).map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'short'})).reverse(), datasets: [{ label: '# de Tickets Creados', data: Object.values(last7Days).reverse(), backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); }
 
@@ -98,37 +84,19 @@ await db.collection('tickets').doc(newTicketId).set(newTicketData); alert(`¡Tic
 async function renderTicketList(container, params = {}) {
     container.innerHTML = ticketListHTML;
     setupTableSearch('table-search-input', 'data-table');
-
-    const [reqSnap] = await Promise.all([
-        db.collection('requesters').get()
-    ]);
+    const [reqSnap] = await Promise.all([db.collection('requesters').get()]);
     const requestersMap = {};
     reqSnap.forEach(doc => requestersMap[doc.id] = doc.data().name);
-
     const tableBody = document.querySelector('#data-table tbody');
     const ticketsListTitle = document.getElementById('tickets-list-title');
-
     let title = 'Todos los Tickets';
-    if (params.status === 'abierto') {
-        title = 'Tickets Abiertos';
-    } else if (params.status === 'cerrado') {
-        title = 'Tickets Cerrados';
-    }
+    if (params.status === 'abierto') { title = 'Tickets Abiertos'; } else if (params.status === 'cerrado') { title = 'Tickets Cerrados'; }
     ticketsListTitle.innerText = title;
-
     let query = db.collection('tickets').orderBy('numericId', 'asc');
-
-    if (params.status) {
-        query = query.where('status', '==', params.status);
-    }
-
+    if (params.status) { query = query.where('status', '==', params.status); }
     query.onSnapshot(snapshot => {
         tableBody.innerHTML = '';
-        if (snapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="8">No hay tickets ${params.status ? title.toLowerCase() : ''}.</td></tr>`;
-            return;
-        }
-
+        if (snapshot.empty) { tableBody.innerHTML = `<tr><td colspan="8">No hay tickets ${params.status ? title.toLowerCase() : ''}.</td></tr>`; return; }
         snapshot.forEach(doc => {
             const ticket = { id: doc.id, ...doc.data() };
             const tr = document.createElement('tr');
@@ -136,17 +104,7 @@ async function renderTicketList(container, params = {}) {
             const closedAt = ticket.closedAt ? ticket.closedAt.toDate().toLocaleDateString('es-ES') : 'N/A';
             const displayTitle = ticket.ticketType === 'ti' ? ticket.title : ticket.descripcionDeLaNovedad;
             const ticketTypeDisplay = ticket.ticketType ? capitalizar(ticket.ticketType) : 'TI';
-
-            tr.innerHTML = `
-                <td>${ticket.id}</td>
-                <td><span class="status ${ticketTypeDisplay === 'TI' ? 'status-abierto' : 'status-en-curso'}">${ticketTypeDisplay}</span></td>
-                <td>${displayTitle ? (displayTitle.substring(0, 50) + (displayTitle.length > 50 ? '...' : '')) : 'Sin título'}</td>
-                <td>${requestersMap[ticket.requesterId] || 'N/A'}</td>
-                <td>${createdAt}</td>
-                <td>${closedAt}</td>
-                <td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td>
-                <td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>
-            `;
+            tr.innerHTML = `<td>${ticket.id}</td><td><span class="status ${ticketTypeDisplay === 'TI' ? 'status-abierto' : 'status-en-curso'}">${ticketTypeDisplay}</span></td><td>${displayTitle ? (displayTitle.substring(0, 50) + (displayTitle.length > 50 ? '...' : '')) : 'Sin título'}</td><td>${requestersMap[ticket.requesterId] || 'N/A'}</td><td>${createdAt}</td><td>${closedAt}</td><td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td><td><button class="primary view-ticket-btn" data-id="${ticket.id}">Ver Detalles</button></td>`;
             tableBody.appendChild(tr);
         });
     }, error => handleFirestoreError(error, tableBody));
@@ -158,101 +116,40 @@ async function renderHistoryPage(container) {
     const requesterSelect = document.getElementById('search-requester');
     const locationSelect = document.getElementById('search-location');
     const resultsTableBody = document.getElementById('data-table').querySelector('tbody');
-
     const requestersMap = {};
     const locationsMap = {}; 
-
     try {
-        const [reqSnap, locSnap, invSnap] = await Promise.all([
-            db.collection('requesters').orderBy('name').get(),
-            db.collection('locations').orderBy('name').get(),
-            db.collection('inventory').get()
-        ]);
-
+        const [reqSnap, locSnap, invSnap] = await Promise.all([db.collection('requesters').orderBy('name').get(), db.collection('locations').orderBy('name').get(), db.collection('inventory').get()]);
         requesterSelect.innerHTML = '<option value="">Todos</option>';
-        reqSnap.forEach(doc => {
-            requestersMap[doc.id] = doc.data().name;
-            requesterSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
-        });
-
+        reqSnap.forEach(doc => { requestersMap[doc.id] = doc.data().name; requesterSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`; });
         locationSelect.innerHTML = '<option value="">Todas</option>';
-        locSnap.forEach(doc => {
-            locationsMap[doc.id] = doc.data().name;
-            locationSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
-        });
-
+        locSnap.forEach(doc => { locationsMap[doc.id] = doc.data().name; locationSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`; });
         const devices = invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         deviceDatalist.innerHTML = devices.map(d => `<option value="${d.id}">${d.id}: ${d.brand || ''} ${d.model || ''} (Usuario: ${d.user || 'N/A'})</option>`).join('');
-
-    } catch (error) {
-        handleFirestoreError(error, container);
-        return;
-    }
-
+    } catch (error) { handleFirestoreError(error, container); return; }
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         resultsTableBody.innerHTML = `<tr><td colspan="9">Buscando...</td></tr>`; 
-
         let query = db.collection('tickets');
-        const filters = {
-            deviceIds: form['search-device'].value,
-            requesterId: form['search-requester'].value,
-            locationId: form['search-location'].value,
-            status: form['search-status'].value,
-            priority: form['search-priority'].value,
-            ticketType: form['search-ticket-type'].value,
-        };
-
-        for (const [key, value] of Object.entries(filters)) {
-            if (value) {
-                if (key === 'deviceIds') {
-                    query = query.where(key, 'array-contains', value);
-                } else {
-                    query = query.where(key, '==', value);
-                }
-            }
-        }
-
+        const filters = { deviceIds: form['search-device'].value, requesterId: form['search-requester'].value, locationId: form['search-location'].value, status: form['search-status'].value, priority: form['search-priority'].value, ticketType: form['search-ticket-type'].value };
+        for (const [key, value] of Object.entries(filters)) { if (value) { if (key === 'deviceIds') { query = query.where(key, 'array-contains', value); } else { query = query.where(key, '==', value); } } }
         try {
             const snapshot = await query.get();
             const tickets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            tickets.sort((a, b) => {
-                const numA = parseInt(a.id.split('-')[1] || 0, 10);
-                const numB = parseInt(b.id.split('-')[1] || 0, 10);
-                return numA - numB;
-            });
-
+            tickets.sort((a, b) => { const numA = parseInt(a.id.split('-')[1] || 0, 10); const numB = parseInt(b.id.split('-')[1] || 0, 10); return numA - numB; });
             resultsTableBody.innerHTML = '';
-            if (tickets.length === 0) {
-               resultsTableBody.innerHTML = `<tr><td colspan="9">No se encontraron tickets con esos criterios.</td></tr>`;
-                return;
-            }
-
+            if (tickets.length === 0) { resultsTableBody.innerHTML = `<tr><td colspan="9">No se encontraron tickets con esos criterios.</td></tr>`; return; }
             tickets.forEach(ticket => {
                 const tr = document.createElement('tr');
                 const closedAtText = ticket.closedAt && ticket.closedAt.toDate ? ticket.closedAt.toDate().toLocaleString('es-ES') : 'N/A';
                 const requesterDisplayName = requestersMap[ticket.requesterId] || 'N/A';
                 const displayTitle = ticket.ticketType === 'ti' ? ticket.title : ticket.descripcionDeLaNovedad;
                 const ticketTypeDisplay = ticket.ticketType ? capitalizar(ticket.ticketType) : 'TI';
-                
-                tr.innerHTML = `
-                    <td>${ticket.id}</td>
-                    <td>${displayTitle ? (displayTitle.substring(0, 50) + (displayTitle.length > 50 ? '...' : '')) : 'Sin título'}</td>
-                    <td><span class="status ${ticketTypeDisplay === 'TI' ? 'status-abierto' : 'status-en-curso'}">${ticketTypeDisplay}</span></td>
-                    <td>${ticket.ticketDelCaso || 'N/A'}</td>
-                    <td>${requesterDisplayName}</td>
-                    <td>${ticket.createdAt.toDate().toLocaleString('es-ES')}</td>
-                    <td>${closedAtText}</td>
-                    <td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td>
-                    <td><a href="#" class="view-ticket-btn" data-id="${ticket.id}">Ver Detalles</a></td>
-                `;
+                tr.innerHTML = `<td>${ticket.id}</td><td>${displayTitle ? (displayTitle.substring(0, 50) + (displayTitle.length > 50 ? '...' : '')) : 'Sin título'}</td><td><span class="status ${ticketTypeDisplay === 'TI' ? 'status-abierto' : 'status-en-curso'}">${ticketTypeDisplay}</span></td><td>${ticket.ticketDelCaso || 'N/A'}</td><td>${requesterDisplayName}</td><td>${ticket.createdAt.toDate().toLocaleString('es-ES')}</td><td>${closedAtText}</td><td><span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></td><td><a href="#" class="view-ticket-btn" data-id="${ticket.id}">Ver Detalles</a></td>`;
                 resultsTableBody.appendChild(tr);
             });
-        } catch (error) {
-            handleFirestoreError(error, resultsTableBody);
-        }
+        } catch (error) { handleFirestoreError(error, resultsTableBody); }
     });
-
     form.dispatchEvent(new Event('submit'));
 }
 async function renderEstadisticas(container) { container.innerHTML = statisticsHTML; const generateBtn = document.getElementById('generate-report-btn'); document.getElementById('export-stats-pdf').addEventListener('click', exportStatsToPDF); let charts = {}; const chartContexts = { ticketsByPriority: document.getElementById('ticketsByPriorityChart').getContext('2d'), ticketsByDeviceCategory: document.getElementById('ticketsByDeviceCategoryChart').getContext('2d'), ticketFlow: document.getElementById('ticket-flow-chart').getContext('2d'), inventoryByCategory: document.getElementById('inventoryByCategoryChart').getContext('2d'), computersByOs: document.getElementById('computersByOsChart').getContext('2d') }; const topDevicesList = document.getElementById('top-devices-list'); const topRequestersList = document.getElementById('top-requesters-list'); const startDateInput = document.getElementById('start-date'); const endDateInput = document.getElementById('end-date'); const today = new Date(); const oneMonthAgo = new Date(new Date().setMonth(today.getMonth() - 1)); startDateInput.value = oneMonthAgo.toISOString().split('T')[0]; endDateInput.value = today.toISOString().split('T')[0]; const generateReports = async () => { const startDate = new Date(startDateInput.value); startDate.setHours(0, 0, 0, 0); const endDate = new Date(endDateInput.value); endDate.setHours(23, 59, 59, 999); try { const [ticketsSnapshot, inventorySnapshot, requestersSnapshot] = await Promise.all([ db.collection('tickets').where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get(), db.collection('inventory').get(), db.collection('requesters').get() ]); const tickets = ticketsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); const inventory = inventorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); const requestersMap = {}; requestersSnapshot.forEach(doc => requestersMap[doc.id] = doc.data().name); const priorityCounts = tickets.reduce((acc, ticket) => { acc[ticket.priority] = (acc[ticket.priority] || 0) + 1; return acc; }, {}); if (charts.ticketsByPriority) charts.ticketsByPriority.destroy(); charts.ticketsByPriority = new Chart(chartContexts.ticketsByPriority, { type: 'doughnut', data: { labels: Object.keys(priorityCounts).map(p => capitalizar(p)), datasets: [{ data: Object.values(priorityCounts), backgroundColor: ['#007bff', '#ffc107', '#dc3545'] }] }, options: { responsive: true, maintainAspectRatio: false } }); const inventoryMap = {}; inventory.forEach(item => inventoryMap[item.id] = item); const ticketsWithDeviceCategory = tickets.map(ticket => ({...ticket, deviceCategory: ticket.deviceIds && ticket.deviceIds.length > 0 ? (inventoryMap[ticket.deviceIds[0]]?.category || 'Sin categoría') : 'Sin dispositivo'})); const deviceCategoryCounts = ticketsWithDeviceCategory.reduce((acc, ticket) => { acc[ticket.deviceCategory] = (acc[ticket.deviceCategory] || 0) + 1; return acc; }, {}); if (charts.ticketsByDeviceCategory) charts.ticketsByDeviceCategory.destroy(); charts.ticketsByDeviceCategory = new Chart(chartContexts.ticketsByDeviceCategory, { type: 'pie', data: { labels: Object.keys(deviceCategoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ data: Object.values(deviceCategoryCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545', '#343a40'] }] }, options: { responsive: true, maintainAspectRatio: false } }); const deviceTicketCounts = tickets.reduce((acc, ticket) => { if(ticket.deviceIds && Array.isArray(ticket.deviceIds)) { ticket.deviceIds.forEach(deviceId => { if(deviceId) acc[deviceId] = (acc[deviceId] || 0) + 1; }); } return acc; }, {}); const topDevices = Object.entries(deviceTicketCounts).sort((a, b) => b[1] - a[1]).slice(0, 5); topDevicesList.innerHTML = topDevices.map(([id, count]) => { const device = inventoryMap[id]; return `<li><span>${device ? `${device.brand} ${device.model}` : id}</span><span>${count}</span></li>`; }).join('') || '<li>No hay datos</li>'; const requesterTicketCounts = tickets.reduce((acc, ticket) => { if(ticket.requesterId) acc[ticket.requesterId] = (acc[ticket.requesterId] || 0) + 1; return acc; }, {}); const topRequesters = Object.entries(requesterTicketCounts).sort((a, b) => b[1] - a[1]).slice(0, 5); topRequestersList.innerHTML = topRequesters.map(([id, count]) => `<li><span>${requestersMap[id] || id}</span><span>${count}</span></li>`).join('') || '<li>No hay datos</li>'; const closedTicketsSnapshot = await db.collection('tickets').where('closedAt', '>=', startDate).where('closedAt', '<=', endDate).get(); const closedTicketsInRange = closedTicketsSnapshot.docs.map(doc => doc.data()); const dataByDay = {}; for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { dataByDay[d.toISOString().split('T')[0]] = { created: 0, closed: 0 }; } tickets.forEach(t => { const day = t.createdAt.toDate().toISOString().split('T')[0]; if (dataByDay[day]) dataByDay[day].created++; }); closedTicketsInRange.forEach(t => { const day = t.closedAt.toDate().toISOString().split('T')[0]; if (dataByDay[day]) dataByDay[day].closed++; }); if (charts.ticketFlow) charts.ticketFlow.destroy(); charts.ticketFlow = new Chart(chartContexts.ticketFlow, { type: 'line', data: { labels: Object.keys(dataByDay), datasets: [ { label: 'Tickets Creados', data: Object.values(dataByDay).map(d => d.created), borderColor: '#007bff', fill: true }, { label: 'Tickets Cerrados', data: Object.values(dataByDay).map(d => d.closed), borderColor: '#28a745', fill: true } ] }, options: { scales: { y: { beginAtZero: true } } } }); const categoryCounts = inventory.reduce((acc, item) => { acc[item.category] = (acc[item.category] || 0) + 1; return acc; }, {}); if (charts.inventoryByCategory) charts.inventoryByCategory.destroy(); charts.inventoryByCategory = new Chart(chartContexts.inventoryByCategory, { type: 'bar', data: { labels: Object.keys(categoryCounts).map(k => inventoryCategoryConfig[k]?.title || k), datasets: [{ label: '# de Dispositivos', data: Object.values(categoryCounts), backgroundColor: '#007bff' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false } }); const computers = inventory.filter(item => item.category === 'computers'); const osCounts = computers.reduce((acc, item) => { acc[item.os] = (acc[item.os] || 0) + 1; return acc; }, {}); if (charts.computersByOs) charts.computersByOs.destroy(); charts.computersByOs = new Chart(chartContexts.computersByOs, { type: 'pie', data: { labels: Object.keys(osCounts), datasets: [{ data: Object.values(osCounts), backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#6c757d', '#28a745', '#dc3545'] }] }, options: { responsive: true, maintainAspectRatio: false } }); } catch(error) { handleFirestoreError(error, container); }}; generateBtn.addEventListener('click', generateReports); generateReports(); }
@@ -512,29 +409,13 @@ async function showEditTicketModal(ticketId) { const formModal = document.getEle
 async function showEditClosedAtModal(ticketId, currentClosedAt) {
     const actionModal = document.getElementById('action-modal');
     const modalBody = actionModal.querySelector('#action-modal-body');
-
     const closedAtValue = currentClosedAt ? currentClosedAt.toDate().toISOString().split('T')[0] : '';
-
-    modalBody.innerHTML = `
-        <h2>Editar Fecha de Cierre del Ticket ${ticketId}</h2>
-        <form id="edit-closed-at-form">
-            <div class="form-group">
-                <label for="closedAtDate">Fecha de Cierre</label>
-                <input type="date" id="closedAtDate" name="closedAtDate" value="${closedAtValue}">
-            </div>
-            <div style="text-align: right; margin-top: 20px;">
-                <button type="submit" class="primary">Guardar Fecha</button>
-                <button type="button" class="btn-secondary modal-close-btn" style="margin-left: 10px;">Cancelar</button>
-            </div>
-        </form>
-    `;
+    modalBody.innerHTML = `<h2>Editar Fecha de Cierre del Ticket ${ticketId}</h2><form id="edit-closed-at-form"><div class="form-group"><label for="closedAtDate">Fecha de Cierre</label><input type="date" id="closedAtDate" name="closedAtDate" value="${closedAtValue}"></div><div style="text-align: right; margin-top: 20px;"><button type="submit" class="primary">Guardar Fecha</button><button type="button" class="btn-secondary modal-close-btn" style="margin-left: 10px;">Cancelar</button></div></form>`;
     actionModal.classList.remove('hidden');
-
     document.getElementById('edit-closed-at-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
         const newClosedAtDate = form.closedAtDate.value;
-
         try {
             if (newClosedAtDate) {
                 const newClosedAtTimestamp = firebase.firestore.Timestamp.fromDate(new Date(newClosedAtDate + 'T00:00:00'));
@@ -544,10 +425,7 @@ async function showEditClosedAtModal(ticketId, currentClosedAt) {
             }
             actionModal.classList.add('hidden');
             showTicketModal(ticketId);
-        } catch (error) {
-            console.error("Error al actualizar la fecha de cierre:", error);
-            alert("No se pudo actualizar la fecha de cierre. Revisa la consola.");
-        }
+        } catch (error) { console.error("Error al actualizar la fecha de cierre:", error); alert("No se pudo actualizar la fecha de cierre. Revisa la consola."); }
     });
 }
 
@@ -558,11 +436,7 @@ async function showTicketModal(ticketId) {
     modalBody.innerHTML = '<p>Cargando detalles del ticket...</p>';
 
     const ticketDoc = await db.collection('tickets').doc(ticketId).get();
-    if (!ticketDoc.exists) {
-        alert('Error: No se encontró el ticket.');
-        ticketModal.classList.add('hidden');
-        return;
-    }
+    if (!ticketDoc.exists) { alert('Error: No se encontró el ticket.'); ticketModal.classList.add('hidden'); return; }
 
     const ticket = { id: ticketDoc.id, ...ticketDoc.data() };
     const requesterName = ticket.requesterId ? (await db.collection('requesters').doc(ticket.requesterId).get()).data()?.name || ticket.requesterId : 'N/A';
@@ -583,9 +457,7 @@ async function showTicketModal(ticketId) {
     if (ticket.history && ticket.history.length > 0) {
         historyHTML += '<ul class="ticket-history-log">';
         ticket.history.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-        ticket.history.forEach(entry => {
-            historyHTML += `<li><div class="history-meta">Registrado el: ${entry.timestamp.toDate().toLocaleString('es-ES')}</div><div class="history-text">${entry.text}</div></li>`;
-        });
+        ticket.history.forEach(entry => { historyHTML += `<li><div class="history-meta">Registrado el: ${entry.timestamp.toDate().toLocaleString('es-ES')}</div><div class="history-text">${entry.text}</div></li>`; });
         historyHTML += '</ul>';
     } else {
         historyHTML += '<p>No hay avances registrados.</p>';
@@ -602,69 +474,28 @@ async function showTicketModal(ticketId) {
     }
 
     let modalActions = `<div class="ticket-modal-actions">`;
-    if ((ticket.status === 'abierto' || ticket.status === 'en-curso') && ticket.ticketType === 'ti') {
-        modalActions += `<button id="edit-ticket-btn" class="btn-secondary">✏️ Editar Ticket</button>`;
-    }
-    if (ticket.status === 'cerrado') {
-        modalActions += `<button id="reopen-ticket-btn" class="btn-warning">↩️ Reabrir Ticket</button>`;
-    }
-    if (ticket.closedAt) {
-        modalActions += `<button id="edit-closed-at-date-btn" class="btn-secondary" style="margin-left:10px;">🗓️ Editar Fecha Cierre</button>`;
-    }
+    if ((ticket.status === 'abierto' || ticket.status === 'en-curso') && ticket.ticketType === 'ti') { modalActions += `<button id="edit-ticket-btn" class="btn-secondary">✏️ Editar Ticket</button>`; }
+    if (ticket.status === 'cerrado') { modalActions += `<button id="reopen-ticket-btn" class="btn-warning">↩️ Reabrir Ticket</button>`; }
+    if (ticket.closedAt) { modalActions += `<button id="edit-closed-at-date-btn" class="btn-secondary" style="margin-left:10px;">🗓️ Editar Fecha Cierre</button>`; }
     modalActions += `</div>`;
 
     modalBody.innerHTML = `<div class="ticket-modal-layout"><div class="ticket-modal-main"><h2>Ticket ${ticket.id} (${capitalizar(ticket.ticketType || 'TI')})</h2>${modalActions}<hr>${mainContentHTML}${historyHTML}${actionsHTML}</div><div class="ticket-modal-sidebar"><h3>Detalles del Ticket</h3><div class="ticket-detail-item"><strong>Estado:</strong> <span class="status status-${ticket.status}">${capitalizar(ticket.status.replace('-', ' '))}</span></div>${ticket.priority ? `<div class="ticket-detail-item"><strong>Prioridad:</strong> ${capitalizar(ticket.priority)}</div>` : ''}<div class="ticket-detail-item"><strong>Solicitante:</strong> ${requesterName}</div>${ticket.locationId ? `<div class="ticket-detail-item"><strong>Ubicación:</strong> ${ticket.locationId}</div>` : ''}<div class="ticket-detail-item"><strong>Creado:</strong> ${ticket.createdAt.toDate().toLocaleString('es-ES')}</div>${ticket.closedAt ? `<div class="ticket-detail-item"><strong>Cerrado:</strong> ${ticket.closedAt.toDate().toLocaleString('es-ES')}</div>` : ''}${devicesHTML}</div></div>`;
 
-    if ((ticket.status === 'abierto' || ticket.status === 'en-curso') && ticket.ticketType === 'ti') {
-        document.getElementById('edit-ticket-btn').addEventListener('click', () => {
-            ticketModal.classList.add('hidden');
-            showEditTicketModal(ticket.id);
-        });
-    }
-
-    if (document.getElementById('edit-closed-at-date-btn')) {
-        document.getElementById('edit-closed-at-date-btn').addEventListener('click', () => {
-            ticketModal.classList.add('hidden');
-            showEditClosedAtModal(ticket.id, ticket.closedAt);
-        });
-    }
+    if ((ticket.status === 'abierto' || ticket.status === 'en-curso') && ticket.ticketType === 'ti') { document.getElementById('edit-ticket-btn').addEventListener('click', () => { ticketModal.classList.add('hidden'); showEditTicketModal(ticket.id); }); }
+    if (document.getElementById('edit-closed-at-date-btn')) { document.getElementById('edit-closed-at-date-btn').addEventListener('click', () => { ticketModal.classList.add('hidden'); showEditClosedAtModal(ticket.id, ticket.closedAt); }); }
 
     if (ticket.status === 'abierto' || ticket.status === 'en-curso') {
-        document.getElementById('progress-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const text = document.getElementById('progress-text').value;
-            if (!text.trim()) return;
-            const newHistoryEntry = { text: text, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
-            await db.collection('tickets').doc(ticket.id).update({ status: 'en-curso', history: firebase.firestore.FieldValue.arrayUnion(newHistoryEntry) });
-            showTicketModal(ticket.id);
-        });
+        document.getElementById('progress-form').addEventListener('submit', async (e) => { e.preventDefault(); const text = document.getElementById('progress-text').value; if (!text.trim()) return; const newHistoryEntry = { text: text, timestamp: firebase.firestore.FieldValue.serverTimestamp() }; await db.collection('tickets').doc(ticket.id).update({ status: 'en-curso', history: firebase.firestore.FieldValue.arrayUnion(newHistoryEntry) }); showTicketModal(ticket.id); });
         const solutionEditor = new Quill('#solution-editor', { theme: 'snow', placeholder: 'Describe la solución final aplicada...' });
-        document.getElementById('solution-form').addEventListener('submit', e => {
-            e.preventDefault();
-            db.collection('tickets').doc(ticket.id).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => showTicketModal(ticket.id));
-        });
+        document.getElementById('solution-form').addEventListener('submit', e => { e.preventDefault(); db.collection('tickets').doc(ticket.id).update({ solution: solutionEditor.root.innerHTML, status: 'cerrado', closedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(() => showTicketModal(ticket.id)); });
     }
 
     if (ticket.status === 'cerrado') {
-        document.getElementById('reopen-ticket-btn').addEventListener('click', async () => {
-            if (confirm('¿Estás seguro de que quieres reabrir este ticket?')) {
-                const reopeningHistoryEntry = { text: `<strong>Ticket reabierto</strong> por el usuario.`, timestamp: firebase.firestore.Timestamp.fromDate(new Date()) };
-                try {
-                    await db.collection('tickets').doc(ticket.id).update({ status: 'abierto', closedAt: null, solution: null, history: firebase.firestore.FieldValue.arrayUnion(reopeningHistoryEntry) });
-                    showTicketModal(ticket.id);
-                } catch (error) { console.error("Error al reabrir el ticket:", error); alert("No se pudo reabrir el ticket. Revisa la consola para más detalles."); }
-            }
-        });
-
+        document.getElementById('reopen-ticket-btn').addEventListener('click', async () => { if (confirm('¿Estás seguro de que quieres reabrir este ticket?')) { const reopeningHistoryEntry = { text: `<strong>Ticket reabierto</strong> por el usuario.`, timestamp: firebase.firestore.Timestamp.fromDate(new Date()) }; try { await db.collection('tickets').doc(ticket.id).update({ status: 'abierto', closedAt: null, solution: null, history: firebase.firestore.FieldValue.arrayUnion(reopeningHistoryEntry) }); showTicketModal(ticket.id); } catch (error) { console.error("Error al reabrir el ticket:", error); alert("No se pudo reabrir el ticket."); } } });
         const createKbBtn = document.getElementById('create-kb-from-ticket-btn');
         if (createKbBtn) {
             createKbBtn.addEventListener('click', () => {
-                const prefillData = {
-                    title: ticket.title,
-                    problem: ticket.description,
-                    solution: ticket.solution,
-                    type: 'article'
-                };
+                const prefillData = { title: ticket.title, problem: ticket.description, solution: ticket.solution, type: 'article' };
                 ticketModal.classList.add('hidden');
                 showKnowledgeBaseFormModal(null, prefillData);
             });
@@ -684,14 +515,9 @@ async function renderKnowledgeBase(container) {
 
     db.collection('knowledge_base').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         gridContainer.innerHTML = '';
-        if (snapshot.empty) {
-            gridContainer.innerHTML = '<p>No hay artículos ni manuales en la base de conocimiento todavía.</p>';
-            return;
-        }
+        if (snapshot.empty) { gridContainer.innerHTML = '<p>No hay artículos ni manuales en la base de conocimiento todavía.</p>'; return; }
         articles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
         displayArticles(articles);
-
     }, error => handleFirestoreError(error, gridContainer));
 
     function displayArticles(articlesToDisplay) {
@@ -701,16 +527,10 @@ async function renderKnowledgeBase(container) {
             const isManual = article.type === 'manual';
             card.className = `kb-card ${isManual ? 'manual-card' : ''}`;
             card.dataset.id = article.id;
-            
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = article.solution;
             const solutionSnippet = tempDiv.textContent || tempDiv.innerText || "";
-
-            card.innerHTML = `
-                <h3>${article.title}</h3>
-                <span class="kb-category">${article.category || 'Sin categoría'}</span>
-                <div class="kb-solution-snippet">${solutionSnippet}</div>
-            `;
+            card.innerHTML = `<h3>${article.title}</h3><span class="kb-category">${article.category || 'Sin categoría'}</span><div class="kb-solution-snippet">${solutionSnippet}</div>`;
             card.addEventListener('click', () => showKnowledgeBaseArticleModal(article.id));
             gridContainer.appendChild(card);
         });
@@ -718,20 +538,13 @@ async function renderKnowledgeBase(container) {
 
     searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase();
-        if (!searchTerm) {
-            displayArticles(articles);
-            return;
-        }
-        const filteredArticles = articles.filter(article => 
-            article.title.toLowerCase().includes(searchTerm) ||
-            (article.category && article.category.toLowerCase().includes(searchTerm)) ||
-            article.solution.toLowerCase().includes(searchTerm) ||
-            (article.problem && article.problem.toLowerCase().includes(searchTerm))
-        );
+        if (!searchTerm) { displayArticles(articles); return; }
+        const filteredArticles = articles.filter(article => article.title.toLowerCase().includes(searchTerm) || (article.category && article.category.toLowerCase().includes(searchTerm)) || article.solution.toLowerCase().includes(searchTerm) || (article.problem && article.problem.toLowerCase().includes(searchTerm)));
         displayArticles(filteredArticles);
     });
 }
 
+// --- MODIFICADO --- Se cambia el input de categoría por un select.
 async function showKnowledgeBaseFormModal(docId = null, prefillData = {}) {
     const formModal = document.getElementById('form-modal');
     const modalBody = formModal.querySelector('#form-modal-body');
@@ -751,7 +564,16 @@ async function showKnowledgeBaseFormModal(docId = null, prefillData = {}) {
         <h2>${isEditing ? 'Editar' : 'Crear'} Artículo de Conocimiento</h2>
         <form id="kb-form">
             <div class="form-group"><label for="kb-title">Título</label><input type="text" id="kb-title" value="${title}" required></div>
-            <div class="form-group"><label for="kb-category">Categoría</label><input type="text" id="kb-category" value="${category}" placeholder="Ej: Redes, Impresoras, Software..." required></div>
+            <div class="form-group">
+                <label for="kb-category">Categoría</label>
+                <select id="kb-category" required>
+                    <option value="" ${!category ? 'selected' : ''} disabled>Selecciona una categoría</option>
+                    <option value="Redes" ${category === 'Redes' ? 'selected' : ''}>Redes</option>
+                    <option value="Dispositivos" ${category === 'Dispositivos' ? 'selected' : ''}>Dispositivos</option>
+                    <option value="Bases de Datos" ${category === 'Bases de Datos' ? 'selected' : ''}>Bases de Datos</option>
+                    <option value="Programas" ${category === 'Programas' ? 'selected' : ''}>Programas</option>
+                </select>
+            </div>
             <div class="form-group"><label>Descripción del Problema/Síntoma</label><div id="kb-problem-editor" style="height: 150px;"></div></div>
             <div class="form-group"><label>Solución Paso a Paso</label><div id="kb-solution-editor" style="height: 250px;"></div></div>
             <div style="text-align: right; margin-top: 20px;"><button type="submit" class="primary">${isEditing ? 'Guardar Cambios' : 'Guardar Artículo'}</button></div>
@@ -773,7 +595,7 @@ async function showKnowledgeBaseFormModal(docId = null, prefillData = {}) {
             problem: problemEditor.root.innerHTML,
             solution: solutionEditor.root.innerHTML,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            type: 'article' // Se asegura que sea de tipo artículo
+            type: 'article'
         };
 
         try {
@@ -791,7 +613,7 @@ async function showKnowledgeBaseFormModal(docId = null, prefillData = {}) {
     });
 }
 
-// --- AÑADIR NUEVO --- (Función para el modal de Crear Manual)
+// --- MODIFICADO --- Se cambia el input de categoría por un select.
 async function showManualFormModal(docId = null) {
     const formModal = document.getElementById('form-modal');
     const modalBody = formModal.querySelector('#form-modal-body');
@@ -809,7 +631,16 @@ async function showManualFormModal(docId = null) {
         <h2>${isEditing ? 'Editar' : 'Crear'} Manual</h2>
         <form id="manual-form">
             <div class="form-group"><label for="manual-title">Título del Manual</label><input type="text" id="manual-title" value="${title}" required></div>
-            <div class="form-group"><label for="manual-category">Categoría</label><input type="text" id="manual-category" value="${category}" placeholder="Ej: Procedimientos Internos, Guías de Usuario..." required></div>
+            <div class="form-group">
+                <label for="manual-category">Categoría</label>
+                <select id="manual-category" required>
+                    <option value="" ${!category ? 'selected' : ''} disabled>Selecciona una categoría</option>
+                    <option value="Redes" ${category === 'Redes' ? 'selected' : ''}>Redes</option>
+                    <option value="Dispositivos" ${category === 'Dispositivos' ? 'selected' : ''}>Dispositivos</option>
+                    <option value="Bases de Datos" ${category === 'Bases de Datos' ? 'selected' : ''}>Bases de Datos</option>
+                    <option value="Programas" ${category === 'Programas' ? 'selected' : ''}>Programas</option>
+                </select>
+            </div>
             <div class="form-group"><label>Paso a Paso</label><div id="manual-solution-editor" style="height: 400px;"></div></div>
             <div style="text-align: right; margin-top: 20px;"><button type="submit" class="primary">${isEditing ? 'Guardar Cambios' : 'Guardar Manual'}</button></div>
         </form>
@@ -825,10 +656,10 @@ async function showManualFormModal(docId = null) {
         const formData = {
             title: document.getElementById('manual-title').value,
             category: document.getElementById('manual-category').value,
-            solution: solutionEditor.root.innerHTML, // El "paso a paso" se guarda en el campo solution
-            problem: '', // El campo problema se deja vacío
+            solution: solutionEditor.root.innerHTML,
+            problem: '',
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            type: 'manual' // Se especifica que es de tipo manual
+            type: 'manual'
         };
 
         try {
@@ -846,7 +677,6 @@ async function showManualFormModal(docId = null) {
     });
 }
 
-
 async function showKnowledgeBaseArticleModal(docId) {
     const actionModal = document.getElementById('action-modal');
     const modalBody = actionModal.querySelector('#action-modal-body');
@@ -855,26 +685,15 @@ async function showKnowledgeBaseArticleModal(docId) {
 
     try {
         const docSnap = await db.collection('knowledge_base').doc(docId).get();
-        if (!docSnap.exists) {
-            modalBody.innerHTML = '<p>Error: No encontrado.</p>';
-            return;
-        }
+        if (!docSnap.exists) { modalBody.innerHTML = '<p>Error: No encontrado.</p>'; return; }
         const article = docSnap.data();
         const isManual = article.type === 'manual';
 
         let contentHTML = '';
         if (isManual) {
-            contentHTML = `
-                <h3>Paso a Paso</h3>
-                <div class="card">${article.solution}</div>
-            `;
+            contentHTML = `<h3>Paso a Paso</h3><div class="card">${article.solution}</div>`;
         } else {
-            contentHTML = `
-                <h3>Problema</h3>
-                <div class="card">${article.problem}</div>
-                <h3>Solución</h3>
-                <div class="card">${article.solution}</div>
-            `;
+            contentHTML = `<h3>Problema</h3><div class="card">${article.problem}</div><h3>Solución</h3><div class="card">${article.solution}</div>`;
         }
 
         modalBody.innerHTML = `
@@ -889,11 +708,7 @@ async function showKnowledgeBaseArticleModal(docId) {
 
         document.getElementById('edit-kb-btn').addEventListener('click', () => {
             actionModal.classList.add('hidden');
-            if (isManual) {
-                showManualFormModal(docId);
-            } else {
-                showKnowledgeBaseFormModal(docId);
-            }
+            if (isManual) { showManualFormModal(docId); } else { showKnowledgeBaseFormModal(docId); }
         });
         document.getElementById('delete-kb-btn').addEventListener('click', async () => {
             if (confirm(`¿Estás seguro de que quieres eliminar est${isManual ? 'e manual' : 'e artículo'}?`)) {
@@ -902,9 +717,9 @@ async function showKnowledgeBaseArticleModal(docId) {
                 renderKnowledgeBase(document.getElementById('app-content'));
             }
         });
-
     } catch (error) { console.error("Error cargando:", error); modalBody.innerHTML = '<p>Error al cargar.</p>'; }
 }
+
 
 // --- 7. AUTENTICACIÓN Y PUNTO DE ENTRADA ---
 document.addEventListener('DOMContentLoaded', () => {
