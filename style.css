@@ -303,3 +303,14 @@ tr:hover { background-color: #f8f9fa; }
     border-bottom: 2px solid #eee;
     padding-bottom: 5px;
 }
+
+.kb-article-content h3 {
+    margin-top: 25px;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 5px;
+}
+
+.kb-card.manual-card {
+    border-left-color: var(--success-color);
+}
