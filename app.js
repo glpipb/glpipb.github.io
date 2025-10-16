@@ -45,7 +45,7 @@ const credentialsCategoryConfig = {
         counter: 'computerUserCounter',
         fields: {
             id: { label: 'Código' },
-            computerId: { label: 'Equipo Asignado', type: 'select', optionsSource: 'computers-inventory' },
+            computerId: { label: 'Equipo Asignado', type: 'text', optionsSource: 'computers-inventory', placeholder: 'Busca por código, marca, modelo...' },
             username: { label: 'Nombre de Usuario', type: 'text' },
             password: { label: 'Contraseña', type: 'text' },
             isAdmin: { label: '¿Es Admin?', type: 'select', options: ['No', 'Sí'] }
@@ -275,8 +275,32 @@ async function showItemFormModal(type, category = null, docId = null) {
                     fieldsHTML += `<div class="form-group"><label for="form-${key}">${field.label}</label><input type="text" id="form-${key}" name="${key}" value="${displayValue}" readonly style="background:#eee;"></div>`;
                     continue;
                 }
+                
+                if (field.type === 'text' && field.optionsSource === 'computers-inventory') {
+                    const datalistId = `datalist-for-${key}`;
+                    const placeholder = field.placeholder || '';
+                    let displayValue = value; 
 
-                if (field.type === 'select') {
+                    const allComputersSnap = await db.collection('inventory').where('category', '==', 'computers').get();
+                    const computerOptions = allComputersSnap.docs.map(doc => {
+                        const d = doc.data();
+                        return {
+                            id: doc.id,
+                            fullText: `${doc.id}: ${d.brand || ''} ${d.model || ''} (${d.user || 'Sin Usuario'})`
+                        };
+                    });
+                    const optionsHTML = computerOptions.map(opt => `<option value="${opt.fullText}"></option>`).join('');
+
+                    if (isEditing && displayValue) {
+                        const matchingOption = computerOptions.find(opt => opt.id === displayValue);
+                        if (matchingOption) {
+                            displayValue = matchingOption.fullText;
+                        }
+                    }
+                    
+                    inputHTML = `<input type="text" id="form-${key}" name="${key}" value="${displayValue}" list="${datalistId}" placeholder="${placeholder}" ${isRequired} autocomplete="off">
+                                 <datalist id="${datalistId}">${optionsHTML}</datalist>`;
+                } else if (field.type === 'select') {
                     let optionsHTML = '';
                     if (field.optionsSource === 'locations') {
                         const locSnap = await db.collection('locations').get();
@@ -287,31 +311,18 @@ async function showItemFormModal(type, category = null, docId = null) {
                         const allComputersSnap = await db.collection('inventory').where('category', '==', 'computers').get();
                         allComputersSnap.forEach(doc => {
                             const computerData = doc.data();
-                            // MODIFICATION: Logic to show only unassigned computers, or the currently assigned one
-                            if (type === 'credentials' && category === 'software') { // Assigning license to computer
-                                if (!computerData.os) { computersMap.set(doc.id, `${doc.id}: ${computerData.brand} ${computerData.model}`); }
-                            } else { // Assigning computer to user credential, or other cases
-                                computersMap.set(doc.id, `${doc.id}: ${computerData.brand} ${computerData.model}`);
-                            }
+                            if (!computerData.os) { computersMap.set(doc.id, `${doc.id}: ${computerData.brand} ${computerData.model}`); }
                         });
-                        
-                        // If editing, ensure the currently selected/assigned computer is in the list, even if it wouldn't normally appear
                         if (isEditing && value && !computersMap.has(value)) {
                             const currentCompSnap = await db.collection('inventory').doc(value).get();
                             if (currentCompSnap.exists) {
                                 const d = currentCompSnap.data();
-                                let displayText = `${d.id}: ${d.brand} ${d.model}`;
-                                if (type === 'credentials' && category === 'software' && d.os) {
-                                    displayText += ` (Asignado actualmente)`;
-                                }
-                                computersMap.set(currentCompSnap.id, displayText);
+                                computersMap.set(currentCompSnap.id, `${d.id}: ${d.brand} ${d.model} (Asignado actualmente)`);
                             }
                         }
-
                         for (const [id, name] of computersMap.entries()) {
                             optionsHTML += `<option value="${id}" ${id === value ? 'selected' : ''}>${name}</option>`;
                         }
-
                     }
                     else if (field.optionsSource === 'software-licenses') {
                         const licensesMap = new Map();
@@ -378,7 +389,18 @@ async function showItemFormModal(type, category = null, docId = null) {
             const form = e.target;
             const data = {};
             const formData = new FormData(form);
-            formData.forEach((value, key) => { data[key] = value; });
+            formData.forEach((value, key) => {
+                const fieldConfig = config.fields[key];
+                if (fieldConfig && fieldConfig.type === 'text' && fieldConfig.optionsSource === 'computers-inventory') {
+                    if (value && value.includes(':')) {
+                        data[key] = value.split(':')[0].trim();
+                    } else {
+                        data[key] = value;
+                    }
+                } else {
+                    data[key] = value;
+                }
+            });
     
             try {
                 if (isEditing) {
