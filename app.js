@@ -58,7 +58,21 @@ const credentialsCategoryConfig = {
     siigo: { title: 'Usuarios Siigo', titleSingular: 'Usuario Siigo', prefix: 'CRED-SIIGO-', counter: 'siigoCounter', fields: { id: { label: 'Código' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, assignedUser: { label: 'Ususario asignado', type: 'text' }, url: { label: 'URL de Acceso', type: 'text' }, status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }, notes: { label: 'Notas', type: 'textarea' } } },
     velocity: { title: 'Usuarios Velocity', titleSingular: 'Usuario Velocity', prefix: 'CRED-VEL-', counter: 'velocityCounter', fields: { id: { label: 'Código' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, assignedUser: { label: 'Usuario asignado', type: 'text' }, url: { label: 'URL de Acceso', type: 'text' }, status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }, notes: { label: 'Notas', type: 'textarea' } } },
     traslados: { title: 'Usuarios App Traslados', titleSingular: 'Usuario App Traslados', prefix: 'CRED-APPTR-', counter: 'trasladosCounter', fields: { id: { label: 'Código' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, assignedUser: { label: 'Usuario asignado', type: 'text' }, status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }, notes: { label: 'Notas', type: 'textarea' } } },
-    others: { title: 'Otras Credenciales', titleSingular: 'Credencial', prefix: 'CRED-OTH-', counter: 'otherCredentialCounter', fields: { id: { label: 'Código' }, system: { label: 'Sistema/Servicio', type: 'text' }, url: { label: 'URL (Opcional)', type: 'text' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, notes: { label: 'Notas', type: 'textarea' } } }
+    atencion: { 
+    title: 'Usuarios App Atención al Cliente', 
+    titleSingular: 'Usuario App Atención al Cliente', 
+    prefix: 'CRED-APPAT-', 
+    counter: 'atencionCounter', 
+    fields: { 
+        id: { label: 'Código' }, 
+        username: { label: 'Usuario', type: 'text' }, 
+        password: { label: 'Contraseña', type: 'text' }, 
+        assignedUser: { label: 'Usuario asignado', type: 'text' }, 
+        status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }, 
+        notes: { label: 'Notas', type: 'textarea' } 
+    } 
+}
+  others: { title: 'Otras Credenciales', titleSingular: 'Credencial', prefix: 'CRED-OTH-', counter: 'otherCredentialCounter', fields: { id: { label: 'Código' }, system: { label: 'Sistema/Servicio', type: 'text' }, url: { label: 'URL (Opcional)', type: 'text' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, notes: { label: 'Notas', type: 'textarea' } } }
 };
 
 // --- FUNCIONES DE RENDERIZADO ---
