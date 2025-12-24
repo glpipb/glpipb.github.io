@@ -71,7 +71,7 @@ const credentialsCategoryConfig = {
         status: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'] }, 
         notes: { label: 'Notas', type: 'textarea' } 
     } 
-}
+},
   others: { title: 'Otras Credenciales', titleSingular: 'Credencial', prefix: 'CRED-OTH-', counter: 'otherCredentialCounter', fields: { id: { label: 'Código' }, system: { label: 'Sistema/Servicio', type: 'text' }, url: { label: 'URL (Opcional)', type: 'text' }, username: { label: 'Usuario', type: 'text' }, password: { label: 'Contraseña', type: 'text' }, notes: { label: 'Notas', type: 'textarea' } } }
 };
 
